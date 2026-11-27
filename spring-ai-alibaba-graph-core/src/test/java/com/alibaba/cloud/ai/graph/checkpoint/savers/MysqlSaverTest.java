@@ -55,6 +55,7 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 import static com.alibaba.cloud.ai.graph.checkpoint.savers.LatestCheckpointCacheTestSupport.enableLatestCheckpointCache;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -127,6 +128,24 @@ public class MysqlSaverTest {
 
     private static RunnableConfig config(String threadId) {
         return RunnableConfig.builder().threadId(threadId).build();
+    }
+
+    @Test
+    void independentSaversFenceAMySqlCheckpointThread() throws Exception {
+        var a = MysqlSaver.builder().dataSource(DATA_SOURCE).build();
+        var b = MysqlSaver.builder().dataSource(DATA_SOURCE).build();
+        var run = config("mysql-execution-lease");
+        RunnableConfig original;
+        try (var first = a.acquireExecutionLease(run)) {
+            original = first.configure(run);
+            a.put(original, checkpoint("first"));
+            assertThrows(IllegalStateException.class, () -> b.acquireExecutionLease(run));
+        }
+        try (var next = b.acquireExecutionLease(run)) {
+            assertThrows(IllegalStateException.class, () -> a.put(original, checkpoint("stale")));
+            b.put(next.configure(run), checkpoint("next"));
+        }
+        assertEquals("next", b.get(run).orElseThrow().getState().get("value"));
     }
 
     private static RunnableConfig config(String threadId, String checkpointId) {

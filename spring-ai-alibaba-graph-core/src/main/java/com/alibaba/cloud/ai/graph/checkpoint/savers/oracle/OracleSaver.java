@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.checkpoint.savers.oracle;
 
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.jdbc.AbstractJdbcCheckpointSaver;
@@ -371,7 +372,7 @@ public class OracleSaver extends AbstractJdbcCheckpointSaver {
 				.id(resultSet.getString(1))
 				.nodeId(resultSet.getString(2))
 				.nextNodeId(resultSet.getString(3))
-				.state(decodeState(binaryPayload, resultSet.getString(5)))
+				.stateFromStorage(decodeState(binaryPayload, resultSet.getString(5)))
 				.build();
 	}
 
@@ -445,7 +446,7 @@ public class OracleSaver extends AbstractJdbcCheckpointSaver {
 		Connection conn = null;
 
 		try (Connection ignored = conn = dataSource.getConnection()) {
-			conn.setAutoCommit(false);
+			beginCheckpointWrite(conn);
 
 			try (PreparedStatement upsertStatement = conn.prepareStatement(UPSERT_THREAD);
 				 PreparedStatement insertCheckpointStatement = conn.prepareStatement(INSERT_CHECKPOINT)) {
@@ -454,7 +455,7 @@ public class OracleSaver extends AbstractJdbcCheckpointSaver {
 				upsertStatement.setString(2, threadName);
 				upsertStatement.execute();
 
-				String encodedState = encodeState(checkpoint.getState());
+				String encodedState = encodeState(checkpoint.stateForStorage());
 				insertCheckpointStatement.setString(1, checkpoint.getId());
 				insertCheckpointStatement.setString(2, checkpoint.getNodeId());
 				insertCheckpointStatement.setString(3, checkpoint.getNextNodeId());
@@ -480,10 +481,10 @@ public class OracleSaver extends AbstractJdbcCheckpointSaver {
 		Connection conn = null;
 
 		try (Connection ignored = conn = dataSource.getConnection()) {
-			conn.setAutoCommit(false);
+			beginCheckpointWrite(conn);
 
 			try (PreparedStatement preparedStatement = conn.prepareStatement(UPDATE_CHECKPOINT)) {
-				String encodedState = encodeState(checkpoint.getState());
+				String encodedState = encodeState(checkpoint.stateForStorage());
 				preparedStatement.setString(1, checkpoint.getId());
 				preparedStatement.setString(2, checkpoint.getNodeId());
 				preparedStatement.setString(3, checkpoint.getNextNodeId());
@@ -516,12 +517,14 @@ public class OracleSaver extends AbstractJdbcCheckpointSaver {
 		try (Connection connection = dataSource.getConnection();
 				PreparedStatement preparedStatement = connection.prepareStatement(
 						DELETE_CHECKPOINTS.formatted(String.join(", ", Collections.nCopies(checkpointIds.size(), "?"))))) {
+			beginCheckpointWrite(connection);
 			int index = 1;
 			for (String checkpointId : checkpointIds) {
 				preparedStatement.setString(index++, checkpointId);
 			}
 			preparedStatement.setString(index, threadName);
 			preparedStatement.executeUpdate();
+			connection.commit();
 		}
 		catch (SQLException ex) {
 			throw new Exception("Unable to delete retained checkpoints", ex);
@@ -533,7 +536,7 @@ public class OracleSaver extends AbstractJdbcCheckpointSaver {
 		Connection conn = null;
 
 		try (Connection ignored = conn = dataSource.getConnection()) {
-			conn.setAutoCommit(false);
+			beginCheckpointWrite(conn);
 
 			try (PreparedStatement preparedStatement = conn.prepareStatement(RELEASE_THREAD)) {
 				preparedStatement.setString(1, threadName);
@@ -566,18 +569,32 @@ public class OracleSaver extends AbstractJdbcCheckpointSaver {
 				statement.addBatch(DROP_THREAD_INDEX);
 				statement.addBatch(DROP_CHECKPOINT_TABLE);
 				statement.addBatch(DROP_THREAD_TABLE);
+				statement.addBatch(DROP_EXECUTION_LEASE);
 			}
 			if (createOption == CreateOption.CREATE_OR_REPLACE ||
 					createOption == CreateOption.CREATE_IF_NOT_EXISTS) {
 				statement.addBatch(CREATE_THREAD_TABLE);
 				statement.addBatch(INDEX_THREAD_TABLE);
 				statement.addBatch(CREATE_CHECKPOINT_TABLE);
+				statement.addBatch(CREATE_EXECUTION_LEASE.formatted("TIMESTAMP WITH TIME ZONE")
+						.replace("VARCHAR(", "VARCHAR2("));
 				statement.executeBatch();
 			}
 		}
 		catch (SQLException sqlException) {
 			throw new RuntimeException("Unable to create tables", sqlException);
 		}
+	}
+
+	@Override
+	public ExecutionLease acquireExecutionLease(RunnableConfig config) throws SQLException {
+		return acquireJdbcExecutionLease(config, "SYSTIMESTAMP",
+				"SYSTIMESTAMP + NUMTODSINTERVAL(%d, 'SECOND')".formatted(EXECUTION_LEASE_SECONDS));
+	}
+
+	@Override
+	protected Connection openLeaseConnection() throws SQLException {
+		return dataSource.getConnection();
 	}
 
 	/**

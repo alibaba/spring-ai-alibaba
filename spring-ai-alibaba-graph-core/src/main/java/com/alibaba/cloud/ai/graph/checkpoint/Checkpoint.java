@@ -21,6 +21,8 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import java.util.Map;
 import java.util.UUID;
 
+import com.alibaba.cloud.ai.graph.utils.SerializationUtils;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -29,22 +31,30 @@ import static java.util.Objects.requireNonNull;
 
 public class Checkpoint {
 
+	private static final String STORAGE_FORMAT_KEY = "__spring_ai_alibaba_checkpoint_format__";
+
+	private static final String STORAGE_FORMAT_V1 = "runtime-v1";
+
 	private final String id;
 
-	private Map<String, Object> state = null;
+	private final Map<String, Object> state;
 
-	private String nodeId = null;
+	private final String nodeId;
 
-	private String nextNodeId = null;
+	private final String nextNodeId;
+
+	private final Map<String, Object> runtimeData;
 
 	@JsonCreator
 	private Checkpoint(@JsonProperty("id") String id, @JsonProperty("state") Map<String, Object> state,
-			@JsonProperty("nodeId") String nodeId, @JsonProperty("nextNodeId") String nextNodeId) {
+			@JsonProperty("nodeId") String nodeId, @JsonProperty("nextNodeId") String nextNodeId,
+			@JsonProperty("runtimeData") Map<String, Object> runtimeData) {
 
 		this.id = requireNonNull(id, "id cannot be null");
 		this.state = requireNonNull(state, "state cannot be null");
 		this.nodeId = requireNonNull(nodeId, "nodeId cannot be null");
 		this.nextNodeId = requireNonNull(nextNodeId, "Checkpoint.nextNodeId cannot be null");
+		this.runtimeData = runtimeData == null ? Map.of() : Map.copyOf(runtimeData);
 
 	}
 
@@ -55,7 +65,8 @@ public class Checkpoint {
 	 */
 	public static Checkpoint copyOf(Checkpoint checkpoint) {
 		requireNonNull(checkpoint, "checkpoint cannot be null");
-		return new Checkpoint(UUID.randomUUID().toString(), checkpoint.state, checkpoint.nodeId, checkpoint.nextNodeId);
+		return new Checkpoint(UUID.randomUUID().toString(), SerializationUtils.deepCopyMap(checkpoint.state),
+				checkpoint.nodeId, checkpoint.nextNodeId, Map.of());
 	}
 
 	public static Builder builder() {
@@ -78,10 +89,30 @@ public class Checkpoint {
 		return nextNodeId;
 	}
 
+	@JsonProperty("runtimeData")
+	public Map<String, Object> runtimeData() {
+		return runtimeData;
+	}
+
+	public Checkpoint withRuntimeData(Map<String, Object> data) {
+		return new Checkpoint(id, state, nodeId, nextNodeId, data);
+	}
+
+	/**
+	 * Encodes checkpoint data for savers that store a single state payload.
+	 * Checkpoints without runtime data continue to use the original state payload.
+	 */
+	public Map<String, Object> stateForStorage() {
+		if (runtimeData.isEmpty() && !state.containsKey(STORAGE_FORMAT_KEY)) {
+			return state;
+		}
+		return Map.of(STORAGE_FORMAT_KEY, STORAGE_FORMAT_V1, "state", state, "runtimeData", runtimeData);
+	}
+
 	public Checkpoint updateState(Map<String, Object> values, Map<String, KeyStrategy> channels) {
 
 		return new Checkpoint(this.id, OverAllState.updateState(this.state, values, channels), this.nodeId,
-				this.nextNodeId);
+				this.nextNodeId, Map.of());
 	}
 
 	@Override
@@ -99,6 +130,8 @@ public class Checkpoint {
 
 		private String nextNodeId = null;
 
+		private Map<String, Object> runtimeData = Map.of();
+
 		public Builder id(String id) {
 			this.id = id;
 			return this;
@@ -114,6 +147,21 @@ public class Checkpoint {
 			return this;
 		}
 
+		@SuppressWarnings("unchecked")
+		public Builder stateFromStorage(Map<String, Object> payload) {
+			if (STORAGE_FORMAT_V1.equals(payload.get(STORAGE_FORMAT_KEY))
+					&& payload.get("state") instanceof Map<?, ?> data
+					&& payload.get("runtimeData") instanceof Map<?, ?> runtime) {
+				this.state = (Map<String, Object>) data;
+				this.runtimeData = (Map<String, Object>) runtime;
+			}
+			else {
+				this.state = payload;
+				this.runtimeData = Map.of();
+			}
+			return this;
+		}
+
 		public Builder nodeId(String nodeId) {
 			this.nodeId = nodeId;
 			return this;
@@ -125,7 +173,7 @@ public class Checkpoint {
 		}
 
 		public Checkpoint build() {
-			return new Checkpoint(id, state, nodeId, nextNodeId);
+			return new Checkpoint(id, state, nodeId, nextNodeId, runtimeData);
 		}
 
 	}

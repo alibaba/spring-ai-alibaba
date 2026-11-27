@@ -30,6 +30,7 @@ export interface AgentResumeRequest {
   userId?: string;
   threadId: string;
   toolFeedbacks?: ToolFeedbackDTO[];
+  interruptionId?: string;
   streaming?: boolean;
 }
 
@@ -71,6 +72,10 @@ export interface ToolRequestMessageDTO extends MessageDTO {
 export interface ToolRequestConfirmMessageDTO extends MessageDTO {
   messageType: 'tool-confirm';
   toolCalls?: ToolCallConfigDTO[];
+  interruptionId?: string;
+  pendingInterruptions?: ToolRequestConfirmMessageDTO[];
+  toolFeedback?: ToolFeedbackDTO[];
+  toolsAutomaticallyApproved?: ToolCallDTO[];
 }
 
 export interface ToolCallConfigDTO {
@@ -123,6 +128,8 @@ export interface AgentRunResponse {
   message: MessageDTO | null;
   tokenUsage: Usage | null;
   chunk: string | null;
+  error?: boolean;
+  errorMessage?: string;
 }
 
 /** Graph SSE response: node, message, and overall state for workflow observation. */
@@ -476,13 +483,15 @@ class SpringAIApiClient {
     userId: string,
     threadId: string,
     toolFeedbacks: ToolFeedbackDTO[],
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    interruptionId?: string
   ): AsyncGenerator<AgentRunResponse, void, unknown> {
     const request: AgentResumeRequest = {
       appName,
       userId,
       threadId,
       toolFeedbacks,
+      interruptionId,
       streaming: true,
     };
 

@@ -40,9 +40,19 @@ public class SpringAIStateSerializer extends ObjectStreamStateSerializer {
 	 * types.
 	 */
 	public SpringAIStateSerializer(AgentStateFactory<OverAllState> stateFactory) {
+		this(stateFactory, true);
+	}
+
+	/**
+	 * Configures binary writes while keeping both system-message formats readable.
+	 * @param stateFactory factory for reconstructed graph states
+	 * @param writeSystemMetadata whether to include system metadata in new writes.
+	 * Disable while released 2.1.0.0 readers still share the checkpoint store.
+	 */
+	public SpringAIStateSerializer(AgentStateFactory<OverAllState> stateFactory, boolean writeSystemMetadata) {
 		super(stateFactory);
 
-		mapper().register(Message.class, new MessageSerializer());
+		mapper().register(Message.class, new MessageSerializer(writeSystemMetadata));
 		mapper().register(AssistantMessage.ToolCall.class, new ToolCallSerializer());
 		mapper().register(ToolResponseMessage.ToolResponse.class, new ToolResponseSerializer());
 		mapper().register(StreamingOutput.class, new StreamingOutputSerializer());

@@ -38,9 +38,40 @@ import org.junit.jupiter.api.Test;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class H2SaverTest {
+
+	@Test
+	void expiredExecutionLeaseCannotWriteAfterAnotherSaverTakesOver() throws Exception {
+		var dataSource = dataSource();
+		var first = saver(dataSource, CreateOption.CREATE_OR_REPLACE);
+		var second = saver(dataSource, CreateOption.CREATE_IF_NOT_EXISTS);
+		var run = config("h2-fenced-thread");
+		try (var original = first.acquireExecutionLease(run)) {
+			var initial = original.configure(run);
+			first.put(initial, checkpoint("initial"));
+			assertThrows(IllegalStateException.class, () -> second.acquireExecutionLease(run));
+			try (var connection = dataSource.getConnection(); var statement = connection.prepareStatement("""
+					UPDATE graph_execution_lease SET expires_at = DATEADD(SECOND, -1, CURRENT_TIMESTAMP)
+					WHERE thread_name = ?
+					""")) {
+				statement.setString(1, run.threadId().orElseThrow());
+				assertEquals(1, statement.executeUpdate());
+			}
+			try (var takeover = second.acquireExecutionLease(run)) {
+				var newOwner = takeover.configure(run);
+				second.put(newOwner, checkpoint("new owner"));
+				assertThrows(IllegalStateException.class, () -> first.put(initial, checkpoint("stale")));
+				assertThrows(IllegalStateException.class, () -> first.release(initial));
+				original.close();
+				second.put(newOwner, checkpoint("still active"));
+			}
+		}
+		assertEquals("still active", first.get(run).orElseThrow().getState().get("value"));
+		assertEquals(3, first.list(run).size());
+	}
 
 	@Test
 	void shouldPersistAndReloadCheckpointsFromH2() throws Exception {

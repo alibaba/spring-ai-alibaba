@@ -56,6 +56,10 @@ public class RoutingNode implements MultiCommandAction {
 	private final Agent rootAgent;
 	private final List<Agent> subAgents;
 
+	public static String selectionKey(String agentName) {
+		return "_ROUTING_SELECTED_AGENTS_:" + agentName;
+	}
+
 	public RoutingNode(ChatModel chatModel, Agent rootAgent, List<Agent> subAgents) {
 		this.rootAgent = rootAgent;
 		this.subAgents = subAgents;
@@ -137,6 +141,7 @@ public class RoutingNode implements MultiCommandAction {
 			Map<String, Object> stateUpdate = new HashMap<>();
 			decision.getAgentQueries().forEach((agentName, query) ->
 					stateUpdate.put(agentName + "_input", query));
+			stateUpdate.put(selectionKey(rootAgent.name()), List.copyOf(decisionValues));
 			return new MultiCommand(decisionValues, stateUpdate);
 		}
 		else {
@@ -166,7 +171,8 @@ public class RoutingNode implements MultiCommandAction {
 			}
 			return "";
 		});
-		return new MultiCommand(List.of(fallbackAgent), Map.of(fallbackAgent + "_input", fallbackInput));
+		return new MultiCommand(List.of(fallbackAgent), Map.of(fallbackAgent + "_input", fallbackInput,
+				selectionKey(rootAgent.name()), List.of(fallbackAgent)));
 	}
 
 	/**

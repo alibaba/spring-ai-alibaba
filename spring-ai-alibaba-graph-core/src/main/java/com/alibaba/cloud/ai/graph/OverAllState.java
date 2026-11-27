@@ -34,6 +34,7 @@ import java.util.stream.Collector;
 import java.util.stream.Stream;
 
 import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.entryOf;
+import static com.alibaba.cloud.ai.graph.utils.SerializationUtils.deepCopyMap;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Optional.ofNullable;
 
@@ -114,12 +115,13 @@ public final class OverAllState implements Serializable {
 	}
 
 	/**
-	 * Snap shot optional.
-	 * @return the optional
+	 * Copies state for an isolated execution branch. State values must be immutable
+	 * or supported by the state copy utility.
+	 * @return the state snapshot
 	 */
 	public Optional<OverAllState> snapShot() {
 		return Optional
-			.of(new OverAllState(new HashMap<>(this.data), new HashMap<>(this.keyStrategies), this.store));
+			.of(new OverAllState(deepCopyMap(this.data), new HashMap<>(this.keyStrategies), this.store));
 	}
 
 	/**

@@ -22,27 +22,29 @@ import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.Errors;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
-import com.alibaba.cloud.ai.graph.internal.edge.Edge;
+import com.alibaba.cloud.ai.graph.internal.ParallelBranchPath;
+import com.alibaba.cloud.ai.graph.internal.ParallelEdgeProcessor;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.internal.node.ConditionalParallelNode;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
+import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
-import java.util.function.Supplier;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -142,116 +144,99 @@ public class CompiledGraph {
 			nodeFactories.put(n.id(), factory);
 		}
 
-		// EVALUATE EDGES
-		for (var e : processedData.edges().elements) {
-			var targets = e.targets();
-			if (targets.size() == 1) {
-				var target = targets.get(0);
-				// Check if this is a conditional edge
-				if (target.value() != null) {
-					var edgeCondition = target.value();
-					// Check if this is a multi-command action (returns multiple nodes)
-					if (edgeCondition.isMultiCommand()) {
-						// Multi-command action - create ConditionalParallelNode for parallel execution
-						var conditionalParallelNode = new ConditionalParallelNode(
-								e.sourceId(),
-								edgeCondition,
-								nodeFactories,
-								keyStrategyMap,
-								compileConfig);
-
-						nodeFactories.put(conditionalParallelNode.id(), conditionalParallelNode.actionFactory());
-						edges.put(e.sourceId(), new EdgeValue(conditionalParallelNode.id()));
-
-						// Find parallel node targets from mappings
-						var mappedNodeIds = edgeCondition.mappings().values().stream()
-								.collect(Collectors.toSet());
-
-						// Validate that all mapped nodes exist in the graph
-						var missingNodeIds = mappedNodeIds.stream()
-								.filter(nodeId -> !nodeFactories.containsKey(nodeId))
-								.collect(Collectors.toSet());
-						if (!missingNodeIds.isEmpty()) {
-							throw new GraphStateException("Conditional multi-command mapping from node '"
-									+ e.sourceId() + "' references unknown target nodes: " + missingNodeIds);
-						}
-
-						var parallelNodeTargets = findParallelNodeTargets(mappedNodeIds);
-						if (parallelNodeTargets.size() > 1) {
-							throw Errors.illegalMultipleTargetsOnParallelNode
-									.exception(e.sourceId(), parallelNodeTargets);
-						}
-						if (parallelNodeTargets.isEmpty()) {
-							throw Errors.illegalMultipleTargetsOnParallelNode.exception(e.sourceId(), 0);
-						}
-						// Set edge from ConditionalParallelNode to the next node.
-						// Conditional parallel branches currently require a single converged target.
-						edges.put(conditionalParallelNode.id(), new EdgeValue(parallelNodeTargets.iterator().next()));
-						// The ConditionalParallelNode will handle parallel execution internally
-					} else {
-						// Single Command action - same as regular single target edge
-						edges.put(e.sourceId(), target);
-					}
-				} else {
-					// Regular single target edge (no condition)
-					edges.put(e.sourceId(), target);
+		var parallelEdges = new ParallelEdgeProcessor(processedData.edges());
+		for (var edge : processedData.edges().elements) {
+			String source = edge.sourceId();
+			String declaredJoin = processedData.parallelJoins().get(source);
+			if (edge.isParallel()) {
+				var targets = edge.targets().stream().map(EdgeValue::id).toList();
+				var plan = parallelEdges.plan(source, targets, declaredJoin);
+				var actions = new ArrayList<AsyncNodeActionWithConfig>();
+				for (String target : targets) {
+					actions.add(branchFactory(source, target, plan).apply(this.compileConfig));
 				}
-			} else {
-				Supplier<Stream<EdgeValue>> parallelNodeStream = () -> targets.stream()
-						.filter(target -> nodeFactories.containsKey(target.id()));
-
-				var parallelNodeEdges = parallelNodeStream.get()
-						.map(target -> new Edge(target.id()))
-						.filter(ee -> processedData.edges().elements.contains(ee))
-						.map(ee -> processedData.edges().elements.indexOf(ee))
-						.map(index -> processedData.edges().elements.get(index))
-						.toList();
-
-				var parallelNodeTargets = parallelNodeEdges.stream()
-						.map(ee -> ee.target().id())
-						.collect(Collectors.toSet());
-
-				if (parallelNodeTargets.size() > 1) {
-
-					// find the first defer node
-
-					var conditionalEdges = parallelNodeEdges.stream()
-							.filter(ee -> ee.target().value() != null)
-							.toList();
-					if (!conditionalEdges.isEmpty()) {
-						throw Errors.unsupportedConditionalEdgeOnParallelNode.exception(e.sourceId(),
-								conditionalEdges.stream().map(Edge::sourceId).toList());
-					}
-					throw Errors.illegalMultipleTargetsOnParallelNode.exception(e.sourceId(), parallelNodeTargets);
+				registerParallel(source, plan.join(), new ParallelNode(source, plan.join(), actions, targets));
+			}
+			else if (edge.target().value() != null && edge.target().value().isMultiCommand()) {
+				var condition = edge.target().value();
+				var targets = new LinkedHashSet<>(condition.mappings().values());
+				if (declaredJoin == null) {
+					declaredJoin = immediateConditionalJoin(source, targets);
 				}
-
-				var targetList = parallelNodeStream.get().toList();
-
-				var actions = targetList.stream()
-						.map(target -> {
-							try {
-								return nodeFactories.get(target.id()).apply(compileConfig);
-							} catch (GraphStateException ex) {
-								throw new RuntimeException("Failed to create parallel node action for target: "
-										+ target.id() + ". Cause: " + ex.getMessage(), ex);
-							}
-						})
-						.toList();
-
-				var actionNodeIds = targetList.stream().map(EdgeValue::id).toList();
-
-				var targetNodeId = parallelNodeTargets.iterator().next();
-				var parallelNode = new ParallelNode(e.sourceId(), targetNodeId, actions, actionNodeIds, keyStrategyMap,
-						compileConfig);
-
-				nodeFactories.put(parallelNode.id(), parallelNode.actionFactory());
-
-				edges.put(e.sourceId(), new EdgeValue(parallelNode.id()));
-
-				edges.put(parallelNode.id(), new EdgeValue(targetNodeId));
-
+				var plan = parallelEdges.plan(source, targets, declaredJoin);
+				var branches = new LinkedHashMap<String, Node.ActionFactory>();
+				targets.forEach(target -> branches.put(target, branchFactory(source, target, plan)));
+				registerParallel(source, plan.join(), new ConditionalParallelNode(source, plan.join(), condition, branches));
+			}
+			else {
+				edges.put(source, edge.target());
 			}
 		}
+	}
+
+	private void registerParallel(String source, String join, Node fork) {
+		nodeFactories.put(fork.id(), fork.actionFactory());
+		edges.put(source, new EdgeValue(fork.id()));
+		edges.put(fork.id(), new EdgeValue(join));
+	}
+
+	private String immediateConditionalJoin(String source, Set<String> branches) throws GraphStateException {
+		var targets = new LinkedHashSet<String>();
+		for (String branch : branches) {
+			var next = processedData.edges().edgeBySourceId(branch);
+			if (next.isEmpty() || next.get().isParallel() || next.get().target().id() == null) {
+				throw new GraphStateException(
+						"Parallel route from '%s' through '%s' requires an explicit join".formatted(source, branch));
+			}
+			targets.add(next.get().target().id());
+		}
+		if (targets.size() != 1) {
+			throw Errors.illegalMultipleTargetsOnParallelNode.exception(source, targets.stream().sorted().toList());
+		}
+		return targets.iterator().next();
+	}
+
+	private Node.ActionFactory branchFactory(String fork, String target, ParallelEdgeProcessor.Plan plan) {
+		if (target.equals(plan.join())) {
+			return ignored -> (state, config) -> CompletableFuture.completedFuture(Map.of());
+		}
+		if (plan.directBranches().contains(target)) {
+			return nodeFactories.get(target);
+		}
+		return ignored -> new PathAction(this, fork, new ParallelBranchPath(target, plan.join()));
+	}
+
+	private record PathAction(CompiledGraph graph, String fork, ParallelBranchPath path)
+			implements ParallelBranchPath.Action {
+
+		private String namespace() {
+			return ParallelNode.formatNodeId(fork) + "/" + path.entry();
+		}
+
+		@Override
+		public String getResumeSubGraphId() {
+			return ResumableSubGraphAction.resumeSubGraphId(namespace());
+		}
+
+		@Override
+		public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig parent) {
+			var config = ResumableSubGraphAction.childConfig(namespace(), parent, graph.compileConfig,
+					graph.compileConfig).build();
+			boolean resume = ResumableSubGraphAction.shouldResume(namespace(), parent);
+			if (!resume && graph.compileConfig.taskCheckpoints()) {
+				var childConfig = config;
+				resume = graph.compileConfig.checkpointSaver().flatMap(saver -> saver.get(childConfig)).isPresent();
+				if (resume) {
+					config = config.withResume();
+				}
+			}
+			var runner = new GraphRunner(graph, config, path);
+			var inputs = resume ? graph.stateCreate(Map.of()) : state;
+			var result = runner.run(inputs);
+			return CompletableFuture.completedFuture(Map.of(ResumableSubGraphAction.outputKeyToParent(namespace()),
+					result));
+		}
+
 	}
 
 	public Collection<StateSnapshot> getStateHistory(RunnableConfig config) {
@@ -309,32 +294,52 @@ public class CompiledGraph {
 	 */
 	public RunnableConfig updateState(RunnableConfig config, Map<String, Object> values, String asNode)
 			throws Exception {
-		BaseCheckpointSaver saver = compileConfig.checkpointSaver()
-				.orElseThrow(() -> (new IllegalStateException("Missing CheckpointSaver!")));
+		return writeUpdatedCheckpoint(config, values, asNode, false);
+	}
 
-		// merge values with checkpoint values
-		Checkpoint branchCheckpoint = saver.get(config)
+	/**
+	 * Appends a new checkpoint derived from the selected checkpoint. The source
+	 * remains available subject to the saver's history retention. Resume using the
+	 * returned configuration to run the new branch.
+	 * @param config the source thread and checkpoint
+	 * @param values state changes for the new checkpoint
+	 * @param asNode the node whose outgoing edges should be evaluated, or null to keep the saved destination
+	 * @return the runnable configuration for the new checkpoint
+	 * @throws Exception if routing or checkpoint storage fails
+	 */
+	public RunnableConfig forkState(RunnableConfig config, Map<String, Object> values, String asNode)
+			throws Exception {
+		return writeUpdatedCheckpoint(config, values, asNode, true);
+	}
+
+	private RunnableConfig writeUpdatedCheckpoint(RunnableConfig config, Map<String, Object> values, String asNode,
+			boolean fork) throws Exception {
+		BaseCheckpointSaver saver = compileConfig.checkpointSaver()
+				.orElseThrow(() -> new IllegalStateException("Missing CheckpointSaver!"));
+		try (var claim = compileConfig.taskCheckpoints() ? GraphRunner.claim(saver, config) : null) {
+			var run = claim == null ? config : claim.lease().configure(config);
+			var checkpoint = updatedCheckpoint(saver, run, values, asNode);
+			var stored = saver.put(fork ? run.withCheckPointId(null) : run, checkpoint);
+			var result = RunnableConfig.builder(claim == null ? stored : config).checkPointId(checkpoint.getId());
+			if (!fork) {
+				result.nextNode(asNode == null ? null : checkpoint.getNextNodeId());
+			}
+			return result.build();
+		}
+	}
+
+	private Checkpoint updatedCheckpoint(BaseCheckpointSaver saver, RunnableConfig config, Map<String, Object> values,
+			String asNode) throws Exception {
+		Checkpoint checkpoint = saver.get(config)
 				.map(Checkpoint::copyOf)
 				.map(cp -> cp.updateState(values, keyStrategyMap))
-				.orElseThrow(() -> (new IllegalStateException("Missing Checkpoint!")));
-
-		String nextNodeId = null;
-		if (asNode != null) {
-			var nextNodeCommand = nextNodeId(asNode, branchCheckpoint.getState(), config);
-
-			nextNodeId = nextNodeCommand.gotoNode();
-			branchCheckpoint = Checkpoint.builder()
-					.id(branchCheckpoint.getId())
-					.state(nextNodeCommand.update())
-					.nodeId(branchCheckpoint.getNodeId())
-					.nextNodeId(branchCheckpoint.getNextNodeId())
-					.build();
-
+				.orElseThrow(() -> new IllegalStateException("Missing Checkpoint!"));
+		if (asNode == null) {
+			return checkpoint;
 		}
-		// update checkpoint in saver
-		RunnableConfig newConfig = saver.put(config, branchCheckpoint);
-
-		return RunnableConfig.builder(newConfig).checkPointId(branchCheckpoint.getId()).nextNode(nextNodeId).build();
+		var route = nextNodeId(asNode, checkpoint.getState(), config);
+		return Checkpoint.builder().id(checkpoint.getId()).state(route.update())
+				.nodeId(asNode).nextNodeId(route.gotoNode()).build();
 	}
 
 	/***
@@ -349,27 +354,6 @@ public class CompiledGraph {
 		return updateState(config, values, null);
 	}
 
-	/**
-	 * Finds the target nodes for a set of source node IDs by looking up their edges.
-	 * This is used to determine where parallel nodes should route after execution.
-	 * Similar to the logic used for ParallelNode.
-	 * 
-	 * @param sourceNodeIds the set of source node IDs to find targets for
-	 * @return a set of target node IDs that the source nodes point to
-	 */
-	private Set<String> findParallelNodeTargets(Set<String> sourceNodeIds) {
-		var parallelNodeEdges = sourceNodeIds.stream()
-				.map(nodeId -> new Edge(nodeId))  // Create Edge object with nodeId as source
-				.filter(ee -> processedData.edges().elements.contains(ee))
-				.map(ee -> processedData.edges().elements.indexOf(ee))
-				.map(index -> processedData.edges().elements.get(index))
-				.toList();
-
-		return parallelNodeEdges.stream()
-				.map(ee -> ee.target().id())
-				.filter(Objects::nonNull)
-				.collect(Collectors.toCollection(TreeSet::new));
-	}
 
 
 	private Command nextNodeId(EdgeValue route, Map<String, Object> state, String nodeId, RunnableConfig config)

@@ -28,6 +28,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -40,28 +41,69 @@ import java.util.stream.IntStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import org.redisson.RedissonObject;
 import org.redisson.api.RBucket;
 import org.redisson.api.RLock;
 import org.redisson.api.RMap;
+import org.redisson.api.RScript;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.ByteArrayCodec;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import reactor.core.Disposable;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import static java.lang.String.format;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 /**
  * The type Redis saver.
+ * A durable execution keeps the Redis thread mapping alive for its lease. The
+ * configured retention still applies to checkpoint content.
  *
  * @author disaster
  * @since 1.0.0-M2
  */
 public class RedisSaver implements BaseCheckpointSaver {
 
+	private static final Logger log = LoggerFactory.getLogger(RedisSaver.class);
+
 	// Redis key prefixes
 	private static final String CHECKPOINT_PREFIX = "graph:checkpoint:content:";
 	private static final String THREAD_META_PREFIX = "graph:thread:meta:";
 	private static final String THREAD_REVERSE_PREFIX = "graph:thread:reverse:";
 	private static final String LOCK_PREFIX = "graph:checkpoint:lock:";
+	private static final String EXECUTION_LEASE_SUFFIX = "graph:execution";
+	private static final String EXECUTION_LEASE_KEY = "_REDIS_EXECUTION_LEASE_";
+	private static final Duration EXECUTION_LEASE_DURATION = Duration.ofSeconds(90);
+	private static final Duration EXECUTION_LEASE_RENEWAL = EXECUTION_LEASE_DURATION.dividedBy(3);
+	private static final Duration LEASE_METADATA_DURATION = EXECUTION_LEASE_DURATION.plus(EXECUTION_LEASE_RENEWAL);
+	private static final String CLAIM_LEASE = """
+			return redis.call('SET', KEYS[1], ARGV[1], 'NX', 'PX', ARGV[2]) and 1 or 0
+			""";
+	private static final String COMMIT_WITH_LEASE = """
+			if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
+			local ttl = tonumber(ARGV[3])
+			if ttl == 0 then
+				redis.call('DEL', KEYS[2])
+			elseif ttl > 0 then
+				redis.call('SET', KEYS[2], ARGV[2], 'PX', ARGV[3])
+			else
+				redis.call('SET', KEYS[2], ARGV[2])
+			end
+			return 1
+			""";
+	private static final String RENEW_LEASE = """
+			if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
+			return redis.call('PEXPIRE', KEYS[1], ARGV[2])
+			""";
+	private static final String RELEASE_LEASE = """
+			if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
+			return redis.call('DEL', KEYS[1])
+			""";
 	// Thread meta hash field names
 	private static final String FIELD_THREAD_ID = "thread_id";
 	private static final String FIELD_IS_RELEASED = "is_released";
@@ -96,6 +138,190 @@ public class RedisSaver implements BaseCheckpointSaver {
 	 */
 	public static Builder builder() {
 		return new Builder();
+	}
+
+	@Override
+	public ExecutionLease acquireExecutionLease(RunnableConfig config) throws InterruptedException {
+		String threadName = config.threadId().orElse(THREAD_ID_DEFAULT);
+		RLock lock = redisson.getLock(LOCK_PREFIX + threadName);
+		if (!lock.tryLock(3, TimeUnit.SECONDS)) {
+			throw new IllegalStateException("Failed to acquire checkpoint lock for thread '" + threadName + "'");
+		}
+		RedisExecutionLease lease;
+		try {
+			var threadId = getOrCreateThreadId(threadName, LEASE_METADATA_DURATION);
+			lease = new RedisExecutionLease(threadName, threadId);
+			if (!lease.execute(CLAIM_LEASE, List.of(lease.key), ttlBytes(EXECUTION_LEASE_DURATION.toMillis()))) {
+				throw new IllegalStateException("A durable graph execution is already active for thread '" + threadName + "'");
+			}
+			try {
+				extendThreadMetadataForLease(threadName, threadId);
+			}
+			catch (RuntimeException failure) {
+				try {
+					lease.execute(RELEASE_LEASE, List.of(lease.key));
+				}
+				catch (RuntimeException cleanupFailure) {
+					failure.addSuppressed(cleanupFailure);
+				}
+				throw failure;
+			}
+		}
+		finally {
+			lock.unlock();
+		}
+		lease.startRenewal();
+		return lease;
+	}
+
+	private void extendThreadMetadataForLease(String threadName, String threadId) {
+		if (ttl <= 0) {
+			return;
+		}
+		for (String key : List.of(THREAD_META_PREFIX + threadName, THREAD_REVERSE_PREFIX + threadId)) {
+			RMap<?, ?> metadata = redisson.getMap(key);
+			long remaining = metadata.remainTimeToLive();
+			if (remaining >= 0 && remaining < LEASE_METADATA_DURATION.toMillis()) {
+				metadata.expire(LEASE_METADATA_DURATION);
+			}
+		}
+	}
+
+	private void restoreThreadMetadataTtl(String threadName, String threadId) {
+		var duration = Duration.ofMillis(ttlUnit.toMillis(ttl));
+		redisson.getMap(THREAD_META_PREFIX + threadName).expire(duration);
+		redisson.getMap(THREAD_REVERSE_PREFIX + threadId).expire(duration);
+	}
+
+	private static byte[] ttlBytes(long millis) {
+		return Long.toString(millis).getBytes(UTF_8);
+	}
+
+	private RedisExecutionLease executionLease(RunnableConfig config, String threadName) {
+		return config.metadata(EXECUTION_LEASE_KEY).filter(RedisExecutionLease.class::isInstance)
+				.map(RedisExecutionLease.class::cast).filter(lease -> lease.belongsTo(this, threadName)).orElse(null);
+	}
+
+	private final class RedisExecutionLease implements ExecutionLease {
+
+		private final String threadName;
+		private final String threadId;
+		private final String contentKey;
+		private final byte[] rawContentKey;
+		private final byte[] key;
+		private final byte[] token = UUID.randomUUID().toString().getBytes(UTF_8);
+		private Disposable renewal;
+
+		RedisExecutionLease(String threadName, String threadId) {
+			this.threadName = threadName;
+			this.threadId = threadId;
+			this.contentKey = CHECKPOINT_PREFIX + threadId;
+			var bucket = redisson.getBucket(contentKey);
+			String rawName = bucket instanceof RedissonObject object ? object.getRawName() : contentKey;
+			this.rawContentKey = rawName.getBytes(UTF_8);
+			// Key bytes are already mapped. Redisson's suffix keeps both keys in
+			// the same cluster slot without changing the existing content key.
+			this.key = RedissonObject.suffixName(rawName, EXECUTION_LEASE_SUFFIX).getBytes(UTF_8);
+		}
+
+		private void startRenewal() {
+			this.renewal = Flux.interval(EXECUTION_LEASE_RENEWAL).onBackpressureDrop()
+					.concatMap(tick -> Mono.fromCallable(this::renew).subscribeOn(Schedulers.boundedElastic()))
+					.takeWhile(Boolean::booleanValue)
+					.subscribe(renewed -> { }, error -> log.warn("Redis graph execution lease renewal stopped", error));
+		}
+
+		private boolean belongsTo(RedisSaver saver, String thread) {
+			return RedisSaver.this == saver && threadName.equals(thread);
+		}
+
+		@Override
+		public RunnableConfig configure(RunnableConfig config) {
+			return RunnableConfig.builder(config).addMetadata(EXECUTION_LEASE_KEY, this).build();
+		}
+
+		private boolean renew() {
+			RLock lock = redisson.getLock(LOCK_PREFIX + threadName);
+			try {
+				if (!lock.tryLock(3, TimeUnit.SECONDS)) {
+					return true;
+				}
+				try {
+					if (!threadId.equals(getActiveThreadId(threadName))) {
+						return false;
+					}
+					extendThreadMetadataForLease(threadName, threadId);
+					return renewToken();
+				}
+				finally {
+					lock.unlock();
+				}
+			}
+			catch (InterruptedException interrupted) {
+				Thread.currentThread().interrupt();
+				return false;
+			}
+			catch (RuntimeException failure) {
+				log.warn("Could not renew Redis graph execution lease for thread '{}'", threadName, failure);
+				return true;
+			}
+		}
+
+		private IllegalStateException expired() {
+			return new IllegalStateException("The graph execution lease for thread '" + threadName + "' has expired or been replaced");
+		}
+
+		private boolean renewToken() {
+			return execute(RENEW_LEASE, List.of(key), ttlBytes(EXECUTION_LEASE_DURATION.toMillis()));
+		}
+
+		private boolean execute(String script, List<Object> keys, Object... arguments) {
+			var values = new Object[arguments.length + 1];
+			values[0] = token;
+			System.arraycopy(arguments, 0, values, 1, arguments.length);
+			return redisson.getScript(ByteArrayCodec.INSTANCE).<Long>eval(contentKey, RScript.Mode.READ_WRITE,
+					script, RScript.ReturnType.INTEGER, keys, values) == 1L;
+		}
+
+		private void commit(byte[] bytes) {
+			long retention = ttl > 0 ? ttlUnit.toMillis(ttl) : -1;
+			if (!execute(COMMIT_WITH_LEASE, List.of(key, rawContentKey), bytes, ttlBytes(retention))) {
+				throw expired();
+			}
+		}
+
+		@Override
+		public void close() {
+			renewal.dispose();
+			try {
+				if (ttl <= 0) {
+					execute(RELEASE_LEASE, List.of(key));
+					return;
+				}
+				RLock lock = redisson.getLock(LOCK_PREFIX + threadName);
+				if (!lock.tryLock(3, TimeUnit.SECONDS)) {
+					throw new IllegalStateException("Failed to acquire checkpoint lock for thread '" + threadName + "'");
+				}
+				try {
+					if (execute(RELEASE_LEASE, List.of(key)) && threadId.equals(getActiveThreadId(threadName))) {
+						restoreThreadMetadataTtl(threadName, threadId);
+					}
+				}
+				finally {
+					lock.unlock();
+				}
+			}
+			catch (InterruptedException interrupted) {
+				Thread.currentThread().interrupt();
+				log.warn("Interrupted while releasing Redis graph execution lease for thread '{}'; it will expire",
+						threadName, interrupted);
+			}
+			catch (RuntimeException failure) {
+				log.warn("Could not release Redis graph execution lease for thread '{}'; it will expire", threadName,
+						failure);
+			}
+		}
+
 	}
 
 	private byte[] serializeCheckpoints(List<Checkpoint> checkpoints) throws IOException {
@@ -166,7 +392,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 	 * @param threadName the thread name
 	 * @return the thread_id (UUID string)
 	 */
-	private String getOrCreateThreadId(String threadName) {
+	private String getOrCreateThreadId(String threadName, Duration minRetention) {
 		String metaKey = THREAD_META_PREFIX + threadName;
 		RMap<String, String> meta = redisson.getMap(metaKey);
 
@@ -183,9 +409,6 @@ public class RedisSaver implements BaseCheckpointSaver {
 		String newThreadId = UUID.randomUUID().toString();
 		meta.put(FIELD_THREAD_ID, newThreadId);
 		meta.put(FIELD_IS_RELEASED, "false");
-		if (ttl > 0) {
-			meta.expire(java.time.Duration.ofMillis(ttlUnit.toMillis(ttl)));
-		}
 
 		// Set reverse mapping
 		String reverseKey = THREAD_REVERSE_PREFIX + newThreadId;
@@ -193,7 +416,9 @@ public class RedisSaver implements BaseCheckpointSaver {
 		reverse.put(FIELD_THREAD_NAME, threadName);
 		reverse.put(FIELD_IS_RELEASED, "false");
 		if (ttl > 0) {
-			reverse.expire(java.time.Duration.ofMillis(ttlUnit.toMillis(ttl)));
+			var retention = Duration.ofMillis(Math.max(ttlUnit.toMillis(ttl), minRetention.toMillis()));
+			reverse.expire(retention);
+			meta.expire(retention);
 		}
 
 		return newThreadId;
@@ -325,8 +550,11 @@ public class RedisSaver implements BaseCheckpointSaver {
 				throw new RuntimeException("Failed to acquire lock for thread: " + threadName);
 			}
 
-			// Get or create thread_id
-			String threadId = getOrCreateThreadId(threadName);
+			var lease = executionLease(config, threadName);
+			String threadId = lease == null ? getOrCreateThreadId(threadName, Duration.ZERO) : getActiveThreadId(threadName);
+			if (lease != null && !lease.threadId.equals(threadId)) {
+				throw lease.expired();
+			}
 
 			// Use thread_id as key for checkpoint storage
 			String contentKey = CHECKPOINT_PREFIX + threadId;
@@ -347,10 +575,16 @@ public class RedisSaver implements BaseCheckpointSaver {
 				checkpoints.push(checkpoint);
 			}
 
-			RBucket<byte[]> bucket = redisson.getBucket(contentKey, ByteArrayCodec.INSTANCE);
-			bucket.set(serializeCheckpoints(checkpoints));
-			if (ttl > 0) {
-				bucket.expire(java.time.Duration.ofMillis(ttlUnit.toMillis(ttl)));
+			byte[] content = serializeCheckpoints(checkpoints);
+			if (lease != null) {
+				lease.commit(content);
+			}
+			else {
+				RBucket<byte[]> bucket = redisson.getBucket(contentKey, ByteArrayCodec.INSTANCE);
+				bucket.set(content);
+				if (ttl > 0) {
+					bucket.expire(Duration.ofMillis(ttlUnit.toMillis(ttl)));
+				}
 			}
 			return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
 
@@ -392,6 +626,10 @@ public class RedisSaver implements BaseCheckpointSaver {
 			if (threadId == null) {
 				throw new IllegalStateException("Thread not found: " + threadName);
 			}
+			var lease = executionLease(config, threadName);
+			if (lease != null && (!lease.threadId.equals(threadId) || !lease.renewToken())) {
+				throw lease.expired();
+			}
 
 			// Mark thread as released
 			meta.put(FIELD_IS_RELEASED, "true");
@@ -401,6 +639,9 @@ public class RedisSaver implements BaseCheckpointSaver {
 			RMap<String, String> reverse = redisson.getMap(reverseKey);
 			if (reverse != null) {
 				reverse.put(FIELD_IS_RELEASED, "true");
+			}
+			if (lease != null && ttl > 0) {
+				restoreThreadMetadataTtl(threadName, threadId);
 			}
 
 			// Get checkpoints for Tag (using thread_id)

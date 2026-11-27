@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.checkpoint.savers.h2;
 
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.jdbc.AbstractJdbcCheckpointSaver;
@@ -265,8 +266,10 @@ public class H2Saver extends AbstractJdbcCheckpointSaver {
 		try (Connection connection = getConnection(); Statement statement = connection.createStatement()) {
 			if (createOption == CreateOption.CREATE_OR_REPLACE) {
 				executeStatements(statement, DROP_TABLES);
+				statement.execute(DROP_EXECUTION_LEASE);
 			}
 			executeStatements(statement, CREATE_TABLES);
+			statement.execute(CREATE_EXECUTION_LEASE.formatted("TIMESTAMP WITH TIME ZONE"));
 			executeStatements(statement, CREATE_INDEXES);
 		}
 	}
@@ -300,7 +303,7 @@ public class H2Saver extends AbstractJdbcCheckpointSaver {
 				.id(resultSet.getString(1))
 				.nodeId(resultSet.getString(2))
 				.nextNodeId(resultSet.getString(3))
-				.state(decodeState(resultSet.getString(4), resultSet.getString(5)))
+				.stateFromStorage(decodeState(resultSet.getString(4), resultSet.getString(5)))
 				.build();
 	}
 
@@ -361,14 +364,14 @@ public class H2Saver extends AbstractJdbcCheckpointSaver {
 	protected void insertCheckpoint(String threadId, Checkpoint checkpoint) throws Exception {
 		Connection conn = null;
 		try (Connection ignored = conn = getConnection()) {
-			conn.setAutoCommit(false);
+			beginCheckpointWrite(conn);
 			String persistedThreadId = activeThreadId(conn, threadId);
 			try (PreparedStatement ps = conn.prepareStatement(INSERT_CHECKPOINT)) {
 				ps.setString(1, checkpoint.getId());
 				ps.setString(2, persistedThreadId);
 				ps.setString(3, checkpoint.getNodeId());
 				ps.setString(4, checkpoint.getNextNodeId());
-				ps.setString(5, encodeState(checkpoint.getState()));
+			ps.setString(5, encodeState(checkpoint.stateForStorage()));
 				ps.setString(6, stateSerializer.contentType());
 				ps.executeUpdate();
 			}
@@ -421,12 +424,12 @@ public class H2Saver extends AbstractJdbcCheckpointSaver {
 	protected void updateCheckpoint(String threadId, String checkpointId, Checkpoint checkpoint) throws Exception {
 		Connection conn = null;
 		try (Connection ignored = conn = getConnection()) {
-			conn.setAutoCommit(false);
+			beginCheckpointWrite(conn);
 			try (PreparedStatement ps = conn.prepareStatement(UPDATE_CHECKPOINT)) {
 				ps.setString(1, checkpoint.getId());
 				ps.setString(2, checkpoint.getNodeId());
 				ps.setString(3, checkpoint.getNextNodeId());
-				ps.setString(4, encodeState(checkpoint.getState()));
+			ps.setString(4, encodeState(checkpoint.stateForStorage()));
 				ps.setString(5, stateSerializer.contentType());
 				ps.setString(6, checkpointId);
 				ps.setString(7, threadId);
@@ -452,12 +455,14 @@ public class H2Saver extends AbstractJdbcCheckpointSaver {
 		String placeholders = String.join(", ", Collections.nCopies(checkpointIds.size(), "?"));
 		try (Connection conn = getConnection();
 				PreparedStatement ps = conn.prepareStatement(DELETE_CHECKPOINTS.formatted(placeholders))) {
+			beginCheckpointWrite(conn);
 			int index = 1;
 			for (String checkpointId : checkpointIds) {
 				ps.setString(index++, checkpointId);
 			}
 			ps.setString(index, threadId);
 			ps.executeUpdate();
+			conn.commit();
 		}
 		catch (SQLException ex) {
 			throw new Exception("Unable to delete retained checkpoints", ex);
@@ -468,7 +473,7 @@ public class H2Saver extends AbstractJdbcCheckpointSaver {
 	protected void releaseThread(String threadId) throws Exception {
 		Connection conn = null;
 		try (Connection ignored = conn = getConnection()) {
-			conn.setAutoCommit(false);
+			beginCheckpointWrite(conn);
 			try (PreparedStatement ps = conn.prepareStatement(RELEASE_THREAD)) {
 				ps.setString(1, threadId);
 				int rowsAffected = ps.executeUpdate();
@@ -483,6 +488,17 @@ public class H2Saver extends AbstractJdbcCheckpointSaver {
 			rollback(conn, threadId);
 			throw new Exception("Unable to release checkpoint", ex);
 		}
+	}
+
+	@Override
+	public ExecutionLease acquireExecutionLease(RunnableConfig config) throws SQLException {
+		return acquireJdbcExecutionLease(config, "CURRENT_TIMESTAMP",
+				"DATEADD(SECOND, %d, CURRENT_TIMESTAMP)".formatted(EXECUTION_LEASE_SECONDS));
+	}
+
+	@Override
+	protected Connection openLeaseConnection() throws SQLException {
+		return getConnection();
 	}
 
 	protected Connection getConnection() throws SQLException {

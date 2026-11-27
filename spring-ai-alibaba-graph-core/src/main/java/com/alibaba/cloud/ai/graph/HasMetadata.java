@@ -116,6 +116,14 @@ public interface HasMetadata<B extends HasMetadata.Builder<B>> {
 			return (B) this;
 		};
 
+		@SuppressWarnings("unchecked")
+		public B removeMetadata(String key) {
+			if (metadata != null) {
+				metadata.remove(key);
+			}
+			return (B) this;
+		}
+
 	}
 
 }

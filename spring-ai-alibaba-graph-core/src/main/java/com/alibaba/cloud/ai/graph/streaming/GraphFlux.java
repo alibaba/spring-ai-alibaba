@@ -120,6 +120,14 @@ public class GraphFlux<T> {
         return key;
     }
 
+    public GraphFlux<T> withIdentity(String nodeId, String key) {
+        return new GraphFlux<>(nodeId, flux, key, mapResult, chunkResult);
+    }
+
+    public GraphFlux<T> withFlux(Flux<T> source) {
+        return new GraphFlux<>(nodeId, source, key, mapResult, chunkResult);
+    }
+
     /**
      * Get the streaming data
      *

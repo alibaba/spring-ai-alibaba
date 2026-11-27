@@ -49,6 +49,8 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	public static final String HUMAN_FEEDBACK_METADATA_KEY = "HUMAN_FEEDBACK";
 
 	public static final String STATE_UPDATE_METADATA_KEY = "STATE_UPDATE";
+	public static final String TASK_ID_METADATA_KEY = "_GRAPH_TASK_ID_";
+	public static final String TASK_ATTEMPT_METADATA_KEY = "_GRAPH_TASK_ATTEMPT_";
 	public static final String DEFAULT_PARALLEL_EXECUTOR_KEY = "_DEFAULT_PARALLEL_EXECUTOR_";
 	public static final String DEFAULT_PARALLEL_AGGREGATION_STRATEGY_KEY = "_DEFAULT_PARALLEL_AGGREGATION_STRATEGY_";
 
@@ -105,6 +107,18 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 
 	public Store store() {
 		return this.store;
+	}
+
+	/**
+	 * Returns the execution identity assigned to a scheduled task.
+	 */
+	public Optional<String> taskId() {
+		return metadata(TASK_ID_METADATA_KEY).filter(String.class::isInstance).map(String.class::cast);
+	}
+
+	/** Returns the one-based attempt number for the current task, when tracked. */
+	public Optional<Integer> taskAttempt() {
+		return metadata(TASK_ATTEMPT_METADATA_KEY).filter(Integer.class::isInstance).map(Integer.class::cast);
 	}
 
 	/**

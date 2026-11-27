@@ -1,0 +1,80 @@
+/*
+ * Copyright 2024-2026 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.alibaba.cloud.ai.graph.checkpoint;
+
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback.FeedbackResult;
+import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static com.alibaba.cloud.ai.graph.checkpoint.CheckpointWrite.decode;
+import static com.alibaba.cloud.ai.graph.checkpoint.CheckpointWrite.encode;
+
+/** Stores interruption trees using portable checkpoint values. */
+public final class InterruptionCheckpointCodec {
+
+	private InterruptionCheckpointCodec() {
+	}
+
+	public static Map<String, Object> encodePause(InterruptionMetadata interruption) {
+		var decisions = interruption.toolFeedbacks().stream().map(feedback -> {
+			Map<String, Object> decision = new HashMap<>();
+			decision.put("id", feedback.getId());
+			decision.put("name", feedback.getName());
+			decision.put("arguments", feedback.getArguments());
+			decision.put("result", feedback.getResult() == null ? null : feedback.getResult().name());
+			decision.put("description", feedback.getDescription());
+			return decision;
+		}).toList();
+		var approved = interruption.getToolsAutomaticallyApproved().stream().map(call -> {
+			Map<String, Object> tool = new HashMap<>();
+			tool.put("id", call.id());
+			tool.put("name", call.name());
+			tool.put("arguments", call.arguments());
+			tool.put("type", call.type());
+			return tool;
+		}).toList();
+		return Map.of("node", interruption.node(), "state", encode(interruption.state().data()),
+				"metadata", encode(interruption.metadata().orElseGet(Map::of)), "decisions", decisions, "approved",
+				approved, "children",
+				interruption.pendingInterruptions().stream().map(InterruptionCheckpointCodec::encodePause).toList());
+	}
+
+	@SuppressWarnings("unchecked")
+	public static InterruptionMetadata decodePause(Map<String, Object> data) {
+		var decisions = ((List<Map<String, Object>>) data.get("decisions")).stream()
+				.map(decision -> new ToolFeedback((String) decision.get("id"), (String) decision.get("name"),
+						(String) decision.get("arguments"), decision.get("result") instanceof String result
+								? FeedbackResult.valueOf(result) : null, (String) decision.get("description")))
+				.toList();
+		var approved = ((List<Map<String, Object>>) data.get("approved")).stream()
+				.map(call -> new ToolCall((String) call.get("id"), (String) call.get("type"),
+						(String) call.get("name"), (String) call.get("arguments")))
+				.toList();
+		var children = ((List<Map<String, Object>>) data.get("children")).stream()
+				.map(InterruptionCheckpointCodec::decodePause)
+				.toList();
+		return new InterruptionMetadata.Builder(decode((Map<String, Object>) data.get("metadata")))
+				.nodeId((String) data.get("node")).state(new OverAllState(decode((Map<String, Object>) data.get("state"))))
+				.toolFeedbacks(decisions).toolsAutomaticallyApproved(approved).pendingInterruptions(children).build();
+	}
+
+}

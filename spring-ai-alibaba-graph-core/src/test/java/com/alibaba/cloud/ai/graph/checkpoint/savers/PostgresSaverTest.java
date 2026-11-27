@@ -39,9 +39,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.time.Duration;
+import java.util.List;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
@@ -49,6 +52,8 @@ import java.util.logging.Logger;
 import javax.sql.DataSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -65,6 +70,7 @@ import static com.alibaba.cloud.ai.graph.checkpoint.savers.LatestCheckpointCache
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @EnabledIfDockerAvailable
@@ -180,6 +186,75 @@ public class PostgresSaverTest {
 
     private static String secondCheckpointId() {
         return "00000000-0000-0000-0000-000000000002";
+    }
+
+    @Test
+    void coordinatesIndependentSaversWithoutHoldingAPooledConnectionAcrossNodes() throws Exception {
+        var poolConfig = new HikariConfig();
+        poolConfig.setDataSource(dataSource());
+        poolConfig.setMaximumPoolSize(1);
+        poolConfig.setConnectionTimeout(2_000);
+        var held = new CompletableFuture<Map<String, Object>>();
+        var definition = new StateGraph().addNode("work", (state, run) ->
+                state.value("hold").isPresent() ? held : CompletableFuture.completedFuture(Map.of("done", true)))
+                .addEdge(START, "work").addEdge("work", END);
+        var run = config("postgres-durable-lease");
+        try (var pool = new HikariDataSource(poolConfig)) {
+            var firstSaver = PostgresSaver.builder().datasource(pool).stateSerializer(serializer).build();
+            var secondSaver = PostgresSaver.builder().datasource(dataSource()).stateSerializer(serializer).build();
+            var first = definition.compile(durableConfig(firstSaver));
+            var second = definition.compile(durableConfig(secondSaver));
+            var subscription = first.stream(Map.of("hold", true), run).subscribe();
+            try {
+                assertEquals(0, pool.getHikariPoolMXBean().getActiveConnections());
+                assertThrows(IllegalStateException.class,
+                        () -> second.stream(Map.of(), run).blockLast(Duration.ofSeconds(5)));
+                assertThrows(IllegalStateException.class, () -> second.updateState(run, Map.of("competing", true)));
+                assertThrows(IllegalStateException.class, () -> second.forkState(run, Map.of(), null));
+                var independent = second.stream(Map.of(), config("postgres-durable-lease-independent"))
+                        .blockLast(Duration.ofSeconds(5));
+                assertEquals(true, independent.state().value("done").orElseThrow());
+            }
+            finally {
+                subscription.dispose();
+            }
+            var result = second.stream(Map.of("hold", OverAllState.MARK_FOR_REMOVAL), run)
+                    .blockLast(Duration.ofSeconds(5));
+            assertEquals(true, result.state().value("done").orElseThrow());
+        }
+    }
+
+    @Test
+    void reopensTaskCheckpointsAndReusesCompletedParallelWrites() throws Exception {
+        var left = new AtomicInteger();
+        var right = new AtomicInteger();
+        var graph = new StateGraph(() -> Map.of("results", KeyStrategy.APPEND))
+                .addNode("left", (state, run) -> {
+                    left.incrementAndGet();
+                    return CompletableFuture.completedFuture(Map.of("results", "left"));
+                })
+                .addNode("right", (state, run) -> {
+                    if (right.incrementAndGet() == 1) {
+                        throw new IllegalStateException("paused by failure");
+                    }
+                    return CompletableFuture.completedFuture(Map.of("results", "right"));
+                })
+                .addEdge(START, "left").addEdge(START, "right")
+                .addEdge("left", END).addEdge("right", END);
+        var run = config("postgres-durable-resume");
+        var first = graph.compile(durableConfig(PostgresSaver.builder().datasource(dataSource())
+                .stateSerializer(serializer).build()));
+        assertThrows(IllegalStateException.class, () -> first.stream(Map.of(), run).blockLast(Duration.ofSeconds(5)));
+        var reopened = graph.compile(durableConfig(PostgresSaver.builder().datasource(dataSource())
+                .stateSerializer(serializer).build()));
+        var end = reopened.stream(Map.of(), run.withResume()).blockLast(Duration.ofSeconds(5));
+        assertEquals(List.of("left", "right"), end.state().value("results").orElseThrow());
+        assertEquals(1, left.get());
+        assertEquals(2, right.get());
+    }
+
+    private static CompileConfig durableConfig(PostgresSaver saver) {
+        return CompileConfig.builder().saverConfig(SaverConfig.builder().register(saver).build()).taskCheckpoints(true).build();
     }
 
     @Test

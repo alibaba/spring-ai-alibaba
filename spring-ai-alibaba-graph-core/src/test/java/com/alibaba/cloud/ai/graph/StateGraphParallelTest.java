@@ -15,6 +15,10 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.action.AsyncMultiCommandAction;
+import com.alibaba.cloud.ai.graph.action.MultiCommand;
+import com.alibaba.cloud.ai.graph.action.Send;
+import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
@@ -28,11 +32,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.time.Duration;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -44,6 +55,107 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class StateGraphParallelTest {
 
 	private static final Logger log = LoggerFactory.getLogger(StateGraphParallelTest.class);
+
+	@Test
+	void advancesAsyncBranchesOnTheSameSingleThreadExecutor() throws Exception {
+		var executor = Executors.newSingleThreadExecutor();
+		try {
+			var graph = new StateGraph()
+					.addNode("left", (state, config) -> CompletableFuture.supplyAsync(
+							() -> Map.<String, Object>of("left", true), executor))
+					.addNode("right", (state, config) -> CompletableFuture.supplyAsync(
+							() -> Map.<String, Object>of("right", true), executor))
+					.addEdge(START, "left").addEdge(START, "right")
+					.addEdge("left", END).addEdge("right", END).compile();
+			var config = RunnableConfig.builder().defaultParallelExecutor(executor)
+					.addMetadata(ParallelNode.formatMaxConcurrencyKey(ParallelNode.formatNodeId(START)), 1)
+					.build();
+			var result = graph.stream(Map.of(), config).blockLast(Duration.ofSeconds(5));
+			assertEquals(true, result.state().value("left").orElseThrow());
+			assertEquals(true, result.state().value("right").orElseThrow());
+		}
+		finally {
+			executor.shutdownNow();
+		}
+	}
+
+	@Test
+	void commitsConditionalRoutingAndBranchWritesInOrderOnIsolatedState() throws Exception {
+		var graph = new StateGraph(() -> Map.of("items", new AppendStrategy()))
+				.addNode("route", AsyncMultiCommandAction.node_async((state, config) ->
+						new MultiCommand(List.of("left", "right"), Map.of("items", List.of("route")))),
+						Map.of("left", "left", "right", "right"))
+				.addNode("left", node_async(state -> {
+					List<String> items = state.<List<String>>value("items").orElseThrow();
+					assertEquals(List.of("input", "route"), items);
+					items.add("private");
+					return Map.of("items", List.of("left"));
+				}))
+				.addNode("right", node_async(state -> {
+					assertEquals(List.of("input", "route"), state.value("items").orElseThrow());
+					return Map.of("items", List.of("right"));
+				}))
+				.addEdge(START, "route").addEdge("left", END).addEdge("right", END).compile();
+
+		var state = graph.invoke(Map.of("items", List.of("input"))).orElseThrow();
+		assertEquals(List.of("input", "route", "left", "right"), state.value("items").orElseThrow());
+	}
+
+	@Test
+	void anyOfSelectsACompletedStreamAndCancelsRemainingStreams() throws Exception {
+		var slowStarted = new AtomicInteger();
+		var slowCancelled = new CountDownLatch(1);
+		var failSubscribed = new CompletableFuture<Void>();
+		var slowSubscribed = new CompletableFuture<Void>();
+		var graph = new StateGraph()
+				.addNode("broken", node_async(state -> Map.of("broken", Flux.error(new IllegalStateException("broken"))
+						.doOnError(error -> failSubscribed.complete(null)))))
+				.addNode("slow", node_async(state -> Map.of("slow", Flux.never().doOnSubscribe(subscription -> {
+					slowStarted.incrementAndGet();
+					slowSubscribed.complete(null);
+				}).doOnCancel(slowCancelled::countDown))))
+				.addNode("healthy", (state, config) -> CompletableFuture.allOf(failSubscribed, slowSubscribed)
+						.thenApply(ready -> Map.of("healthy", Flux.just(GraphResponse.done(Map.of("winner", "healthy"))))))
+				.addEdge(START, "broken").addEdge(START, "slow").addEdge(START, "healthy")
+				.addEdge("broken", END).addEdge("slow", END).addEdge("healthy", END).compile();
+
+		var config = RunnableConfig.builder().defaultParallelAggregationStrategy(NodeAggregationStrategy.ANY_OF).build();
+		var result = graph.stream(Map.of(), config).blockLast(Duration.ofSeconds(5));
+		assertEquals("healthy", result.state().value("winner").orElseThrow());
+		assertEquals(1, slowStarted.get());
+		assertTrue(slowCancelled.await(1, TimeUnit.SECONDS));
+	}
+
+	@Test
+	void dispatchesTheSameNodeWithSeparateInputsAndTaskIdentities() throws Exception {
+		var graph = new StateGraph(() -> Map.of("results", new AppendStrategy()))
+				.addNode("route", AsyncMultiCommandAction.node_async((state, config) ->
+						MultiCommand.dispatch(List.of(new Send("work", Map.of("item", "left")),
+								new Send("work", Map.of("item", "right"))), Map.of("routeValue", "shared"))),
+						Map.of("work", "worker"))
+				.addNode("worker", (state, config) -> {
+					String item = state.value("item", String.class).orElseThrow();
+					String taskId = config.taskId().orElseThrow();
+					String routeValue = state.value("routeValue", String.class).orElseThrow();
+					var output = NodeOutput.of("worker", "", state, null);
+					var updates = Map.of("results", List.of(item + "/" + routeValue), item + "Task", taskId);
+					Flux<GraphResponse<NodeOutput>> flux = Flux.just(GraphResponse.of(output), GraphResponse.done(updates));
+					return CompletableFuture.completedFuture(Map.of("stream", flux));
+				})
+				.addEdge(START, "route").addEdge("worker", END).compile();
+
+		var events = graph.graphResponseStream(Map.of("item", "parent"), RunnableConfig.builder().build())
+				.collectList().block(Duration.ofSeconds(5));
+		var workerTasks = events.stream().filter(event -> event.hasMetadata("taskId"))
+				.map(event -> event.getMetadata("taskId")).toList();
+		var state = (Map<?, ?>) events.get(events.size() - 1).resultValue().orElseThrow();
+		assertEquals(List.of("left/shared", "right/shared"), state.get("results"));
+		assertEquals("parent", state.get("item"));
+		assertEquals(2, workerTasks.size());
+		assertEquals(2, workerTasks.stream().distinct().count());
+		assertTrue(workerTasks.contains(state.get("leftTask")));
+		assertTrue(workerTasks.contains(state.get("rightTask")));
+	}
 
 	private KeyStrategyFactory createKeyStrategyFactory() {
 		return () -> {

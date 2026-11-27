@@ -20,7 +20,7 @@ interface StreamContextType {
   messages: UIMessage[];
   isStreaming: boolean;
   sendMessage: (content: string) => Promise<void>;
-  resumeFeedback: (toolFeedbacks: ToolFeedbackDTO[]) => Promise<void>;
+  resumeFeedback: (toolFeedbacks: ToolFeedbackDTO[], interruptionId?: string) => Promise<void>;
   clearMessages: () => void;
 }
 
@@ -341,23 +341,15 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
   }, []);
 
   const resumeFeedback = useCallback(
-    async (toolFeedbacks: ToolFeedbackDTO[]) => {
+    async (toolFeedbacks: ToolFeedbackDTO[], interruptionId?: string) => {
       if (!currentThreadId) {
-        toast.error("No active thread");
-        return;
+        throw new Error("No active thread");
       }
-      if (mode === 'agent' && !appName) {
-        toast.error("No agent selected.");
-        return;
-      }
-      if (mode === 'graph' && !selectedGraph) {
-        toast.error("No graph selected.");
-        return;
-      }
-
       if (mode === 'graph') {
-        toast.info("Resume with tool feedback is not yet supported for graphs.");
-        return;
+        throw new Error("Resume with tool feedback is not yet supported for graphs.");
+      }
+      if (!appName) {
+        throw new Error("No agent selected.");
       }
 
       setIsStreaming(true);
@@ -372,7 +364,8 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
               userId,
               currentThreadId,
               toolFeedbacks,
-              abortControllerRef.current.signal
+              abortControllerRef.current.signal,
+              interruptionId
             );
 
         let isFirstChunk = true;
@@ -380,6 +373,10 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
 
         for await (const agentResponse of stream) {
           console.log('[Stream] Received agent response:', agentResponse);
+
+          if (agentResponse.error) {
+            throw new Error(agentResponse.errorMessage || "Failed to resume execution");
+          }
 
           // Skip heartbeat messages
           if (agentResponse.node === "heartbeat") {
@@ -466,14 +463,6 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
         }
 
         console.log('[Stream] Resume streaming complete');
-      } catch (error: any) {
-        if (error.name === "AbortError") {
-          console.log("Resume request was aborted");
-          toast.info("Request cancelled");
-        } else {
-          console.error("Failed to resume with feedback:", error);
-          toast.error(error.message || "Failed to resume execution");
-        }
       } finally {
         setIsStreaming(false);
         abortControllerRef.current = null;

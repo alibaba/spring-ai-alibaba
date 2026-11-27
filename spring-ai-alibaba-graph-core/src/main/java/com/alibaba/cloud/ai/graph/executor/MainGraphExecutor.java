@@ -18,13 +18,14 @@ package com.alibaba.cloud.ai.graph.executor;
 import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.GraphRunnerContext;
 import com.alibaba.cloud.ai.graph.NodeOutput;
-import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -56,8 +57,13 @@ public class MainGraphExecutor extends BaseGraphExecutor {
 	@Override
 	public Flux<GraphResponse<NodeOutput>> execute(GraphRunnerContext context, AtomicReference<Object> resultValue) {
 		try {
-			if (context.shouldStop() || context.isMaxIterationsReached()) {
+			if (context.shouldStop()) {
 				return handleCompletion(context, resultValue);
+			}
+			if (context.isMaxIterationsReached()) {
+				return context.isParallelBranch()
+						? graphError(context, new IllegalStateException("Parallel branch reached the graph recursion limit"))
+						: handleCompletion(context, resultValue);
 			}
 
 			final var returnFromEmbed = context.getReturnFromEmbedAndReset();
@@ -76,7 +82,7 @@ public class MainGraphExecutor extends BaseGraphExecutor {
 			}
 
 			if (context.isStartNode()) {
-				return handleStartNode(context);
+				return handleStartNode(context, resultValue);
 			}
 
 			if (context.isEndNode()) {
@@ -84,35 +90,38 @@ public class MainGraphExecutor extends BaseGraphExecutor {
 			}
 
 			final var resumeFrom = context.getResumeFromAndReset();
-			if (resumeFrom.isPresent()) {
-				if (context.getCompiledGraph().compileConfig.interruptBeforeEdge()
-						&& java.util.Objects.equals(context.getNextNodeId(), INTERRUPT_AFTER)) {
-					var nextNodeCommand = context.nextNodeId(resumeFrom.get(), context.getCurrentStateData());
-					context.setNextNodeId(nextNodeCommand.gotoNode());
-					context.setCurrentNodeId(null);
-				}
+			if (resumeFrom.isPresent() && context.getCompiledGraph().compileConfig.interruptBeforeEdge()
+					&& Objects.equals(context.getNextNodeId(), INTERRUPT_AFTER)) {
+				return context.resolveNextNode(resumeFrom.get(), context.getCurrentStateData())
+						.flatMapMany(command -> {
+							context.setNextNodeId(command.gotoNode());
+							context.setCurrentNodeId(null);
+							return context.isEndNode() ? handleEndNode(context, resultValue)
+									: executeNext(context, resultValue);
+						})
+						.onErrorResume(error -> graphError(context, error));
 			}
 
-			if (context.shouldInterrupt()) {
-				try {
-					InterruptionMetadata metadata = InterruptionMetadata
-						.builder(context.getCurrentNodeId(), context.cloneState(context.getCurrentStateData()))
-						.build();
-					return Flux.just(GraphResponse.done(metadata));
-				}
-				catch (Exception e) {
-					return Flux.just(GraphResponse.error(e));
-				}
-			}
-
-			return nodeExecutor.execute(context, resultValue);
+			return executeNext(context, resultValue);
 		}
 		catch (Exception e) {
-			context.doListeners(ERROR, e);
-			org.slf4j.LoggerFactory.getLogger(com.alibaba.cloud.ai.graph.GraphRunner.class)
-				.error("Error during graph execution", e);
-			return Flux.just(GraphResponse.error(e));
+			return graphError(context, e);
 		}
+	}
+
+	private Flux<GraphResponse<NodeOutput>> executeNext(GraphRunnerContext context, AtomicReference<Object> resultValue) {
+		if (context.shouldInterrupt()) {
+			return Mono.fromCallable(() -> InterruptionMetadata
+					.builder(context.getCurrentNodeId(), context.cloneState(context.getCurrentStateData())).build())
+					.map(GraphResponse::<NodeOutput>done).flux()
+					.onErrorResume(error -> graphError(context, error));
+		}
+		return nodeExecutor.execute(context, resultValue);
+	}
+
+	private Flux<GraphResponse<NodeOutput>> graphError(GraphRunnerContext context, Throwable error) {
+		context.doListeners(ERROR, error instanceof Exception exception ? exception : new Exception(error));
+		return Flux.just(GraphResponse.error(error));
 	}
 
 	/**
@@ -120,23 +129,18 @@ public class MainGraphExecutor extends BaseGraphExecutor {
 	 * @param context the graph runner context
 	 * @return Flux of GraphResponse with start node handling result
 	 */
-	private Flux<GraphResponse<NodeOutput>> handleStartNode(GraphRunnerContext context) {
-		try {
-			context.doListeners(START, null);
-			Command nextCommand = context.getEntryPoint();
-			context.setNextNodeId(nextCommand.gotoNode());
-
-			Optional<Checkpoint> cp = context.addCheckpoint(START, context.getNextNodeId());
-			NodeOutput output = context.buildOutput(START, cp);
-
-			context.setCurrentNodeId(context.getNextNodeId());
-			// Continue with the main execution handler (expanded iteratively by GraphRunner)
-			return Flux.just(GraphResponse.of(output),
-					GraphResponse.continueWith(() -> execute(context, new AtomicReference<>())));
-		}
-		catch (Exception e) {
-			return Flux.just(GraphResponse.error(e));
-		}
+	private Flux<GraphResponse<NodeOutput>> handleStartNode(GraphRunnerContext context,
+			AtomicReference<Object> resultValue) {
+		context.doListeners(START, null);
+		return context.resolveEntryPoint().flatMap(command -> Mono.fromCallable(() -> {
+			context.setNextNodeId(command.gotoNode());
+			Optional<Checkpoint> checkpoint = context.addCheckpoint(START, command.gotoNode());
+			NodeOutput output = context.buildOutput(START, checkpoint);
+			context.setCurrentNodeId(command.gotoNode());
+			return output;
+		})).flatMapMany(output -> Flux.just(GraphResponse.of(output),
+				GraphResponse.continueWith(() -> execute(context, resultValue))))
+				.onErrorResume(error -> graphError(context, error));
 	}
 
 	/**

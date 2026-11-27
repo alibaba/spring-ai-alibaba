@@ -70,6 +70,7 @@ public class MongoSaver implements BaseCheckpointSaver {
 	private static final String DB_NAME = "check_point_db";
 	private static final String THREAD_META_COLLECTION = "thread_meta";
 	private static final String CHECKPOINT_COLLECTION = "checkpoint_collection";
+	private static final String EXECUTION_LEASE_COLLECTION = "execution_lease";
 	private static final String THREAD_META_PREFIX = "mongo:thread:meta:";
 	private static final String CHECKPOINT_PREFIX = "mongo:checkpoint:content:";
 	private static final String DOCUMENT_CONTENT_KEY = "checkpoint_content";
@@ -112,6 +113,18 @@ public class MongoSaver implements BaseCheckpointSaver {
 	 */
 	public static Builder builder() {
 		return new Builder();
+	}
+
+	@Override
+	public ExecutionLease acquireExecutionLease(RunnableConfig config) {
+		return new MongoExecutionLease(this, database.getCollection(EXECUTION_LEASE_COLLECTION),
+				config.threadId().orElse(THREAD_ID_DEFAULT));
+	}
+
+	private MongoExecutionLease lease(RunnableConfig config) {
+		return config.metadata(MongoExecutionLease.CONFIG_KEY).filter(MongoExecutionLease.class::isInstance)
+				.map(MongoExecutionLease.class::cast)
+				.filter(lease -> lease.belongsTo(this, config.threadId().orElse(THREAD_ID_DEFAULT))).orElse(null);
 	}
 
 	private String serializeCheckpoints(List<Checkpoint> checkpoints) throws IOException {
@@ -380,6 +393,17 @@ public class MongoSaver implements BaseCheckpointSaver {
 
 	@Override
 	public RunnableConfig put(RunnableConfig config, Checkpoint checkpoint) throws Exception {
+		var lease = lease(config);
+		if (lease == null) {
+			return putCheckpoint(config, checkpoint, null);
+		}
+		synchronized (lease) {
+			return putCheckpoint(config, checkpoint, lease);
+		}
+	}
+
+	private RunnableConfig putCheckpoint(RunnableConfig config, Checkpoint checkpoint, MongoExecutionLease lease)
+			throws Exception {
 		Optional<String> threadNameOpt = config.threadId();
 		if (!threadNameOpt.isPresent()) {
 			throw new IllegalArgumentException("threadId is not allow null");
@@ -390,6 +414,9 @@ public class MongoSaver implements BaseCheckpointSaver {
 				.startSession(ClientSessionOptions.builder().defaultTransactionOptions(txnOptions).build());
 		clientSession.startTransaction();
 		try {
+			if (lease != null) {
+				lease.fence(clientSession);
+			}
 			// Get or create thread_id
 			String threadId = getOrCreateThreadId(threadName, clientSession);
 
@@ -411,6 +438,7 @@ public class MongoSaver implements BaseCheckpointSaver {
 							.orElseThrow(() -> (new NoSuchElementException(
 									format("Checkpoint with id %s not found!", checkPointId))));
 					finalCheckpointLinkedList.set(index, checkpoint);
+					retainLatestCheckpoints(finalCheckpointLinkedList, config);
 					Document tempDocument = new Document().append("_id", checkpointDocId)
 							.append(DOCUMENT_CONTENT_KEY, serializeCheckpoints(finalCheckpointLinkedList));
 					collection.replaceOne(clientSession, Filters.eq("_id", checkpointDocId), tempDocument);
@@ -422,12 +450,14 @@ public class MongoSaver implements BaseCheckpointSaver {
 			if (checkpointLinkedList == null) {
 				checkpointLinkedList = new LinkedList<>();
 				checkpointLinkedList.push(checkpoint); // Add Checkpoint
+				retainLatestCheckpoints(checkpointLinkedList, config);
 				Document tempDocument = new Document().append("_id", checkpointDocId)
 						.append(DOCUMENT_CONTENT_KEY, serializeCheckpoints(checkpointLinkedList));
 				collection.insertOne(clientSession, tempDocument);
 			}
 			else {
 				checkpointLinkedList.push(checkpoint); // Add Checkpoint
+				retainLatestCheckpoints(checkpointLinkedList, config);
 				Document tempDocument = new Document().append("_id", checkpointDocId)
 						.append(DOCUMENT_CONTENT_KEY, serializeCheckpoints(checkpointLinkedList));
 				ReplaceOptions opts = new ReplaceOptions().upsert(true);
@@ -447,6 +477,16 @@ public class MongoSaver implements BaseCheckpointSaver {
 
 	@Override
 	public Tag release(RunnableConfig config) throws Exception {
+		var lease = lease(config);
+		if (lease == null) {
+			return releaseThread(config, null);
+		}
+		synchronized (lease) {
+			return releaseThread(config, lease);
+		}
+	}
+
+	private Tag releaseThread(RunnableConfig config, MongoExecutionLease lease) {
 		Optional<String> threadNameOpt = config.threadId();
 		if (!threadNameOpt.isPresent()) {
 			throw new IllegalArgumentException("threadId is not allow null");
@@ -457,6 +497,9 @@ public class MongoSaver implements BaseCheckpointSaver {
 				.startSession(ClientSessionOptions.builder().defaultTransactionOptions(txnOptions).build());
 		clientSession.startTransaction();
 		try {
+			if (lease != null) {
+				lease.fence(clientSession);
+			}
 			MongoCollection<Document> threadMetaCollection = database.getCollection(THREAD_META_COLLECTION);
 			String metaId = THREAD_META_PREFIX + threadName;
 

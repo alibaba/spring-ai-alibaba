@@ -21,7 +21,7 @@ package com.alibaba.cloud.ai.graph;
  * Determines how parallel branches should be aggregated:
  * <ul>
  *   <li>{@code ALL_OF}: Wait for all parallel branches to complete before proceeding</li>
- *   <li>{@code ANY_OF}: Proceed as soon as any parallel branch completes</li>
+ *   <li>{@code ANY_OF}: Proceed after the first successful branch completion</li>
  * </ul>
  */
 public enum NodeAggregationStrategy {
@@ -32,8 +32,8 @@ public enum NodeAggregationStrategy {
 	ALL_OF,
 
 	/**
-	 * Proceed as soon as any parallel branch completes.
-	 * Only the result from the first completed branch will be used.
+	 * Proceed after the first successful branch, including completion of its streams.
+	 * Only the winning branch's result and stream events are published.
 	 */
 	ANY_OF
 }

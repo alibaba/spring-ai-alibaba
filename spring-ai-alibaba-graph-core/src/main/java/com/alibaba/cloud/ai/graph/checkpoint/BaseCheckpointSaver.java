@@ -61,6 +61,38 @@ public interface BaseCheckpointSaver {
 
 	Tag release(RunnableConfig config) throws Exception;
 
+	/**
+	 * Identifies the checkpoint namespace for coordinating executions within this JVM.
+	 * Savers backed by the same storage can return a shared value.
+	 */
+	default Object executionScope() {
+		return this;
+	}
+
+	/**
+	 * Acquires a backend lease for a durable execution. Implementations may use it
+	 * to coordinate across process boundaries. The caller releases the lease on
+	 * completion, failure or cancellation.
+	 * @param config the thread to lock
+	 * @return the lease
+	 * @throws Exception if the backend cannot acquire the lease
+	 */
+	default ExecutionLease acquireExecutionLease(RunnableConfig config) throws Exception {
+		return () -> { };
+	}
+
+	@FunctionalInterface
+	interface ExecutionLease extends AutoCloseable {
+
+		default RunnableConfig configure(RunnableConfig config) {
+			return config;
+		}
+
+		@Override
+		void close();
+
+	}
+
 	record Tag(String threadId, Collection<Checkpoint> checkpoints) {
 		public Tag(String threadId, Collection<Checkpoint> checkpoints) {
 			this.threadId = threadId;

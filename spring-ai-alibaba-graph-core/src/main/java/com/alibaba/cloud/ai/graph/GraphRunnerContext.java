@@ -19,7 +19,9 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
+import com.alibaba.cloud.ai.graph.checkpoint.CheckpointWrite;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
+import com.alibaba.cloud.ai.graph.internal.ParallelBranchPath;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
@@ -33,15 +35,20 @@ import org.springframework.ai.chat.metadata.Usage;
 
 import org.springframework.util.CollectionUtils;
 
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.UnaryOperator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Mono;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.NODE_AFTER;
@@ -58,11 +65,23 @@ public class GraphRunnerContext {
 
 	public static final String INTERRUPT_AFTER = "__INTERRUPTED__";
 
+	public static final String BRANCH_WRITES = "_graph_branch_writes_";
+
 	private static final Logger log = LoggerFactory.getLogger(GraphRunner.class);
 
 	final CompiledGraph compiledGraph;
 
 	final AtomicInteger iteration = new AtomicInteger(0);
+
+	private final ParallelBranchPath branchPath;
+
+	private final List<Map<String, Object>> branchWrites = new ArrayList<>();
+
+	private final UUID executionId = UUID.randomUUID();
+
+	private volatile Checkpoint currentCheckpoint;
+
+	private boolean replayingHistoricalCheckpoint;
 
 	OverAllState overallState;
 
@@ -80,8 +99,14 @@ public class GraphRunnerContext {
 
 	public GraphRunnerContext(OverAllState initialState, RunnableConfig config, CompiledGraph compiledGraph)
 			throws Exception {
+		this(initialState, config, compiledGraph, null);
+	}
+
+	GraphRunnerContext(OverAllState initialState, RunnableConfig config, CompiledGraph compiledGraph,
+			ParallelBranchPath branchPath) throws Exception {
 		this.compiledGraph = compiledGraph;
 		this.config = config;
+		this.branchPath = branchPath;
 
 		// Decide whether this run continues from a persisted checkpoint or starts over
 		// from START. A checkpoint is only resumed when the config explicitly asks for it,
@@ -107,6 +132,16 @@ public class GraphRunnerContext {
 				.orElseThrow(() -> new IllegalStateException("Resume request without a configured checkpoint saver!"));
 		var checkpoint = saver.get(config)
 				.orElseThrow(() -> new IllegalStateException("Resume request without a valid checkpoint!"));
+		this.currentCheckpoint = checkpoint;
+		if (branchPath != null) {
+			CheckpointWrite.decodeAll(checkpoint.runtimeData().get(BRANCH_WRITES)).stream()
+					.map(CheckpointWrite::encode).forEach(branchWrites::add);
+		}
+		this.replayingHistoricalCheckpoint = compiledGraph.compileConfig.taskCheckpoints()
+				&& config.checkPointId().isPresent()
+				&& saver.get(config.withCheckPointId(null))
+						.map(latest -> !latest.getId().equals(checkpoint.getId()))
+						.orElse(false);
 
 		var startCheckpointNextNodeAction = compiledGraph.getNodeAction(checkpoint.getNextNodeId());
 		if (startCheckpointNextNodeAction instanceof ResumableSubGraphAction resumableAction) {
@@ -141,7 +176,8 @@ public class GraphRunnerContext {
 		}
 
 		// Use CompiledGraph's getInitialState method
-		this.overallState = stateCreate(compiledGraph.getInitialState(inputs, config), initialState);
+		this.overallState = stateCreate(branchPath == null ? compiledGraph.getInitialState(inputs, config) : inputs,
+				initialState);
 		this.currentNodeId = START;
 		this.nextNodeId = null;
 	}
@@ -174,7 +210,11 @@ public class GraphRunnerContext {
 	}
 
 	public boolean isEndNode() {
-		return END.equals(nextNodeId);
+		return END.equals(nextNodeId) || (branchPath != null && branchPath.join().equals(nextNodeId));
+	}
+
+	public boolean isParallelBranch() {
+		return branchPath != null;
 	}
 
 	public boolean shouldInterrupt() {
@@ -203,49 +243,53 @@ public class GraphRunnerContext {
 	}
 
 	public Command getEntryPoint() throws Exception {
-		var entryPoint = compiledGraph.getEdge(START);
-		return nextNodeId(entryPoint, overallState.data(), "entryPoint");
+		return resolveEntryPoint().toFuture().get();
 	}
 
 	public Command nextNodeId(String nodeId, Map<String, Object> state) throws Exception {
-		return nextNodeId(compiledGraph.getEdge(nodeId), state, nodeId);
+		return resolveNextNode(nodeId, state).toFuture().get();
 	}
 
-	private Command nextNodeId(EdgeValue route, Map<String, Object> state,
-			String nodeId) throws Exception {
-		if (route == null) {
-			throw RunnableErrors.missingEdge.exception(nodeId);
+	public Mono<Command> resolveEntryPoint() {
+		if (branchPath != null) {
+			return Mono.just(new Command(branchPath.entry(), overallState.data()));
 		}
-		if (route.id() != null) {
-			return new Command(route.id(), state);
-		}
-		if (route.value() != null) {
-			var edgeCondition = route.value();
-			
-			// Check if this is a multi-command action
-			if (edgeCondition.isMultiCommand()) {
-				// Multi-command action - route to ConditionalParallelNode
-				// The ConditionalParallelNode is dynamically created in CompiledGraph
-				String conditionalParallelNodeId = ParallelNode.formatNodeId(nodeId);
-				// Return Command pointing to ConditionalParallelNode
-				// The ConditionalParallelNode will handle the MultiCommand internally
-				return new Command(conditionalParallelNodeId, state);
-			} else {
-				// Single Command action
-				var singleAction = edgeCondition.singleAction();
-				var command = singleAction.apply(this.overallState, config).get();
-				
-				// Single Command case
-				var newRoute = command.gotoNode();
-				String result = route.value().mappings().get(newRoute);
-				if (result == null) {
-					throw RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
-				}
-				this.mergeIntoCurrentState(command.update());
-				return new Command(result, state);
+		return resolveNextNode(compiledGraph.getEdge(START), overallState.data(), START);
+	}
+
+	public Mono<Command> resolveNextNode(String nodeId, Map<String, Object> state) {
+		return resolveNextNode(compiledGraph.getEdge(nodeId), state, nodeId);
+	}
+
+	private Mono<Command> resolveNextNode(EdgeValue route, Map<String, Object> state, String nodeId) {
+		return Mono.defer(() -> {
+			if (route == null) {
+				return Mono.error(RunnableErrors.missingEdge.exception(nodeId));
 			}
-		}
-		throw RunnableErrors.executionError.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
+			if (route.id() != null) {
+				return Mono.just(new Command(route.id(), state));
+			}
+			var condition = route.value();
+			if (condition == null) {
+				return Mono.error(RunnableErrors.executionError.exception(format("Invalid edge value for node '%s'", nodeId)));
+			}
+			if (condition.isMultiCommand()) {
+				return Mono.just(new Command(ParallelNode.formatNodeId(nodeId), state));
+			}
+			return Mono.fromFuture(condition.singleAction().apply(overallState, config))
+					.switchIfEmpty(Mono.error(RunnableErrors.executionError.exception(
+							format("Conditional edge from node '%s' returned no command", nodeId))))
+					.handle((command, sink) -> {
+						String target = condition.mappings().get(command.gotoNode());
+						if (target == null) {
+							sink.error(RunnableErrors.missingNodeInEdgeMapping.exception(command.gotoNode(), nodeId));
+						}
+						else {
+							mergeIntoCurrentState(command.update());
+							sink.next(new Command(target, state));
+						}
+					});
+		});
 	}
 
 	// ================================================================================================================
@@ -253,16 +297,87 @@ public class GraphRunnerContext {
 	// ================================================================================================================
 
 	public Optional<Checkpoint> addCheckpoint(String nodeId, String nextNodeId) throws Exception {
+		if (branchPath != null && !compiledGraph.compileConfig.taskCheckpoints()) {
+			return Optional.empty();
+		}
 		if (compiledGraph.compileConfig.checkpointSaver().isPresent()) {
 			var cp = Checkpoint.builder().nodeId(nodeId).state(cloneState(overallState.data())).nextNodeId(nextNodeId)
 					.build();
+			if (branchPath != null) {
+				cp = cp.withRuntimeData(branchCompletionMetadata());
+			}
 			// Force checkPointId to null to ensure we append a new checkpoint instead of
 			// replacing the current one
 			RunnableConfig appendConfig = RunnableConfig.builder(config).checkPointId(null).build();
 			this.config = compiledGraph.compileConfig.checkpointSaver().get().put(appendConfig, cp);
+			this.currentCheckpoint = cp;
+			this.replayingHistoricalCheckpoint = false;
 			return Optional.of(cp);
 		}
 		return Optional.empty();
+	}
+
+	public Map<String, Object> branchCompletionMetadata() {
+		return branchPath == null ? Map.of() : Map.of(BRANCH_WRITES, List.copyOf(branchWrites));
+	}
+
+	public void checkpointPausedNode() throws Exception {
+		var saver = compiledGraph.compileConfig.checkpointSaver();
+		if (saver.isEmpty()) {
+			return;
+		}
+		if (currentCheckpoint == null || replayingHistoricalCheckpoint
+				|| !currentNodeId.equals(currentCheckpoint.getNextNodeId())) {
+			addCheckpoint(currentNodeId, currentNodeId);
+			return;
+		}
+		var runtime = new HashMap<>(currentCheckpoint.runtimeData());
+		runtime.putAll(branchCompletionMetadata());
+		var checkpoint = Checkpoint.builder().id(currentCheckpoint.getId()).nodeId(currentCheckpoint.getNodeId())
+				.nextNodeId(currentNodeId).state(cloneState(overallState.data())).build().withRuntimeData(runtime);
+		saver.get().put(config.withCheckPointId(checkpoint.getId()), checkpoint);
+		currentCheckpoint = checkpoint;
+	}
+
+	/**
+	 * Builds a stable task identity within a persisted step or a single in-memory run.
+	 */
+	public String branchTaskId(int index, String nodeId) {
+		String scope = currentCheckpoint == null || replayingHistoricalCheckpoint
+				? executionId + ":" + iteration.get() : currentCheckpoint.getId();
+		String identity = scope + ":" + index + ":" + nodeId;
+		return UUID.nameUUIDFromBytes(identity.getBytes(StandardCharsets.UTF_8)).toString();
+	}
+
+	public synchronized Map<String, Object> stepCheckpointData() {
+		return canWriteTaskProgress() ? currentCheckpoint.runtimeData() : Map.of();
+	}
+
+	public synchronized void updateStepCheckpoint(UnaryOperator<Map<String, Object>> update) {
+		if (!canWriteTaskProgress()) {
+			return;
+		}
+		try {
+			var checkpoint = currentCheckpoint.withRuntimeData(update.apply(currentCheckpoint.runtimeData()));
+			compiledGraph.compileConfig.checkpointSaver().orElseThrow()
+					.put(config.withCheckPointId(checkpoint.getId()), checkpoint);
+			this.currentCheckpoint = checkpoint;
+		}
+		catch (Exception ex) {
+			throw new IllegalStateException("Cannot checkpoint tasks for node '" + currentNodeId + "'", ex);
+		}
+	}
+
+	private boolean canWriteTaskProgress() {
+		return compiledGraph.compileConfig.taskCheckpoints() && currentCheckpoint != null
+				&& !replayingHistoricalCheckpoint && currentCheckpoint.getNextNodeId().equals(currentNodeId);
+	}
+
+	public void clearHumanFeedback() {
+		this.config = RunnableConfig.builder(config)
+				.removeMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY)
+				.removeMetadata(RunnableConfig.STATE_UPDATE_METADATA_KEY)
+				.build();
 	}
 
 	// ================================================================================================================
@@ -357,8 +472,11 @@ public class GraphRunnerContext {
 	public void mergeIntoCurrentState(Map<String, Object> updateState) {
 		// Create a new map and filter out ChatResponse entries
 		Map<String, Object> filteredState = findTokenUsageInDeltaState(updateState);
-
+		var write = branchPath != null && !filteredState.isEmpty() ? CheckpointWrite.encode(filteredState) : null;
 		this.overallState.updateState(filteredState);
+		if (write != null) {
+			branchWrites.add(write);
+		}
 	}
 
 	/**

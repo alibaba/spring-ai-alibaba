@@ -40,6 +40,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -209,6 +210,9 @@ public class ExecutionController {
 			Agent agent = agentLoader.loadAgent(request.appName);
 
 			InterruptionMetadata.Builder metadataBuilder = InterruptionMetadata.builder();
+			if (StringUtils.hasText(request.getInterruptionId())) {
+				metadataBuilder.interruptionId(request.getInterruptionId());
+			}
 
 			// Convert ToolFeedback from request to InterruptionMetadata.ToolFeedback
 			if (request.toolFeedbacks != null && !request.toolFeedbacks.isEmpty()) {

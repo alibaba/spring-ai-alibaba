@@ -15,11 +15,13 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
-import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.GraphLifecycleListener;
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.alibaba.cloud.ai.graph.agent.tool.StateAwareToolCallback;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
+import com.alibaba.cloud.ai.graph.agent.tool.CancellableAsyncToolCallback;
+import com.alibaba.cloud.ai.graph.agent.tool.CancellationToken;
 import com.alibaba.cloud.ai.graph.agent.tools.ToolContextHelper;
-import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -35,11 +37,20 @@ import org.springframework.ai.util.JsonHelper;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.util.StringUtils;
 
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+
+import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_TOOL_CALL_ID_CONTEXT_KEY;
+import static com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver.THREAD_ID_DEFAULT;
+import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.childInvocation;
+import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.taskThreadId;
 
 /**
  * Factory class for creating ToolCallback instances for ReactAgent.
@@ -48,6 +59,33 @@ import java.util.Optional;
 public class AgentTool {
 	private static final ToolCallResultConverter CONVERTER = new MessageToolCallResultConverter();
 	private static final JsonHelper jsonHelper = new JsonHelper();
+
+	public static final String CONTINUATION_CONTEXT_KEY = "_AGENT_TOOL_CONTINUATION_";
+
+	public record Continuation(String threadId, InterruptionMetadata feedback) {
+	}
+
+	public static final class Interrupted extends RuntimeException {
+
+		private final String threadId;
+
+		private final InterruptionMetadata interruption;
+
+		Interrupted(String threadId, InterruptionMetadata interruption) {
+			super("Agent tool paused for feedback");
+			this.threadId = threadId;
+			this.interruption = interruption;
+		}
+
+		public String threadId() {
+			return threadId;
+		}
+
+		public InterruptionMetadata interruption() {
+			return interruption;
+		}
+
+	}
 
 	/**
 	 * Create a ToolCallback for invoking a ReactAgent as a tool.
@@ -58,6 +96,10 @@ public class AgentTool {
 	 */
 	public static ToolCallback getFunctionToolCallback(ReactAgent agent) {
 		return AgentTool.create(agent);
+	}
+
+	public static boolean isAgentTool(ToolCallback callback) {
+		return callback instanceof AgentToolCallback;
 	}
 
 	/**
@@ -136,7 +178,7 @@ public class AgentTool {
 		}
 	}
 
-	private static class AgentToolCallback implements StateAwareToolCallback {
+	private static class AgentToolCallback implements CancellableAsyncToolCallback {
 
 		private final ToolDefinition toolDefinition;
 
@@ -163,12 +205,24 @@ public class AgentTool {
 				AssistantMessage result = executor.executeAgent(toolInput, toolContext);
 				return CONVERTER.convert(result, AssistantMessage.class);
 			}
-			catch (ToolExecutionException e) {
+			catch (Interrupted | ToolExecutionException e) {
 				throw e;
 			}
 			catch (RuntimeException e) {
 				throw new ToolExecutionException(toolDefinition, e);
 			}
+		}
+
+		@Override
+		public CompletableFuture<String> callAsync(String arguments, ToolContext context, CancellationToken cancellation) {
+			var result = executor.executeAgentResult(arguments, context)
+					.map(message -> CONVERTER.convert(message, AssistantMessage.class))
+					.onErrorMap(RuntimeException.class,
+							error -> error instanceof Interrupted || error instanceof ToolExecutionException
+									? error : new ToolExecutionException(toolDefinition, error))
+					.subscribeOn(Schedulers.boundedElastic()).toFuture();
+			cancellation.onCancel(() -> result.cancel(true));
+			return result;
 		}
 
 	}
@@ -193,6 +247,10 @@ public class AgentTool {
 		 * @return AssistantMessage the response from the agent
 		 */
 		public AssistantMessage executeAgent(String input, ToolContext toolContext) {
+			return executeAgentResult(input, toolContext).block();
+		}
+
+		private Mono<AssistantMessage> executeAgentResult(String input, ToolContext toolContext) {
 			// Extract the actual input value from the wrapped JSON structure
 			// The input parameter is wrapped as {"input": "actual_value"}
 			String actualInput = extractInputValue(input);
@@ -207,48 +265,56 @@ public class AgentTool {
 			}
 			messagesToAdd.add(new UserMessage(actualInput));
 
-			Optional<OverAllState> resultState;
-			Optional<RunnableConfig> parentConfigOpt = ToolContextHelper.getConfig(toolContext);
-			try {
-				if (parentConfigOpt.isPresent()) {
-					RunnableConfig parentConfig = parentConfigOpt.get();
-					RunnableConfig subConfig = RunnableConfig.builder(parentConfig)
-							.threadId(parentConfig.threadId()
-									.map(id -> id + "_" + agent.name())
-									.orElseGet(agent::name))
-							.nextNode(null)
-							.checkPointId(null)
-							.build();
-					subConfig.clearContext();
-					resultState = agent.invoke(Map.of("messages", messagesToAdd), subConfig);
-				}
-				else {
-					resultState = agent.invoke(Map.of("messages", messagesToAdd));
-				}
-			}
-			catch (GraphRunnerException e) {
-				throw buildExecutionException(actualInput, parentConfigOpt.orElse(null),
-						"sub-agent invocation failed: " + e.getMessage(), e);
-			}
-			catch (RuntimeException e) {
-				throw buildExecutionException(actualInput, parentConfigOpt.orElse(null),
-						"sub-agent invocation failed: " + e.getMessage(), e);
-			}
+			var parent = ToolContextHelper.getConfig(toolContext).orElse(null);
+			var continuation = ToolContextHelper.getMetadata(toolContext, CONTINUATION_CONTEXT_KEY, Continuation.class);
+			var run = childConfig(toolContext, parent, continuation);
+			var inputs = continuation.isPresent() ? Map.<String, Object>of() : Map.<String, Object>of("messages", messagesToAdd);
+			return Mono.defer(() -> agent.getAndCompileGraph().stream(inputs, agent.buildNonStreamConfig(run)).last())
+					.onErrorMap(error -> buildExecutionException(actualInput, parent,
+							"sub-agent invocation failed: " + error.getMessage(), error))
+					.map(output -> requireAssistantMessage(output, run, actualInput, parent));
+		}
 
-			Optional<List> messages = resultState.flatMap(overAllState -> overAllState.value("messages", List.class));
+		private RunnableConfig childConfig(ToolContext context, RunnableConfig parent, Optional<Continuation> continuation) {
+			if (parent == null && continuation.isEmpty()) {
+				return RunnableConfig.builder().build();
+			}
+			var caller = parent == null ? RunnableConfig.builder().build() : parent;
+			var child = childInvocation(caller, continuation.isPresent())
+					.threadId(caller.threadId().map(id -> id + "_" + agent.name()).orElseGet(agent::name))
+					.clearContext();
+			ToolContextHelper.getMetadata(context, AGENT_TOOL_CALL_ID_CONTEXT_KEY, String.class)
+					.filter(StringUtils::hasText).ifPresent(callId -> {
+						String parentExecution = caller.checkPointId().or(caller::taskId)
+								.or(() -> ToolContextHelper.getState(context)
+										.flatMap(state -> state.value(GraphLifecycleListener.EXECUTION_ID_KEY, String.class)))
+								.orElse("");
+						String invocationId = taskThreadId(caller, agent.name(), parentExecution + ":" + callId);
+						child.threadId(invocationId).addMetadata(RunnableConfig.TASK_ID_METADATA_KEY, invocationId);
+					});
+			continuation.ifPresent(resume -> child.threadId(resume.threadId())
+					.addMetadata(RunnableConfig.TASK_ID_METADATA_KEY, resume.threadId()).addHumanFeedback(resume.feedback()));
+			return child.build();
+		}
+
+		private AssistantMessage requireAssistantMessage(NodeOutput output, RunnableConfig run, String actualInput,
+				RunnableConfig parent) {
+			if (output instanceof InterruptionMetadata pause) {
+				throw new Interrupted(run.threadId().orElse(THREAD_ID_DEFAULT), pause);
+			}
+			Optional<List<Message>> messages = output.state().value("messages");
 			if (messages.isPresent()) {
-				@SuppressWarnings("unchecked")
-				List<Message> messageList = (List<Message>) messages.get();
+				List<Message> messageList = messages.get();
 				if (!messageList.isEmpty() && messageList.get(messageList.size() - 1) instanceof AssistantMessage assistantMessage) {
 					return assistantMessage;
 				}
-				throw buildExecutionException(actualInput, parentConfigOpt.orElse(null),
+				throw buildExecutionException(actualInput, parent,
 						"sub-agent returned no assistant message. Last message type: "
 								+ (messageList.isEmpty() ? "<empty>" : messageList.get(messageList.size() - 1).getMessageType()),
 						null);
 			}
 			
-			throw buildExecutionException(actualInput, parentConfigOpt.orElse(null),
+			throw buildExecutionException(actualInput, parent,
 					"sub-agent returned no messages", null);
 		}
 

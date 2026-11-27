@@ -37,7 +37,7 @@ public class CheckPointSerializer implements NullableObjectSerializer<Checkpoint
 		out.writeUTF(object.getId());
 		writeNullableUTF(object.getNodeId(), out);
 		writeNullableUTF(object.getNextNodeId(), out);
-		OverAllState state = (OverAllState) stateSerializer.stateFactory().apply(object.getState());
+		OverAllState state = stateSerializer.stateOf(object.stateForStorage());
 		stateSerializer.write(state, out);
 	}
 
@@ -47,7 +47,7 @@ public class CheckPointSerializer implements NullableObjectSerializer<Checkpoint
 			.id(in.readUTF())
 			.nodeId(readNullableUTF(in).orElse(null))
 			.nextNodeId(readNullableUTF(in).orElse(null))
-			.state((OverAllState) stateSerializer.read(in))
+			.stateFromStorage(stateSerializer.read(in).data())
 			.build();
 	}
 

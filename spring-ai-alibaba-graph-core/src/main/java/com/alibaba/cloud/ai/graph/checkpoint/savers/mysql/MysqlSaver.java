@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.checkpoint.savers.mysql;
 
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.jdbc.AbstractJdbcCheckpointSaver;
@@ -337,12 +338,14 @@ public class MysqlSaver extends AbstractJdbcCheckpointSaver {
 				// Drop tables (indexes are automatically dropped with tables in MySQL)
 				statement.addBatch(DROP_CHECKPOINT_TABLE);
 				statement.addBatch(DROP_THREAD_TABLE);
+				statement.addBatch(DROP_EXECUTION_LEASE);
 				statement.executeBatch();
 			}
 			if (createOption == CreateOption.CREATE_OR_REPLACE ||
 					createOption == CreateOption.CREATE_IF_NOT_EXISTS) {
 				statement.execute(CREATE_THREAD_TABLE);
 				statement.execute(CREATE_CHECKPOINT_TABLE);
+				statement.execute(CREATE_EXECUTION_LEASE.formatted("TIMESTAMP(6)") + " ENGINE=InnoDB");
 				ensureActiveThreadNameColumn(connection);
 				ensureCheckpointSequenceColumn(connection);
 				replaceThreadIndex(statement);
@@ -411,7 +414,7 @@ public class MysqlSaver extends AbstractJdbcCheckpointSaver {
 				.id(resultSet.getString(1))
 				.nodeId(resultSet.getString(2))
 				.nextNodeId(resultSet.getString(3))
-				.state(decodeState(resultSet.getBytes(4)))
+				.stateFromStorage(decodeState(resultSet.getBytes(4)))
 				.build();
 	}
 
@@ -478,7 +481,7 @@ public class MysqlSaver extends AbstractJdbcCheckpointSaver {
 	protected void insertCheckpoint(String threadName, Checkpoint checkpoint) throws Exception {
 		Connection conn = null;
 		try (Connection ignored = conn = dataSource.getConnection()) {
-			conn.setAutoCommit(false);
+			beginCheckpointWrite(conn);
 
 			try (PreparedStatement upsertStatement = conn.prepareStatement(UPSERT_THREAD);
 					PreparedStatement insertCheckpointStatement = conn.prepareStatement(INSERT_CHECKPOINT)) {
@@ -490,7 +493,7 @@ public class MysqlSaver extends AbstractJdbcCheckpointSaver {
 				insertCheckpointStatement.setString(1, checkpoint.getId());
 				insertCheckpointStatement.setString(2, checkpoint.getNodeId());
 				insertCheckpointStatement.setString(3, checkpoint.getNextNodeId());
-				insertCheckpointStatement.setString(4, encodeState(checkpoint.getState()));
+			insertCheckpointStatement.setString(4, encodeState(checkpoint.stateForStorage()));
 				insertCheckpointStatement.setString(5, threadName);
 				insertCheckpointStatement.execute();
 			}
@@ -509,13 +512,13 @@ public class MysqlSaver extends AbstractJdbcCheckpointSaver {
 	protected void updateCheckpoint(String threadName, String checkpointId, Checkpoint checkpoint) throws Exception {
 		Connection conn = null;
 		try (Connection ignored = conn = dataSource.getConnection()) {
-			conn.setAutoCommit(false);
+			beginCheckpointWrite(conn);
 
 			try (PreparedStatement preparedStatement = conn.prepareStatement(UPDATE_CHECKPOINT)) {
 				preparedStatement.setString(1, checkpoint.getId());
 				preparedStatement.setString(2, checkpoint.getNodeId());
 				preparedStatement.setString(3, checkpoint.getNextNodeId());
-				preparedStatement.setString(4, encodeState(checkpoint.getState()));
+				preparedStatement.setString(4, encodeState(checkpoint.stateForStorage()));
 				preparedStatement.setString(5, threadName);
 				preparedStatement.setString(6, checkpointId);
 				int rowsAffected = preparedStatement.executeUpdate();
@@ -543,12 +546,14 @@ public class MysqlSaver extends AbstractJdbcCheckpointSaver {
 		try (Connection connection = dataSource.getConnection();
 				PreparedStatement preparedStatement = connection.prepareStatement(
 						DELETE_CHECKPOINTS.formatted(String.join(", ", Collections.nCopies(checkpointIds.size(), "?"))))) {
+			beginCheckpointWrite(connection);
 			preparedStatement.setString(1, threadName);
 			int index = 2;
 			for (String checkpointId : checkpointIds) {
 				preparedStatement.setString(index++, checkpointId);
 			}
 			preparedStatement.executeUpdate();
+			connection.commit();
 		}
 		catch (SQLException ex) {
 			throw new Exception("Unable to delete retained checkpoints", ex);
@@ -559,7 +564,7 @@ public class MysqlSaver extends AbstractJdbcCheckpointSaver {
 	protected void releaseThread(String threadName) throws Exception {
 		Connection conn = null;
 		try (Connection ignored = conn = dataSource.getConnection()) {
-			conn.setAutoCommit(false);
+			beginCheckpointWrite(conn);
 
 			try (PreparedStatement preparedStatement = conn.prepareStatement(RELEASE_THREAD)) {
 				preparedStatement.setString(1, threadName);
@@ -578,6 +583,17 @@ public class MysqlSaver extends AbstractJdbcCheckpointSaver {
 			rollback(conn, threadName);
 			throw new Exception("Unable to release checkpoint", ex);
 		}
+	}
+
+	@Override
+	public ExecutionLease acquireExecutionLease(RunnableConfig config) throws SQLException {
+		return acquireJdbcExecutionLease(config, "CURRENT_TIMESTAMP(6)",
+				"TIMESTAMPADD(SECOND, %d, CURRENT_TIMESTAMP(6))".formatted(EXECUTION_LEASE_SECONDS));
+	}
+
+	@Override
+	protected Connection openLeaseConnection() throws SQLException {
+		return dataSource.getConnection();
 	}
 
 	/**
