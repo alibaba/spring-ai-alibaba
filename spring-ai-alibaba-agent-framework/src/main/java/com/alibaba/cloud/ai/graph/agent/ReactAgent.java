@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.agent;
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphResponse;
+import com.alibaba.cloud.ai.graph.GraphLifecycleListener;
 import com.alibaba.cloud.ai.graph.GraphRunnerContext;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
@@ -29,6 +30,7 @@ import com.alibaba.cloud.ai.graph.SubGraphNode;
 import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
 import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.action.EdgeAction;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.agent.exception.AgentException;
 import com.alibaba.cloud.ai.graph.agent.extension.interceptor.AssistantMessageSanitizerInterceptor;
@@ -53,6 +55,8 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.skills.SkillsInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.toolselection.ToolSelectionInterceptor;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
+import com.alibaba.cloud.ai.graph.agent.structured.StructuredOutputException;
+import com.alibaba.cloud.ai.graph.agent.structured.StructuredOutputFormat;
 import com.alibaba.cloud.ai.graph.agent.tool.DeferredToolCatalog;
 import com.alibaba.cloud.ai.graph.checkpoint.CheckpointWrite;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
@@ -196,6 +200,46 @@ public class ReactAgent extends BaseAgent {
 
 	public AssistantMessage call(String message, RunnableConfig config) throws GraphRunnerException {
 		return doMessageInvoke(message, config);
+	}
+
+	/** Runs the agent once and returns its validated final answer as the requested type. */
+	public <T> T callStructured(String message, Class<T> type) throws GraphRunnerException {
+		return callStructured(message, type, null);
+	}
+
+	/**
+	 * Executes a structured turn. For agents that can pause, use
+	 * {@link #invokeAndGetOutput(String, RunnableConfig)} and read the result after resume.
+	 */
+	public <T> T callStructured(String message, Class<T> type, RunnableConfig config) throws GraphRunnerException {
+		Objects.requireNonNull(type, "Structured output type is required");
+		var output = invokeAndGetOutput(message, config)
+				.orElseThrow(() -> new StructuredOutputException("The agent produced no output"));
+		if (output instanceof InterruptionMetadata) {
+			throw new StructuredOutputException("The agent paused. Use invokeAndGetOutput to access and resume the interruption");
+		}
+		return structuredOutput(output, type)
+				.orElseThrow(() -> new StructuredOutputException("The agent did not complete a validated structured answer"));
+	}
+
+	/** Reads a validated answer from a completed graph output without invoking the model again. */
+	public <T> Optional<T> structuredOutput(NodeOutput output, Class<T> type) {
+		Objects.requireNonNull(type, "Structured output type is required");
+		if (output instanceof InterruptionMetadata) {
+			return Optional.empty();
+		}
+		var state = output.state();
+		String executionId = state.value(GraphLifecycleListener.EXECUTION_ID_KEY, String.class).orElse("");
+		var messages = state.<List<?>>value("messages").orElseGet(List::of);
+		for (int i = messages.size() - 1; i >= 0; i--) {
+			if (messages.get(i) instanceof AssistantMessage reply
+					&& reply.getMetadata().get(StructuredOutputFormat.RESULT_METADATA) instanceof Map<?, ?> result
+					&& name.equals(result.get("agent")) && executionId.equals(result.get("executionId"))
+					&& result.get("json") instanceof String json) {
+				return Optional.of(StructuredOutputFormat.decode(json, type));
+			}
+		}
+		return Optional.empty();
 	}
 
 	public AssistantMessage call(UserMessage message) throws GraphRunnerException {

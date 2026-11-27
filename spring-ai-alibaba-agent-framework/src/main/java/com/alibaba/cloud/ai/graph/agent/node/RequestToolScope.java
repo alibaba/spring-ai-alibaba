@@ -38,6 +38,7 @@ import org.springframework.core.Ordered;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -81,12 +82,15 @@ final class RequestToolScope {
 		});
 	}
 
-	Advisor captureAdvisor(List<String> selection, ContextWindowPolicy policy, ChatModel target) {
+	Advisor captureAdvisor(List<String> selection, ContextWindowPolicy policy, ChatModel target, ToolCallback resultTool) {
 		var capture = new ToolsAdvisor("CaptureRequestTools", Ordered.LOWEST_PRECEDENCE - 1, request -> {
 			var options = request.prompt().getOptions();
-			var callbacks = options instanceof ToolCallingChatOptions toolOptions
-					? select(ToolCallbackUtils.deduplicateByName(toolOptions.getToolCallbacks()), selection)
-					: legacyCallbacks;
+			var outbound = options instanceof ToolCallingChatOptions toolOptions
+					? ToolCallbackUtils.deduplicateByName(toolOptions.getToolCallbacks()) : legacyCallbacks;
+			boolean includesResultTool = resultTool != null && outbound.contains(resultTool);
+			var businessTools = includesResultTool ? outbound.stream().filter(tool -> tool != resultTool).toList() : outbound;
+			var callbacks = options instanceof ToolCallingChatOptions
+					? select(businessTools, selection) : businessTools;
 			Map<String, ToolCallback> active = new LinkedHashMap<>();
 			Map<String, String> resumable = new LinkedHashMap<>();
 			for (var callback : callbacks) {
@@ -97,6 +101,11 @@ final class RequestToolScope {
 				}
 			}
 			captured = new CapturedTools(Map.copyOf(active), Map.copyOf(resumable));
+			if (includesResultTool) {
+				var withResultTool = new ArrayList<>(callbacks);
+				withResultTool.add(resultTool);
+				return withCallbacks(request, withResultTool);
+			}
 			return withCallbacks(request, callbacks);
 		});
 		return policy == null && target == null ? capture : new ContextWindowAdvisor(policy, capture, target);
