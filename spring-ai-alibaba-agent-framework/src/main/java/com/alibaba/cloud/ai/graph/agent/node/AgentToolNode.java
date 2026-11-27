@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.agent.node;
 
+import com.alibaba.cloud.ai.graph.agent.context.ToolResultArchive;
+
 import com.alibaba.cloud.ai.graph.GraphLifecycleListener;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
@@ -117,6 +119,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 	private final String agentName;
 
+	private final ToolResultArchive toolResultArchive;
+
 	private final String budgetStateKey;
 	private final String pendingAgentToolsStateKey;
 	private final int maxCallsPerTool;
@@ -144,6 +148,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 	public AgentToolNode(Builder builder) {
 		this.agentName = builder.agentName;
+		this.toolResultArchive = builder.toolResultArchive;
 		this.budgetStateKey = "_TOOL_CALL_BUDGET_:" + Objects.toString(agentName, "");
 		this.pendingAgentToolsStateKey = "_PENDING_AGENT_TOOLS_:" + Objects.toString(agentName, "");
 		this.maxCallsPerTool = builder.maxCallsPerTool;
@@ -474,8 +479,11 @@ public class AgentToolNode implements NodeActionWithConfig {
 			}
 			else if (outcome != null) {
 				var response = outcome.response();
-				responses.add(ToolCallResults.withCallKey(response.toToolResultPart(), key));
-				returnDirect = shouldReturnDirect(response, returnDirect, execution);
+				boolean direct = shouldReturnDirect(response, execution);
+				var result = ToolCallResults.withCallKey(response.toToolResultPart(), key);
+				responses.add(this.toolResultArchive != null && !direct
+						? this.toolResultArchive.archive(config, this.agentName, key, result) : result);
+				returnDirect = !Boolean.FALSE.equals(returnDirect) && direct;
 			}
 		}
 
@@ -507,9 +515,9 @@ public class AgentToolNode implements NodeActionWithConfig {
 				.map(AgentToolContinuations.PausedCall::interruption).toList());
 		return new NodePause(interruption).withUpdates(result);
 	}
-	private Boolean shouldReturnDirect(ToolCallResponse response, Boolean returnDirect, ToolExecution execution) {
+	private boolean shouldReturnDirect(ToolCallResponse response, ToolExecution execution) {
 		ToolCallback callback = response.isError() ? null : execution.resolve().apply(response.getToolName());
-		return !Boolean.FALSE.equals(returnDirect) && callback != null && callback.getToolMetadata().returnDirect();
+		return callback != null && callback.getToolMetadata().returnDirect();
 	}
 
 	/**
@@ -994,6 +1002,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		private String agentName;
 
+		private ToolResultArchive toolResultArchive;
+
 		private boolean enableActingLog;
 
 		private boolean parallelToolExecution = false;
@@ -1020,6 +1030,11 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		public Builder agentName(String agentName) {
 			this.agentName = agentName;
+			return this;
+		}
+
+		public Builder toolResultArchive(ToolResultArchive toolResultArchive) {
+			this.toolResultArchive = toolResultArchive;
 			return this;
 		}
 

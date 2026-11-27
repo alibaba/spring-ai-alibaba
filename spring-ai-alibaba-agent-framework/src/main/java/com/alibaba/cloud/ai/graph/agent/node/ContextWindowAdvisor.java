@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.alibaba.cloud.ai.graph.agent.context.ContextWindowExceededException;
 import com.alibaba.cloud.ai.graph.agent.context.ContextWindowPolicy;
+import com.alibaba.cloud.ai.graph.agent.context.ToolResultArchive;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolCallResults;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
@@ -171,7 +172,7 @@ final class ContextWindowAdvisor implements CallAdvisor, StreamAdvisor {
 	}
 
 	private ToolResultPart shorten(ToolResultPart result) {
-		if (result.payload() != null || result.isError()
+		if (result.payload() != null || result.isError() || ToolResultArchive.isArchived(result)
 				|| result.content().stream().anyMatch(part -> !(part instanceof TextPart))) {
 			return result;
 		}

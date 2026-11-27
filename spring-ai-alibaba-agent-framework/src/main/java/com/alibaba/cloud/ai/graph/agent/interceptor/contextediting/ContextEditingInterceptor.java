@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor.contextediting;
 
+import com.alibaba.cloud.ai.graph.agent.context.ToolResultArchive;
 import com.alibaba.cloud.ai.graph.agent.hook.TokenCounter;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
@@ -146,7 +147,7 @@ public class ContextEditingInterceptor extends ModelInterceptor {
 	}
 
 	private MessagePart clearResult(MessagePart part) {
-		if (part instanceof ToolResultPart result && result.payload() == null) {
+		if (part instanceof ToolResultPart result && result.payload() == null && !ToolResultArchive.isArchived(result)) {
 			return new ToolResultPart(result.id(), result.name(), List.of(TextPart.of(placeholder)),
 					result.isError(), null, result.attributes());
 		}
