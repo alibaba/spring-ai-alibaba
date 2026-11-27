@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.agent.nacos;
 
-import com.alibaba.cloud.ai.agent.nacos.utils.ChatOptionsProxy;
 import com.alibaba.cloud.ai.agent.nacos.vo.AgentVO;
 import com.alibaba.cloud.ai.agent.nacos.vo.McpServersVO;
 import com.alibaba.cloud.ai.agent.nacos.vo.ModelVO;
@@ -25,21 +24,18 @@ import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
-import com.alibaba.cloud.ai.observation.model.ObservationMetadataAwareOptions;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.nacos.api.config.listener.Listener;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.client.config.NacosConfigService;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.annotation.Tool;
@@ -51,6 +47,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,13 +56,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
 
 /**
  * Unit tests to verify that tools provided via methodTools(), tools(), toolNames(),
@@ -83,8 +79,6 @@ class NacosReactAgentBuilderToolsTest {
 	private NacosMcpOperationService mcpOperationService;
 
 	private NacosOptions nacosOptions;
-
-	private MockedStatic<ChatOptionsProxy> chatOptionsProxyMockedStatic;
 
 	/**
 	 * Simple ToolCallbackResolver implementation that provides tools.
@@ -239,49 +233,10 @@ class NacosReactAgentBuilderToolsTest {
 				.thenReturn(JSON.toJSONString(mcpServersVO));
 	}
 
-	/**
-	 * Create a mock OpenAiChatOptions that implements ObservationMetadataAwareOptions.
-	 */
-	private OpenAiChatOptions createMockChatOptions() {
-		OpenAiChatOptions options = OpenAiChatOptions.builder()
-				.model("gpt-4")
-				.temperature(0.7)
-				.build();
-		return options;
-	}
-
 	@BeforeEach
 	void setUp() throws Exception {
 		nacosOptions = createMockNacosOptions();
 		setupMockNacosConfigs();
-
-		// Mock the static ChatOptionsProxy.createProxy method to avoid CGLIB issues
-		chatOptionsProxyMockedStatic = mockStatic(ChatOptionsProxy.class);
-		chatOptionsProxyMockedStatic.when(() -> ChatOptionsProxy.createProxy(any(ChatOptions.class), anyMap()))
-				.thenAnswer(invocation -> {
-					ChatOptions originalOptions = invocation.getArgument(0);
-					// Return a mock that implements both interfaces
-					OpenAiChatOptions mockOptions = mock(OpenAiChatOptions.class, withSettings()
-							.extraInterfaces(ObservationMetadataAwareOptions.class));
-
-					// Setup basic behavior
-					when(mockOptions.getModel()).thenReturn("gpt-4");
-					when(mockOptions.getTemperature()).thenReturn(0.7);
-
-					// Setup ObservationMetadataAwareOptions behavior
-					Map<String, String> metadata = new HashMap<>();
-					ObservationMetadataAwareOptions observationOptions = (ObservationMetadataAwareOptions) mockOptions;
-					when(observationOptions.getObservationMetadata()).thenReturn(metadata);
-
-					return mockOptions;
-				});
-	}
-
-	@AfterEach
-	void tearDown() {
-		if (chatOptionsProxyMockedStatic != null) {
-			chatOptionsProxyMockedStatic.close();
-		}
 	}
 
 	/**
@@ -573,33 +528,38 @@ class NacosReactAgentBuilderToolsTest {
 		}
 	}
 
-	/**
-	 * Test case: Verify local tools are stored and used for MCP listener updates
-	 */
 	@Test
-	void testLocalToolsAreStoredForMcpUpdates() throws Exception {
-		ToolCallback localTool1 = createTestToolCallback("localTool1", "Local tool 1");
-		ToolCallback localTool2 = createTestToolCallback("localTool2", "Local tool 2");
+	void keepsLocalToolsAheadOfMcpToolsOnInitialLoadAndRefresh() throws Exception {
+		var local = createTestToolCallback("server_tools_shared", "Local tool");
+		var duplicate = createTestToolCallback("server_tools_shared", "Remote tool with the same name");
+		var remote = createTestToolCallback("server_tools_remote", "Remote tool");
+		var updated = createTestToolCallback("server_tools_updated", "Updated remote tool");
+		var registryTools = new AtomicReference<>(List.of(duplicate, remote));
 
-		NacosReactAgentBuilder builder = new NacosReactAgentBuilder();
-		ReactAgent agent = builder
-				.nacosOptions(nacosOptions)
-				.name("agent_with_local_tools")
-				.tools(localTool1, localTool2)
-				.build();
+		try (var registry = mockStatic(NacosMcpToolsInjector.class)) {
+			registry.when(() -> NacosMcpToolsInjector.getMcpServersVO(nacosOptions)).thenReturn(new McpServersVO());
+			registry.when(() -> NacosMcpToolsInjector.convert(eq(nacosOptions), any(McpServersVO.class)))
+					.thenAnswer(invocation -> registryTools.get());
 
-		// Verify that localTools field in builder is correctly populated
-		Field localToolsField = NacosReactAgentBuilder.class.getDeclaredField("localTools");
-		localToolsField.setAccessible(true);
-		@SuppressWarnings("unchecked")
-		List<ToolCallback> localTools = (List<ToolCallback>) localToolsField.get(builder);
+			var agent = new NacosReactAgentBuilder().nacosOptions(nacosOptions).name("agent_with_local_tools")
+					.tools(local).build();
+			var llmNode = getLlmNode(agent);
+			var toolNode = getToolNode(agent);
+			assertEquals(List.of(local, remote), getToolCallbacks(llmNode));
+			assertEquals(List.of(local, remote), toolNode.getToolCallbacks());
 
-		assertNotNull(localTools, "localTools should not be null");
-		assertEquals(2, localTools.size(), "localTools should have 2 tools");
-		assertTrue(localTools.stream().anyMatch(t -> "localTool1".equals(t.getToolDefinition().name())),
-				"localTools should contain localTool1");
-		assertTrue(localTools.stream().anyMatch(t -> "localTool2".equals(t.getToolDefinition().name())),
-				"localTools should contain localTool2");
+			var listener = ArgumentCaptor.forClass(Listener.class);
+			verify(nacosConfigService).addListener(eq("mcp-servers.json"), anyString(), listener.capture());
+			registryTools.set(List.of(duplicate, updated));
+			listener.getValue().receiveConfigInfo("{}");
+			assertEquals(List.of(local, updated), getToolCallbacks(llmNode));
+			assertEquals(List.of(local, updated), toolNode.getToolCallbacks());
+
+			registryTools.set(List.of());
+			listener.getValue().receiveConfigInfo("{}");
+			assertEquals(List.of(local), getToolCallbacks(llmNode));
+			assertEquals(List.of(local), toolNode.getToolCallbacks());
+		}
 	}
 
 	/**

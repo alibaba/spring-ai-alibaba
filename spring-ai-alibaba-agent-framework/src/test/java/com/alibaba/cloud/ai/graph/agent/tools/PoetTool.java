@@ -39,17 +39,15 @@ public class PoetTool implements BiFunction<String, ToolContext, String> {
 	}
 
 	public static ToolCallback createPoetToolCallback() {
-		return FunctionToolCallback.builder("poem", new PoetTool())
-				.description("用来写诗的工具")
-				.inputType(String.class)
-				.build();
+		return createPoetToolCallback("poem", new PoetTool());
 	}
 
 	public static ToolCallback createPoetToolCallback(String name, PoetTool poetTool) {
-		return FunctionToolCallback.builder(name, poetTool)
-				.description("用来写诗的工具")
-				.inputType(String.class)
-				.build();
+		return FunctionToolCallback.builder(name, (PoemInput input, ToolContext context) ->
+				poetTool.apply(input.topic(), context)).description("用来写诗的工具").inputType(PoemInput.class).build();
+	}
+
+	private record PoemInput(@ToolParam(description = "The topic for the poem") String topic) {
 	}
 
 }

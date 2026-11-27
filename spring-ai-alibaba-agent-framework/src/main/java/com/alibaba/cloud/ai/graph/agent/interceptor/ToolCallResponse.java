@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.agent.interceptor;
 
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.part.ToolResultPart;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -121,6 +122,12 @@ public class ToolCallResponse {
 
 	public ToolResponseMessage.ToolResponse toToolResponse() {
 		return new ToolResponseMessage.ToolResponse(toolCallId, toolName, result);
+	}
+
+	public ToolResultPart toToolResultPart() {
+		ToolResultPart part = ToolResultPart.of(toToolResponse());
+		return isError() ? new ToolResultPart(part.id(), part.name(), part.content(), true,
+				part.payload(), part.attributes()) : part;
 	}
 
 	public static class Builder {

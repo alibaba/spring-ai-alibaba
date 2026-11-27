@@ -22,7 +22,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * Data Transfer Object for AssistantMessage.
@@ -41,6 +43,10 @@ public class ToolRequestMessageDTO implements MessageDTO {
 
 	@JsonProperty("toolCalls")
 	private List<ToolCallDTO> toolCalls;
+
+	@JsonProperty("parts")
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	private JsonNode parts;
 
 	/**
 	 * Default constructor for deserialization.
@@ -64,6 +70,7 @@ public class ToolRequestMessageDTO implements MessageDTO {
 	public ToolRequestMessageDTO(AssistantMessage message) {
 		this();
 		this.content = message.getText();
+		this.parts = MessagePartsJson.write(message.getParts());
 		this.metadata = new HashMap<>(message.getMetadata());
 
 		// Convert tool calls if present
@@ -80,6 +87,9 @@ public class ToolRequestMessageDTO implements MessageDTO {
 	 * Convert to Spring AI AssistantMessage.
 	 */
 	public AssistantMessage toAssistantMessage() {
+		if (parts != null && !parts.isNull()) {
+			return AssistantMessage.builder().parts(MessagePartsJson.read(parts)).properties(metadata).build();
+		}
 		List<AssistantMessage.ToolCall> springToolCalls = new ArrayList<>();
 		if (this.toolCalls != null) {
 			for (ToolCallDTO dto : this.toolCalls) {

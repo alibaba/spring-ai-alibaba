@@ -23,6 +23,15 @@ import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.stream.LLmNodeAction;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.part.MediaPart;
+import org.springframework.ai.chat.messages.part.OpaquePayload;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.StreamingParts;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
+import org.springframework.ai.chat.messages.part.UnknownPart;
+import org.springframework.ai.content.Media;
+import org.springframework.util.MimeTypeUtils;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -34,6 +43,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -85,6 +95,38 @@ public class StreamFunctionCallTest {
         assertEquals("get_weather", toolCall.name());
         assertEquals("{\"city\":\"Beijing\"}", toolCall.arguments());
     }
+
+
+	@Test
+	void aggregatesIndexedPartsOnceAndPreservesToolSignatures() throws Exception {
+		var reason = ReasoningPart.of("reasoning");
+		var media = MediaPart.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data("test-image").build());
+		var signature = new OpaquePayload("fixture", "signature", "encoded");
+		var tool = new ToolCallPart(new AssistantMessage.ToolCall("1", "function", "test", "{}"), signature, Map.of());
+		var unknown = new UnknownPart("fixture", "opaque", "{}", null, Map.of());
+		var first = AssistantMessage.builder().parts(List.of(StreamingParts.partial(reason, 0),
+				StreamingParts.complete(media, 1), StreamingParts.partial(tool, 2))).build();
+		var last = AssistantMessage.builder().parts(List.of(StreamingParts.complete(tool, 2),
+				StreamingParts.complete(TextPart.of("done"), 3), StreamingParts.complete(unknown, 4))).build();
+		var subscriptions = new AtomicInteger();
+		var chunks = Flux.just(new ChatResponse(List.of(new Generation(first))),
+				new ChatResponse(List.of(new Generation(last))))
+				.doOnSubscribe(subscription -> subscriptions.incrementAndGet());
+		var graph = new StateGraph(() -> Map.of("messages", new AppendStrategy()))
+				.addNode("model", node_async(state -> Map.of("messages", chunks)))
+				.addEdge(START, "model").addEdge("model", END).compile();
+
+		var messages = graph.invoke(Map.of()).orElseThrow().<List<?>>value("messages").orElseThrow();
+		var parts = assertInstanceOf(AssistantMessage.class, messages.get(0)).getParts();
+
+		assertEquals(1, subscriptions.get());
+		assertEquals(5, parts.size());
+		assertEquals(reason, parts.get(0));
+		assertEquals("test-image", assertInstanceOf(MediaPart.class, parts.get(1)).media().getData());
+		assertEquals(tool, parts.get(2));
+		assertEquals(TextPart.of("done"), parts.get(3));
+		assertEquals(unknown, parts.get(4));
+	}
 
     private static ChatModel createMockChatModelWithSplitToolCallChunks() {
         return new ChatModel() {

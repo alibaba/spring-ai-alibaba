@@ -53,6 +53,9 @@ import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
 import org.springframework.util.Assert;
 
+import static org.springframework.ai.model.tool.DefaultToolCallingManager.DEFAULT_MAX_CALLS_PER_TOOL;
+import static org.springframework.ai.model.tool.DefaultToolCallingManager.DEFAULT_MAX_TOTAL_TOOL_CALLS;
+
 public abstract class Builder {
 
 	protected String name;
@@ -131,6 +134,9 @@ public abstract class Builder {
 	protected int maxParallelTools = 5;
 	protected Duration toolExecutionTimeout = Duration.ofMinutes(5);
 	protected boolean wrapSyncToolsAsAsync = false;
+	protected int maxCallsPerTool = DEFAULT_MAX_CALLS_PER_TOOL;
+	protected int maxTotalToolCalls = DEFAULT_MAX_TOTAL_TOOL_CALLS;
+	protected boolean dynamicTools;
 
 	public Builder name(String name) {
 		this.name = name;
@@ -442,6 +448,16 @@ public abstract class Builder {
 	 */
 	public Builder toolExecutionTimeout(Duration timeout) {
 		this.toolExecutionTimeout = Objects.requireNonNull(timeout, "timeout cannot be null");
+		return this;
+	}
+
+	/**
+	 * Sets the per-tool and total tool dispatch limits for each agent turn.
+	 */
+	public Builder toolCallLimits(int maxCallsPerTool, int maxTotalToolCalls) {
+		Assert.isTrue(maxCallsPerTool > 0 && maxTotalToolCalls > 0, "Tool call limits must be greater than zero");
+		this.maxCallsPerTool = maxCallsPerTool;
+		this.maxTotalToolCalls = maxTotalToolCalls;
 		return this;
 	}
 

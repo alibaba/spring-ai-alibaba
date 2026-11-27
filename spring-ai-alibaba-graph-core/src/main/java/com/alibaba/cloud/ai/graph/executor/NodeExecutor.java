@@ -30,23 +30,23 @@ import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.ParallelGraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
+import com.alibaba.cloud.ai.graph.utils.ChatResponseStreamAggregator;
+import com.alibaba.cloud.ai.graph.utils.FinishReasonMetadata;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.concurrent.Queues;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -231,93 +231,19 @@ public class NodeExecutor extends BaseGraphExecutor {
 		var lastGraphResponseRef = new AtomicReference<GraphResponse<NodeOutput>>(null);
 		var upstreamAlreadyEmittedCompletion = new AtomicBoolean(false);
 
-		return rawFlux.filter(element -> {
-				// Don't filter out Exception/Throwable - we need to handle them
-				return true;
-			})
-			.switchIfEmpty(Flux.error(new IllegalStateException(
-				"Empty flux detected for key '" + key + "'. This may indicate an LLM API error with null result.")))
-			.map(element -> {
-				// Handle Exception/Throwable as data elements (not error signals)
-				if (element instanceof Throwable throwable) {
-					log.error("Exception emitted as data element in embedded Flux stream for key '{}': {}",
-						key, throwable.getMessage(), throwable);
-					GraphResponse<NodeOutput> errorResponse = GraphResponse.error(throwable);
-					lastGraphResponseRef.set(errorResponse);
-					return errorResponse;
-				}
-				if (element instanceof ChatResponse response) {
-					// Handle usage-only chunks (null result/output) without dropping usage metadata
-					if (response.getResult() == null || response.getResult().getOutput() == null) {
-						GraphResponse<NodeOutput> graphResponse = GraphResponse
-							.of(context.buildStreamingOutput(response, nodeId, true));
-						lastGraphResponseRef.set(graphResponse);
-						return graphResponse;
-					}
-					ChatResponse lastResponse = lastChatResponseRef.get();
-					final var currentMessage = response.getResult().getOutput();
-
-					if (lastResponse == null) {
-						lastChatResponseRef.set(response);
-					} else {
-						var lastOutput = lastResponse.getResult().getOutput();
-						var lastMessageText = "";
-						if (lastOutput.getText() != null) {
-							lastMessageText = lastOutput.getText();
-						}
-
-						final var currentMessageText = currentMessage.getText();
-
-						boolean mergeReasoningContent = context.getConfig().mergeReasoningContent();
-						Map<String, Object> messageMetadata = mergeReasoningContent
-								? mergeMetadataWithReasoningContent(lastOutput.getMetadata(), currentMessage.getMetadata())
-								: currentMessage.getMetadata();
-
-						var newMessage = AssistantMessage.builder()
-								.content(currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText)
-								.properties(messageMetadata)
-								.toolCalls(mergeToolCalls(lastOutput.getToolCalls(), currentMessage.getToolCalls()))
-								.media(currentMessage.getMedia())
-								.build();
-
-						var newGeneration = new Generation(newMessage,
-								response.getResult().getMetadata());
-
-						ChatResponse newResponse = new ChatResponse(
-								List.of(newGeneration), response.getMetadata());
-						lastChatResponseRef.set(newResponse);
-					}
-					GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-						.of(context.buildStreamingOutput(response.getResult().getOutput(), response, nodeId, true));
-					 lastGraphResponseRef.set(lastGraphResponse);
-					return lastGraphResponse;
-				}
-				else if (element instanceof GraphResponse) {
-					GraphResponse<NodeOutput> graphResponse = (GraphResponse<NodeOutput>) element;
-					if (graphResponse.isDone() || graphResponse.resultValue().isPresent()) {
-						upstreamAlreadyEmittedCompletion.set(true);
-					}
-					lastGraphResponseRef.set(graphResponse);
-					return graphResponse;
-				} else if (element instanceof NodeOutput nodeOutput) {
-					GraphResponse<NodeOutput> graphResponse = GraphResponse.of(nodeOutput);
-					lastGraphResponseRef.set(graphResponse);
-					return graphResponse;
-				}
-				else {
-					try {
-						log.info("Received element of type '{}' in embedded Flux for key '{}', wrapping in StreamingOutput.",
-							element.getClass().getName(), key);
-						StreamingOutput<?> streamingOutput = context.buildStreamingOutput(element, nodeId, true);
-						GraphResponse<NodeOutput> graphResponse = GraphResponse.of(streamingOutput);
-						lastGraphResponseRef.set(graphResponse);
-						return graphResponse;
-					}
-					catch (Exception ex) {
-						throw new RuntimeException(ex);
-					}
-				}
-			})
+		return rawFlux.publish(shared -> {
+			Flux<GraphResponse<NodeOutput>> events = streamEvents(context, shared, key, nodeId,
+					lastGraphResponseRef, upstreamAlreadyEmittedCompletion);
+			var sourceError = new AtomicReference<Throwable>();
+			Flux<ChatResponse> responses = shared.ofType(ChatResponse.class).doOnError(sourceError::set);
+			Mono<GraphResponse<NodeOutput>> aggregation = ChatResponseStreamAggregator
+					.aggregate(responses, context.getConfig().mergeReasoningContent())
+					.onErrorComplete(error -> error == sourceError.get())
+					.doOnNext(lastChatResponseRef::set).then(Mono.empty());
+			// Deliver queued chunks before the terminal error. The event stream reports
+			// source errors so the aggregation subscriber does not report them twice.
+			return Flux.mergeDelayError(Queues.XS_BUFFER_SIZE, events, aggregation);
+		})
 			.onErrorResume(error -> {
 				// Handle actual error signals from the Flux
 				log.error("Error signal occurred in embedded Flux stream for key '{}': {}",
@@ -356,7 +282,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 				} else {
 					ChatResponse lastChatResponse = lastChatResponseRef.get();
 					// FINISHED StreamingOutput omits message for agent/graph LLM nodes (tool/hook unchanged); full text still in done(state).
-					Message messageForCompletion = lastChatResponse.getResult().getOutput();
+					Generation generation = lastChatResponse.getResult();
+					AssistantMessage answer = FinishReasonMetadata.apply(generation.getOutput(), generation.getMetadata());
+					Message messageForCompletion = answer;
 					if (shouldOmitMessageOnStreamCompletion(nodeId)) {
 						messageForCompletion = null;
 					}
@@ -364,9 +292,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 						.of(context.buildStreamingOutput(messageForCompletion, lastChatResponse, nodeId, false));
 					// Then emit the completion response
 					Map<String, Object> completionResult = new HashMap<>();
-					completionResult.put(key, lastChatResponse.getResult().getOutput());
+					completionResult.put(key, answer);
 					if (!key.equals("messages")) {
-						completionResult.put("messages", lastChatResponse.getResult().getOutput());
+						completionResult.put("messages", answer);
 					}
 					GraphResponse<NodeOutput> doneResponse = GraphResponse.done(completionResult);
 					return Flux.just(aggregatedResponse, doneResponse);
@@ -374,138 +302,39 @@ public class NodeExecutor extends BaseGraphExecutor {
 			}));
 	}
 
-	/**
-	 * Merges metadata from last and current streaming chunks, aggregating
-	 * {@code reasoningContent} by concatenation (each chunk carries partial content).
-	 * Other metadata keys are taken from current; fallback to last when absent.
-	 */
-	private static Map<String, Object> mergeMetadataWithReasoningContent(
-			Map<String, Object> lastMetadata, Map<String, Object> currentMetadata) {
-		Map<String, Object> merged = new LinkedHashMap<>();
-		if (lastMetadata != null) {
-			merged.putAll(lastMetadata);
-		}
-		if (currentMetadata != null) {
-			merged.putAll(currentMetadata);
-		}
-		// Aggregate reasoningContent: concatenate last + current (streaming chunks are incremental)
-		String key = "reasoningContent";
-		String last = (lastMetadata != null && lastMetadata.containsKey(key))
-				? String.valueOf(lastMetadata.get(key)) : "";
-		String current = (currentMetadata != null && currentMetadata.containsKey(key))
-				? String.valueOf(currentMetadata.get(key)) : "";
-		if (!last.isEmpty() || !current.isEmpty()) {
-			String aggregated = last.isEmpty() ? current : (current.isEmpty() ? last : last + current);
-			merged.put(key, aggregated);
-		}
-		return merged;
+	private Flux<GraphResponse<NodeOutput>> streamEvents(GraphRunnerContext context, Flux<?> source, String key,
+			String nodeId, AtomicReference<GraphResponse<NodeOutput>> lastGraphResponse,
+			AtomicBoolean upstreamAlreadyEmittedCompletion) {
+		return source.switchIfEmpty(Flux.error(new IllegalStateException(
+				"Empty flux detected for key '" + key + "'. This may indicate an LLM API error with null result.")))
+				.map(element -> {
+					GraphResponse<NodeOutput> event;
+					if (element instanceof Throwable throwable) {
+						log.error("Exception emitted as data element in embedded Flux for key '{}'", key, throwable);
+						event = GraphResponse.error(throwable);
+					}
+					else if (element instanceof ChatResponse response) {
+						Generation generation = response.getResult();
+						event = GraphResponse.of(generation == null || generation.getOutput() == null
+								? context.buildStreamingOutput(response, nodeId, true)
+								: context.buildStreamingOutput(generation.getOutput(), response, nodeId, true));
+					}
+					else if (element instanceof GraphResponse<?> graphResponse) {
+						event = (GraphResponse<NodeOutput>) graphResponse;
+						if (event.isDone() || event.resultValue().isPresent()) {
+							upstreamAlreadyEmittedCompletion.set(true);
+						}
+					}
+					else if (element instanceof NodeOutput nodeOutput) {
+						event = GraphResponse.of(nodeOutput);
+					}
+					else {
+						event = GraphResponse.of(context.buildStreamingOutput(element, nodeId, true));
+					}
+					lastGraphResponse.set(event);
+					return event;
+				});
 	}
-
-    /**
-     * Merges tool calls from two streamed assistant messages.
-     * <p>
-     * Streaming chunks from some providers may split tool-call fields across multiple chunks
-     * (for example: first chunk has name, later chunk has only arguments and even no id).
-     * We merge by id when possible, and fall back to positional merge to keep a single
-     * tool call record complete.
-     *
-     * @return the merged list of tool calls
-     */
-    private List<ToolCall> mergeToolCalls(List<ToolCall> lastToolCalls, List<ToolCall> currentToolCalls) {
-        if (lastToolCalls == null || lastToolCalls.isEmpty()) {
-            return currentToolCalls != null ? currentToolCalls : List.of();
-        }
-        if (currentToolCalls == null || currentToolCalls.isEmpty()) {
-            return lastToolCalls;
-        }
-
-        List<ToolCall> merged = new ArrayList<>(lastToolCalls);
-        for (int i = 0; i < currentToolCalls.size(); i++) {
-            ToolCall current = currentToolCalls.get(i);
-            if (current == null) {
-                continue;
-            }
-            int mergeIndex = findToolCallMergeIndex(merged, current, i);
-            if (mergeIndex >= 0) {
-                merged.set(mergeIndex, mergeToolCallFields(merged.get(mergeIndex), current));
-            }
-            else {
-                merged.add(current);
-            }
-        }
-        return merged;
-    }
-
-    private int findToolCallMergeIndex(List<ToolCall> mergedCalls, ToolCall currentToolCall, int currentIndex) {
-        String currentId = normalized(currentToolCall.id());
-        if (StringUtils.hasText(currentId)) {
-            for (int i = 0; i < mergedCalls.size(); i++) {
-                if (currentId.equals(normalized(mergedCalls.get(i).id()))) {
-                    return i;
-                }
-            }
-        }
-
-        if (currentIndex < mergedCalls.size()) {
-            return currentIndex;
-        }
-
-        String currentName = normalized(currentToolCall.name());
-        if (StringUtils.hasText(currentName)) {
-            int matchedIndex = -1;
-            for (int i = 0; i < mergedCalls.size(); i++) {
-                if (currentName.equals(normalized(mergedCalls.get(i).name()))) {
-                    if (matchedIndex >= 0) {
-                        return -1;
-                    }
-                    matchedIndex = i;
-                }
-            }
-            if (matchedIndex >= 0) {
-                return matchedIndex;
-            }
-        }
-
-        return -1;
-    }
-
-    private ToolCall mergeToolCallFields(ToolCall previous, ToolCall current) {
-        return new AssistantMessage.ToolCall(
-                firstNonBlank(current.id(), previous.id()),
-                firstNonBlank(current.type(), previous.type()),
-                firstNonBlank(current.name(), previous.name()),
-                mergeToolArguments(previous.arguments(), current.arguments()));
-    }
-
-    private static String mergeToolArguments(String previousArguments, String currentArguments) {
-        if (!StringUtils.hasText(previousArguments)) {
-            return currentArguments;
-        }
-        if (!StringUtils.hasText(currentArguments)) {
-            return previousArguments;
-        }
-
-        if (currentArguments.equals(previousArguments)) {
-            return currentArguments;
-        }
-        if (currentArguments.startsWith(previousArguments) || currentArguments.contains(previousArguments)) {
-            return currentArguments;
-        }
-        if (previousArguments.startsWith(currentArguments) || previousArguments.contains(currentArguments)) {
-            return previousArguments;
-        }
-
-        // Typical streaming delta case: append incremental argument fragment.
-        return previousArguments + currentArguments;
-    }
-
-    private static String firstNonBlank(String primary, String fallback) {
-        return StringUtils.hasText(primary) ? primary : fallback;
-    }
-
-    private static String normalized(String value) {
-        return StringUtils.hasText(value) ? value : null;
-    }
 
 	/**
 	 * Whether the FINISHED {@link StreamingOutput} after a {@link ChatResponse} flux should omit

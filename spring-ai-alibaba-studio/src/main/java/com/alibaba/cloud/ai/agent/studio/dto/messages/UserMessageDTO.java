@@ -22,7 +22,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * Data Transfer Object for UserMessage.
@@ -41,6 +43,10 @@ public class UserMessageDTO implements MessageDTO {
 
 	@JsonProperty("media")
 	private List<MediaDTO> media;
+
+	@JsonProperty("parts")
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	private JsonNode parts;
 
 	/**
 	 * Default constructor for deserialization.
@@ -64,18 +70,19 @@ public class UserMessageDTO implements MessageDTO {
 	public UserMessageDTO(UserMessage message) {
 		this();
 		this.content = message.getText();
+		this.parts = MessagePartsJson.write(message.getParts());
 		this.metadata = new HashMap<>(message.getMetadata());
 
-		// Note: Media extraction is not currently supported
-		// Spring AI's Media API is not directly accessible in this version
 	}
 
 	/**
 	 * Convert to Spring AI UserMessage.
 	 */
 	public UserMessage toUserMessage() {
-		// UserMessage constructor just takes content as String
-		return new UserMessage(this.content);
+		if (parts != null && !parts.isNull()) {
+			return UserMessage.builder().parts(MessagePartsJson.read(parts)).metadata(metadata).build();
+		}
+		return UserMessage.builder().text(this.content).metadata(this.metadata).build();
 	}
 
 	// Getters and Setters

@@ -19,10 +19,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.utils.FinishReasonMetadata;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -30,9 +30,13 @@ import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.session.SessionService;
+import org.springframework.ai.session.advisor.SessionAdvisors;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import static com.alibaba.cloud.ai.graph.utils.Messageutils.convertToMessages;
@@ -60,6 +64,10 @@ public class LlmNode implements NodeAction {
 	private String paramsKey;
 
 	private String messagesKey;
+
+	private String sessionIdKey;
+
+	private List<Advisor> sessionAdvisors = List.of();
 
 	private String outputKey;
 
@@ -90,7 +98,9 @@ public class LlmNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		initNodeWithState(state);
+		if (sessionIdKey != null) {
+			resolveSessionId(state);
+		}
 
 		// add streaming support
 		if (Boolean.TRUE.equals(stream)) {
@@ -101,7 +111,8 @@ public class LlmNode implements NodeAction {
 			AssistantMessage responseOutput;
 			try {
 				ChatResponse response = call(state);
-				responseOutput = response.getResult().getOutput();
+				var generation = response.getResult();
+				responseOutput = FinishReasonMetadata.apply(generation.getOutput(), generation.getMetadata());
 			}
 			catch (Exception e) {
 				responseOutput = new AssistantMessage("Exception: " + e.getMessage());
@@ -116,42 +127,31 @@ public class LlmNode implements NodeAction {
 		}
 	}
 
-	private void initNodeWithState(OverAllState state) {
-		if (StringUtils.hasLength(userPromptKey)) {
-			this.userPrompt = (String) state.value(userPromptKey).orElse(this.userPrompt);
-		}
-		if (StringUtils.hasLength(systemPromptKey)) {
-			this.systemPrompt = (String) state.value(systemPromptKey).orElse(this.systemPrompt);
-		}
-		if (StringUtils.hasLength(paramsKey)) {
-			this.params = (Map<String, Object>) state.value(paramsKey).orElse(this.params);
-		}
-		// Used for adapting the dify's DSL conversion
-		if (!this.params.isEmpty()) {
-			Map<String, Object> rawParams = this.params;
-			Map<String, Object> filledParams = new HashMap<>();
-			for (Map.Entry<String, Object> entry : rawParams.entrySet()) {
-				if (entry.getValue().equals("null")) {
-					Optional<Object> valueFromState = state.value(entry.getKey());
-					filledParams.put(entry.getKey(), valueFromState.orElse(entry.getValue()));
-				}
-				else {
-					filledParams.put(entry.getKey(), entry.getValue());
-				}
+	private Map<String, Object> resolveParams(OverAllState state) {
+		@SuppressWarnings("unchecked")
+		var values = StringUtils.hasLength(paramsKey)
+				? (Map<String, Object>) state.value(paramsKey).orElse(params) : params;
+		// The DSL uses the string "null" to indicate a parameter that comes from state.
+		Map<String, Object> resolved = new HashMap<>();
+		values.forEach((key, value) -> {
+			if ("null".equals(value)) {
+				resolved.put(key, state.value(key).orElse(value));
 			}
+			else {
+				resolved.put(key, value);
+			}
+		});
+		return resolved;
+	}
 
-			this.params = filledParams;
-		}
+	private List<Message> resolveMessages(OverAllState state) {
 		if (StringUtils.hasLength(messagesKey)) {
-			Object messagesValue = state.value(messagesKey).orElse(null);
-			if (messagesValue != null) {
-				List<Message> convertedMessages = convertToMessages(messagesValue);
-				this.messages = convertedMessages.isEmpty() ? this.messages : convertedMessages;
+			var fromState = convertToMessages(state.value(messagesKey).orElse(null));
+			if (!fromState.isEmpty()) {
+				return new ArrayList<>(fromState);
 			}
 		}
-		if (StringUtils.hasLength(userPrompt) && !params.isEmpty()) {
-			this.userPrompt = renderPromptTemplate(userPrompt, params);
-		}
+		return new ArrayList<>(messages);
 	}
 
 	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
@@ -172,44 +172,57 @@ public class LlmNode implements NodeAction {
 	}
 
 	public void augmentUserMessage(String outputSchema) {
+		List<Message> updated = new ArrayList<>(messages);
+		appendOutputSchema(updated, outputSchema);
+		this.messages = updated;
+	}
+
+	private static void appendOutputSchema(List<Message> messages, String outputSchema) {
+		if (!StringUtils.hasText(outputSchema)) {
+			return;
+		}
 		for (int i = messages.size() - 1; i >= 0; i--) {
-			Message message = messages.get(i);
-			if (message instanceof UserMessage userMessage) {
-				messages.set(i, userMessage.mutate().text(userMessage.getText() + System.lineSeparator() + outputSchema).build());
-				break;
-			}
-			if (i == 0) {
-				messages.add(new UserMessage(outputSchema));
+			if (messages.get(i) instanceof UserMessage userMessage) {
+				messages.set(i, userMessage.mutate().part(TextPart.of(System.lineSeparator() + outputSchema)).build());
+				return;
 			}
 		}
+		messages.add(new UserMessage(outputSchema));
 	}
 
 	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(OverAllState state) {
-		augmentUserMessage(outputSchema);
+		var requestParams = resolveParams(state);
+		var requestMessages = resolveMessages(state);
+		String system = StringUtils.hasLength(systemPromptKey)
+				? state.<String>value(systemPromptKey).orElse(systemPrompt) : systemPrompt;
+		String user = StringUtils.hasLength(userPromptKey)
+				? state.<String>value(userPromptKey).orElse(userPrompt) : userPrompt;
 
-		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
-				.toolCallbacks(toolCallbacks)
-				.messages(messages)
-				.advisors(advisors);
-
-		if (StringUtils.hasLength(systemPrompt)) {
-			if (!params.isEmpty()) {
-				systemPrompt = renderPromptTemplate(systemPrompt, params);
-			} else {
-				// try render with state
-				systemPrompt = renderPromptTemplate(systemPrompt, state.data());
-			}
-			chatClientRequestSpec.system(systemPrompt);
+		var request = chatClient.prompt().tools(toolCallbacks).advisors(advisors);
+		if (StringUtils.hasLength(system)) {
+			request.system(renderPromptTemplate(system, requestParams.isEmpty() ? state.data() : requestParams));
 		}
-
-		if (StringUtils.hasLength(userPrompt)) {
-			if (!params.isEmpty()) {
-				userPrompt = renderPromptTemplate(userPrompt, params);
-			}
-			chatClientRequestSpec.user(userPrompt);
+		if (StringUtils.hasLength(user)) {
+			String rendered = requestParams.isEmpty() ? user : renderPromptTemplate(user, requestParams);
+			request.user(StringUtils.hasText(outputSchema) ? rendered + System.lineSeparator() + outputSchema : rendered);
 		}
+		else {
+			appendOutputSchema(requestMessages, outputSchema);
+		}
+		request.messages(requestMessages);
 
-		return chatClientRequestSpec;
+		if (sessionIdKey != null) {
+			request.advisors(sessionAdvisors).advisors(SessionAdvisors.session(resolveSessionId(state)));
+		}
+		return request;
+	}
+
+	private String resolveSessionId(OverAllState state) {
+		Object value = state.value(sessionIdKey).orElse(null);
+		if (value instanceof String sessionId && StringUtils.hasText(sessionId)) {
+			return sessionId;
+		}
+		throw new IllegalArgumentException("Missing Session Memory ID in graph state: " + sessionIdKey);
 	}
 
 	public static class Builder {
@@ -237,6 +250,10 @@ public class LlmNode implements NodeAction {
 		private List<Message> messages;
 
 		private List<Advisor> advisors;
+
+		private String sessionIdKey;
+
+		private List<Advisor> sessionAdvisors = List.of();
 
 		private List<ToolCallback> toolCallbacks;
 
@@ -297,6 +314,18 @@ public class LlmNode implements NodeAction {
 			return this;
 		}
 
+		/**
+		 * Loads and stores conversation history through Spring AI Session Memory.
+		 * The graph state key must hold a nonblank session ID. Supply the current
+		 * request as node input; the configured service supplies prior turns.
+		 */
+		public Builder sessionMemory(SessionService sessionService, String sessionIdKey) {
+			Assert.hasText(sessionIdKey, "Session ID state key must not be blank");
+			this.sessionAdvisors = SessionAdvisors.builder(sessionService).build();
+			this.sessionIdKey = sessionIdKey;
+			return this;
+		}
+
 		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
 			this.toolCallbacks = toolCallbacks;
 			return this;
@@ -336,6 +365,8 @@ public class LlmNode implements NodeAction {
 				llmNode.toolCallbacks = this.toolCallbacks;
 			}
 			llmNode.chatClient = this.chatClient;
+			llmNode.sessionIdKey = this.sessionIdKey;
+			llmNode.sessionAdvisors = this.sessionAdvisors;
 			return llmNode;
 		}
 

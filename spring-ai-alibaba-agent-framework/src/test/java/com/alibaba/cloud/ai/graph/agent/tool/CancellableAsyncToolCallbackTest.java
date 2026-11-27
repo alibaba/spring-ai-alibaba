@@ -433,6 +433,7 @@ class CancellableAsyncToolCallbackTest {
 		@DisplayName("tool should stop gracefully when checking cancellation")
 		void tool_shouldStopGracefully_whenCheckingCancellation() throws InterruptedException {
 			AtomicReference<Integer> iterationsCompleted = new AtomicReference<>(0);
+			CountDownLatch toolStarted = new CountDownLatch(1);
 			CountDownLatch toolFinished = new CountDownLatch(1);
 			ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -443,6 +444,7 @@ class CancellableAsyncToolCallbackTest {
 				public CompletableFuture<String> callAsync(String arguments, ToolContext context,
 						CancellationToken cancellationToken) {
 					return CompletableFuture.supplyAsync(() -> {
+						toolStarted.countDown();
 						try {
 							for (int i = 0; i < 1000; i++) {
 								if (cancellationToken.isCancelled()) {
@@ -468,14 +470,13 @@ class CancellableAsyncToolCallbackTest {
 				// Start the tool
 				CompletableFuture<String> future = callback.callAsync("{}", new ToolContext(Map.of()), token);
 
-				// Let it run for a bit
-				Thread.sleep(50);
+				assertTrue(toolStarted.await(5, TimeUnit.SECONDS));
 
 				// Cancel
 				token.cancel();
 
 				// Wait for tool to finish
-				assertTrue(toolFinished.await(1, TimeUnit.SECONDS));
+				assertTrue(toolFinished.await(5, TimeUnit.SECONDS));
 
 				// Tool should have stopped early (not completed all 1000 iterations)
 				assertTrue(iterationsCompleted.get() < 100,

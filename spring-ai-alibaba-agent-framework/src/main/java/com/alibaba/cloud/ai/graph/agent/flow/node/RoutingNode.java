@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ContentFilteredException;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -206,7 +207,7 @@ public class RoutingNode implements MultiCommandAction {
 				RoutingDecision decision;
 
 				if (attempt == 0) {
-					decision = this.chatClient.prompt().messages(messages).call().entity(this.outputConverter);
+					decision = RoutingModelResponse.entity(this.chatClient.prompt().messages(messages).call(), this.outputConverter);
 				}
 				else {
 					String errorFeedback = String.format(
@@ -236,8 +237,8 @@ public class RoutingNode implements MultiCommandAction {
 						messagesWithFeedback.add(new UserMessage(errorFeedback));
 					}
 
-					decision = this.chatClient.prompt().messages(messagesWithFeedback).call()
-							.entity(this.outputConverter);
+					decision = RoutingModelResponse.entity(this.chatClient.prompt().messages(messagesWithFeedback).call(),
+							this.outputConverter);
 				}
 
 				List<String> decisionValues = decision.getAgentNames();
@@ -266,6 +267,9 @@ public class RoutingNode implements MultiCommandAction {
 					logger.warn("RoutingAgent {} attempt {}/{} returned empty agent list",
 							rootAgent.name(), attempt, maxRetries);
 				}
+			}
+			catch (ContentFilteredException e) {
+				throw e;
 			}
 			catch (Exception e) {
 				if (attempt == maxRetries) {

@@ -20,7 +20,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.core.convert.converter.Converter;
 
 import java.util.List;
@@ -85,7 +85,7 @@ public class ArrayLoopStrategy implements LoopStrategy {
                 if(lastMessage == null) {
                     return null;
                 }
-                return JsonParser.fromJson(lastMessage, List.class);
+                return new JsonHelper().fromJson(lastMessage, List.class);
             };
 
 }

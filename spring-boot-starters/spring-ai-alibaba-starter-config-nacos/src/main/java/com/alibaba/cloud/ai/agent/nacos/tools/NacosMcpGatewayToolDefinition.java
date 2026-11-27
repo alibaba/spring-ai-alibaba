@@ -18,15 +18,17 @@ package com.alibaba.cloud.ai.agent.nacos.tools;
 
 import com.alibaba.nacos.api.ai.model.mcp.McpServerRemoteServiceConfig;
 import com.alibaba.nacos.api.ai.model.mcp.McpToolMeta;
-import com.alibaba.nacos.common.utils.JacksonUtils;
 import com.alibaba.nacos.common.utils.StringUtils;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import org.springframework.ai.tool.support.ToolUtils;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.util.Assert;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class NacosMcpGatewayToolDefinition extends McpGatewayToolDefinition {
+
+	private static final JsonHelper JSON = new JsonHelper();
 
 	private McpServerRemoteServiceConfig remoteServerConfig;
 
@@ -78,7 +80,7 @@ public class NacosMcpGatewayToolDefinition extends McpGatewayToolDefinition {
 
 	@Override
 	public String inputSchema() {
-		return JacksonUtils.toJson(this.inputSchema);
+		return JSON.toJson(this.inputSchema);
 	}
 
 	public String getName() {

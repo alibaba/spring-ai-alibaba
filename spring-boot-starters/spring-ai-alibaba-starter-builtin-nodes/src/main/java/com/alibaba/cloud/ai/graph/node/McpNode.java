@@ -19,18 +19,22 @@ package com.alibaba.cloud.ai.graph.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import io.modelcontextprotocol.client.McpClient;
-import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
+import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
+import io.modelcontextprotocol.modern.client.transport.HttpClientMcpTransport;
+import io.modelcontextprotocol.modern.client.transport.McpHttpRequestCustomizer;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
-import io.modelcontextprotocol.spec.McpSchema.InitializeResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.mcp.modern.McpSchemaConverter;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.net.URI;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -57,9 +61,7 @@ public class McpNode implements NodeAction {
 
 	private final List<String> inputParamKeys;
 
-	private HttpClientSseClientTransport transport;
-
-	private McpSyncClient client;
+	private final Protocol protocol;
 
 	private McpNode(Builder builder) {
 		this.url = builder.url;
@@ -68,32 +70,11 @@ public class McpNode implements NodeAction {
 		this.params = builder.params;
 		this.outputKey = builder.outputKey;
 		this.inputParamKeys = builder.inputParamKeys;
+		this.protocol = builder.protocol;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		log.info(
-				"[McpNode] Start executing apply, original configuration: url={}, tool={}, headers={}, inputParamKeys={}",
-				url, tool, headers, inputParamKeys);
-
-		// Build transport and client
-		String baseUrl = this.url;
-		String sseEndpoint = "/sse";
-		if (this.url.contains("/sse?")) {
-			int idx = this.url.indexOf("/sse?");
-			baseUrl = this.url.substring(0, idx);
-			sseEndpoint = this.url.substring(idx); // e.g. /sse?key=xxx
-		}
-		HttpClientSseClientTransport.Builder transportBuilder = HttpClientSseClientTransport.builder(baseUrl)
-			.sseEndpoint(sseEndpoint);
-		if (this.headers != null && !this.headers.isEmpty()) {
-			transportBuilder.customizeRequest(req -> this.headers.forEach(req::header));
-		}
-		this.transport = transportBuilder.build();
-		this.client = McpClient.sync(this.transport).build();
-		InitializeResult initializeResult = this.client.initialize();
-		log.info("[McpNode] MCP Client initialized: {}", initializeResult);
-		// Variable replacement
 		String finalTool = replaceVariables(tool, state);
 		Map<String, Object> finalParams = new HashMap<>();
 		// 1. First read from inputParamKeys
@@ -110,20 +91,12 @@ public class McpNode implements NodeAction {
 		if (replacedParams != null) {
 			finalParams.putAll(replacedParams);
 		}
-		log.info("[McpNode] after replace params: url={}, tool={}, headers={}, params={}", url, finalTool, headers,
-				finalParams);
-
-		// Directly use the already initialized client
 		CallToolResult result;
 		try {
-			McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(finalTool, finalParams);
-			log.info("[McpNode] CallToolRequest: {}", request);
-			result = client.callTool(request);
-			log.info("[McpNode] tool call result: {}", result);
+			result = callTool(finalTool, finalParams);
 		}
 		catch (Exception e) {
-			log.error("[McpNode] MCP call fail:", e);
-			throw new McpNodeException("MCP call fail: " + e.getMessage(), e);
+			throw new McpNodeException("MCP call failed: " + e.getMessage(), e);
 		}
 
 		// Result handling
@@ -151,6 +124,44 @@ public class McpNode implements NodeAction {
 		}
 		log.info("[McpNode] update state: {}", updatedState);
 		return updatedState;
+	}
+
+	private CallToolResult callTool(String toolName, Map<String, Object> arguments) {
+		URI endpoint = URI.create(this.url);
+		String origin = endpoint.getScheme() + "://" + endpoint.getRawAuthority();
+		String path = endpoint.getRawPath();
+		String query = endpoint.getRawQuery() == null ? "" : "?" + endpoint.getRawQuery();
+		var request = new McpSchema.CallToolRequest(toolName, arguments);
+		if (this.protocol == Protocol.MODERN) {
+			URI modernEndpoint = StringUtils.hasText(path) && !"/".equals(path)
+					? endpoint : URI.create(origin + "/mcp" + query);
+			var transport = HttpClientMcpTransport.builder(modernEndpoint)
+					.requestCustomizer(McpHttpRequestCustomizer.fromSync((method, requestHeaders, context) ->
+							this.headers.forEach(requestHeaders::set)))
+					.build();
+			var client = io.modelcontextprotocol.modern.client.McpClient.sync(transport).build();
+			return McpSchemaConverter.convert(client.tool(toolName).arguments(arguments).call(), CallToolResult.class);
+		}
+		if (this.protocol == Protocol.STREAMABLE) {
+			var transport = HttpClientStreamableHttpTransport.builder(origin)
+					.endpoint((StringUtils.hasText(path) && !"/".equals(path) ? path : "/mcp") + query)
+					.httpRequestCustomizer((builder, method, uri, body, context) -> this.headers.forEach(builder::header))
+					.build();
+			try (var client = McpClient.sync(transport).build()) {
+				client.initialize();
+				return client.callTool(request);
+			}
+		}
+
+		String ssePath = path.endsWith("/sse") ? path : path.replaceFirst("/$", "") + "/sse";
+		var transport = HttpClientSseClientTransport.builder(origin)
+				.sseEndpoint(ssePath + query)
+				.httpRequestCustomizer((builder, method, uri, body, context) -> this.headers.forEach(builder::header))
+				.build();
+		try (var client = McpClient.sync(transport).build()) {
+			client.initialize();
+			return client.callTool(request);
+		}
 	}
 
 	private String replaceVariables(String template, OverAllState state) {
@@ -187,7 +198,21 @@ public class McpNode implements NodeAction {
 		return new Builder();
 	}
 
+	public enum Protocol {
+		SSE,
+		STREAMABLE,
+		MODERN
+	}
+
 	public static class Builder {
+
+		private Protocol protocol = Protocol.SSE;
+
+		public Builder protocol(Protocol protocol) {
+			this.protocol = Objects.requireNonNull(protocol);
+			return this;
+		}
+
 
 		private String url;
 

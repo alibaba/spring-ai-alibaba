@@ -41,6 +41,16 @@ public abstract class MessagesModelHook implements Hook {
 		return new AgentCommand(previousMessages);
 	}
 
+	protected Map<String, Object> beforeModelStateUpdates(OverAllState state, List<Message> previous,
+			List<Message> updated) {
+		return Map.of();
+	}
+
+	protected Map<String, Object> afterModelStateUpdates(OverAllState state, List<Message> previous,
+			List<Message> updated) {
+		return Map.of();
+	}
+
 	public void setAgentName(String agentName) {
 		this.agentName = agentName;
 	}
@@ -108,6 +118,9 @@ public abstract class MessagesModelHook implements Hook {
 					result.put("messages", command.getMessages());
 				}
 			}
+			if (command.getMessages() != null && UpdatePolicy.REPLACE == command.getUpdatePolicy()) {
+				result.putAll(messagesModelHook.beforeModelStateUpdates(state, messages, command.getMessages()));
+			}
 			if (command.getJumpTo() != null) {
 				result.put("jump_to", command.getJumpTo().name());
 			}
@@ -141,6 +154,9 @@ public abstract class MessagesModelHook implements Hook {
 				} else {
 					result.put("messages", command.getMessages());
 				}
+			}
+			if (command.getMessages() != null && UpdatePolicy.REPLACE == command.getUpdatePolicy()) {
+				result.putAll(messagesModelHook.afterModelStateUpdates(state, messages, command.getMessages()));
 			}
 			if (command.getJumpTo() != null) {
 				result.put("jump_to", command.getJumpTo().name());

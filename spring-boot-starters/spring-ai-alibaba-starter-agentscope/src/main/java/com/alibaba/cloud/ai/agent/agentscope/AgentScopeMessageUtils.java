@@ -28,7 +28,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -63,6 +63,8 @@ public final class AgentScopeMessageUtils {
 
 	/** Metadata key for reasoning/thinking content in AssistantMessage. */
 	public static final String REASONING_CONTENT_KEY = "reasoning_content";
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private AgentScopeMessageUtils() {
 	}
@@ -183,14 +185,12 @@ public final class AgentScopeMessageUtils {
 				.build();
 	}
 
-	@SuppressWarnings("unchecked")
 	private static Map<String, Object> parseToolCallArguments(String arguments) {
 		if (arguments == null || arguments.isBlank()) {
 			return Map.of();
 		}
 		try {
-			Object parsed = JsonParser.fromJson(arguments, Map.class);
-			return parsed instanceof Map ? (Map<String, Object>) parsed : Map.of();
+			return jsonHelper.fromJsonToMap(arguments);
 		}
 		catch (Exception e) {
 			return Map.of();
@@ -276,7 +276,7 @@ public final class AgentScopeMessageUtils {
 		List<AssistantMessage.ToolCall> toolCalls = new ArrayList<>();
 		for (ToolUseBlock block : toolUseBlocks) {
 			String arguments = block.getInput() != null && !block.getInput().isEmpty()
-					? JsonParser.toJson(block.getInput())
+					? jsonHelper.toJson(block.getInput())
 					: "{}";
 			toolCalls.add(new AssistantMessage.ToolCall(
 					block.getId() != null ? block.getId() : "",

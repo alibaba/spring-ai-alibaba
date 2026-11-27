@@ -16,10 +16,10 @@
 
 package com.alibaba.cloud.ai.agent.nacos;
 
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.alibaba.cloud.ai.agent.nacos.utils.ChatOptionsProxy;
 import com.alibaba.cloud.ai.agent.nacos.vo.PromptVO;
 import com.alibaba.cloud.ai.graph.agent.DefaultBuilder;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
@@ -29,8 +29,9 @@ import com.alibaba.nacos.api.config.listener.AbstractListener;
 import com.alibaba.nacos.api.config.listener.Listener;
 import com.alibaba.nacos.api.exception.NacosException;
 
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.openai.OpenAiChatOptions;
 
 public class NacosAgentPromptBuilder extends DefaultBuilder {
 
@@ -81,15 +82,9 @@ public class NacosAgentPromptBuilder extends DefaultBuilder {
 			promptVO = NacosPromptInjector.getPromptByKey(nacosOptions, nacosOptions.getPromptKey());
 			if (promptVO != null) {
 				this.instruction = promptVO.getTemplate();
-				if (this.chatOptions == null) {
-					this.chatOptions = new OpenAiChatOptions();
-				}
-				if (!(this.chatOptions instanceof ObservationMetadataAwareOptions)) {
-					this.chatOptions = (ChatOptions) ChatOptionsProxy.createProxy(this.chatOptions, getMetadata(promptVO));
-				}
-
-				observationMetadataAwareOptions = (ObservationMetadataAwareOptions) this.chatOptions;
-				observationMetadataAwareOptions.getObservationMetadata().putAll(getMetadata(promptVO));
+				this.chatOptions = buildObservationMetadataOptions(getMetadata(promptVO));
+				observationMetadataAwareOptions = ObservationMetadataChatOptionsSupport
+						.asObservationMetadataAware(this.chatOptions);
 			}
 		}
 		if (this.observationRegistry == null && nacosOptions.getObservationConfiguration() != null) {
@@ -105,5 +100,68 @@ public class NacosAgentPromptBuilder extends DefaultBuilder {
 			registryPrompt(nacosOptions, reactAgent, observationMetadataAwareOptions, promptVO.getPromptKey());
 		}
 		return reactAgent;
+	}
+
+	private ChatOptions buildObservationMetadataOptions(Map<String, String> metadata) {
+		ChatOptions sourceOptions = resolveSourceOptions();
+		if (sourceOptions == null) {
+			return ObservationMetadataChatOptionsSupport.metadataOnly(metadata);
+		}
+		return ObservationMetadataChatOptionsSupport.withObservationMetadata(sourceOptions, metadata);
+	}
+
+	private ChatOptions resolveSourceOptions() {
+		if (this.chatOptions != null) {
+			return this.chatOptions;
+		}
+		if (this.model != null) {
+			return this.model.getOptions();
+		}
+		if (this.chatClient != null) {
+			return getChatClientDefaultOptions(this.chatClient);
+		}
+		return null;
+	}
+
+	private static ChatOptions getChatClientDefaultOptions(ChatClient chatClient) {
+		try {
+			Object defaultChatClientRequest = getDefaultChatClientRequest(chatClient);
+			if (defaultChatClientRequest == null) {
+				return null;
+			}
+			ChatModel chatModel = getField(defaultChatClientRequest, "chatModel", ChatModel.class);
+			ChatOptions modelOptions = chatModel != null ? chatModel.getOptions() : null;
+			ChatOptions.Builder<?> optionsCustomizer = getField(defaultChatClientRequest, "optionsCustomizer",
+					ChatOptions.Builder.class);
+			if (optionsCustomizer == null) {
+				return modelOptions;
+			}
+			if (modelOptions == null) {
+				return optionsCustomizer.clone().build();
+			}
+			return modelOptions.mutate().combineWith(optionsCustomizer.clone()).build();
+		}
+		catch (NoSuchFieldException | IllegalAccessException e) {
+			return null;
+		}
+	}
+
+	private static Object getDefaultChatClientRequest(ChatClient chatClient)
+			throws NoSuchFieldException, IllegalAccessException {
+		Field defaultRequestField = chatClient.getClass().getDeclaredField("defaultChatClientRequest");
+		defaultRequestField.setAccessible(true);
+		return defaultRequestField.get(chatClient);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <T> T getField(Object target, String fieldName, Class<?> fieldType)
+			throws NoSuchFieldException, IllegalAccessException {
+		Field field = target.getClass().getDeclaredField(fieldName);
+		field.setAccessible(true);
+		Object value = field.get(target);
+		if (value == null || fieldType.isInstance(value)) {
+			return (T) value;
+		}
+		return null;
 	}
 }

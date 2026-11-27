@@ -22,7 +22,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * Data Transfer Object for ToolResponseMessage.
@@ -41,6 +43,10 @@ public class ToolResponseMessageDTO implements MessageDTO {
 
 	@JsonProperty("responses")
 	private List<ToolResponseDTO> responses;
+
+	@JsonProperty("parts")
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	private JsonNode parts;
 
 	/**
 	 * Default constructor for deserialization.
@@ -64,6 +70,7 @@ public class ToolResponseMessageDTO implements MessageDTO {
 	public ToolResponseMessageDTO(ToolResponseMessage message) {
 		this();
 		this.content = message.getText();
+		this.parts = MessagePartsJson.write(message.getParts());
 		this.metadata = new HashMap<>(message.getMetadata());
 
 		// Convert tool responses
@@ -79,6 +86,9 @@ public class ToolResponseMessageDTO implements MessageDTO {
 	 * Convert to Spring AI ToolResponseMessage.
 	 */
 	public ToolResponseMessage toToolResponseMessage() {
+		if (parts != null && !parts.isNull()) {
+			return ToolResponseMessage.builder().parts(MessagePartsJson.read(parts)).metadata(metadata).build();
+		}
 		List<ToolResponseMessage.ToolResponse> springResponses = new ArrayList<>();
 		if (this.responses != null) {
 			for (ToolResponseDTO dto : this.responses) {

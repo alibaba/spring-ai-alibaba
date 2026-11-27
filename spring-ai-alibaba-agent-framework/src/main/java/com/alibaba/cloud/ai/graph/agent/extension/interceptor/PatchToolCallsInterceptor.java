@@ -19,17 +19,18 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
+import com.alibaba.cloud.ai.graph.agent.tool.ToolCallResults;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolResultPart;
+import org.springframework.ai.model.tool.ToolCallDecisions;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,88 +80,49 @@ public class PatchToolCallsInterceptor extends ModelInterceptor {
 			return handler.call(request);
 		}
 
-		List<Message> patchedMessages = patchDanglingToolCalls(messages);
-
-		// If messages were patched, create a new request with the updated messages
-		if (patchedMessages != messages) {
-			ModelRequest patchedRequest = ModelRequest.builder(request)
-					.messages(patchedMessages)
-					.build();
-			return handler.call(patchedRequest);
+		List<Message> patched = patchDanglingToolCalls(messages);
+		if (patched == messages) {
+			return handler.call(request);
 		}
-
-		return handler.call(request);
+		return handler.call(ModelRequest.builder(request).messages(patched).build());
 	}
 
-	/**
-	 * Patch dangling tool calls by adding ToolResponseMessages for any tool calls
-	 * that don't have corresponding responses.
-	 *
-	 * @param messages The original message list
-	 * @return A new list with patched messages, or the original list if no patching needed
-	 */
 	private List<Message> patchDanglingToolCalls(List<Message> messages) {
 		List<Message> patchedMessages = new ArrayList<>();
 		boolean hasPatches = false;
-
-		// Build a map of all tool response IDs for quick lookup
-		Set<String> existingToolResponseIds = new HashSet<>();
-		for (Message msg : messages) {
-			if (msg instanceof ToolResponseMessage toolResponseMsg) {
-				for (ToolResponseMessage.ToolResponse response : toolResponseMsg.getResponses()) {
-					existingToolResponseIds.add(response.id());
+		for (int i = 0; i < messages.size();) {
+			Message message = messages.get(i);
+			if (!(message instanceof AssistantMessage assistant) || !assistant.hasToolCalls()) {
+				patchedMessages.add(message);
+				i++;
+				continue;
+			}
+			int end = ToolCallResults.responseEnd(messages, i);
+			patchedMessages.addAll(messages.subList(i, end));
+			var results = messages.subList(i + 1, end).stream().map(ToolResponseMessage.class::cast)
+					.flatMap(response -> response.getResults().stream()).toList();
+			var settled = ToolCallResults.settledKeys(assistant, results);
+			var keys = ToolCallDecisions.toolCallKeys(assistant);
+			var calls = assistant.getToolCalls();
+			List<ToolResultPart> missing = new ArrayList<>();
+			for (int callIndex = 0; callIndex < calls.size(); callIndex++) {
+				String key = keys.get(callIndex);
+				if (!settled.contains(key)) {
+					var call = calls.get(callIndex);
+					String cancellation = String.format(CANCELLATION_MESSAGE_TEMPLATE, call.name(), key);
+					var result = new ToolResultPart(call.id(), call.name(), List.of(TextPart.of(cancellation)),
+							true, null, Map.of());
+					missing.add(ToolCallResults.withCallKey(result, key));
+					log.debug("Patching dangling tool call {} ({})", call.name(), key);
 				}
 			}
-		}
-
-		// Iterate through messages and patch dangling tool calls
-		for (int i = 0; i < messages.size(); i++) {
-			Message msg = messages.get(i);
-			patchedMessages.add(msg);
-
-			// Check if this is an AssistantMessage with tool calls
-			if (msg instanceof AssistantMessage assistantMsg) {
-				List<AssistantMessage.ToolCall> toolCalls = assistantMsg.getToolCalls();
-
-				if (!toolCalls.isEmpty()) {
-					// Check each tool call to see if it has a corresponding response
-					List<ToolResponseMessage.ToolResponse> missingResponses = new ArrayList<>();
-
-					for (AssistantMessage.ToolCall toolCall : toolCalls) {
-						String toolCallId = toolCall.id();
-
-						// Check if a response exists in the remaining messages
-						boolean hasResponse = existingToolResponseIds.contains(toolCallId);
-
-						if (!hasResponse) {
-							// Found a dangling tool call - create a cancellation response
-							String cancellationMsg = String.format(
-									CANCELLATION_MESSAGE_TEMPLATE,
-									toolCall.name(),
-									toolCallId
-							);
-
-							missingResponses.add(new ToolResponseMessage.ToolResponse(
-									toolCallId,
-									toolCall.name(),
-									cancellationMsg
-							));
-
-							log.info("Patching dangling tool call: {} (id: {})", toolCall.name(), toolCallId);
-						}
-					}
-
-					// Add a ToolResponseMessage with all missing responses
-					if (!missingResponses.isEmpty()) {
-						Map<String, Object> metadata = new HashMap<>();
-						metadata.put("patched", true);
-						patchedMessages.add(ToolResponseMessage.builder().responses(missingResponses).metadata(metadata).build());
-						hasPatches = true;
-					}
-				}
+			if (!missing.isEmpty()) {
+				patchedMessages.add(ToolResponseMessage.builder().metadata(Map.of("patched", true))
+						.results(missing).build());
+				hasPatches = true;
 			}
+			i = end;
 		}
-
 		return hasPatches ? patchedMessages : messages;
 	}
 

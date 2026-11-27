@@ -24,6 +24,10 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.part.MessagePart;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
+import org.springframework.ai.chat.messages.part.ToolResultPart;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -98,178 +102,73 @@ public class ContextEditingInterceptor extends ModelInterceptor {
 			return handler.call(request);
 		}
 
+		int target = clearAtLeast > 0 ? clearAtLeast : tokens - trigger;
 		int clearedTokens = 0;
-		Set<Integer> indicesToClear = new HashSet<>();
-
-		// Clear tool results until we meet the clearAtLeast threshold
 		for (ClearableToolMessage candidate : candidates) {
-			if (clearedTokens >= clearAtLeast) {
+			messages.set(candidate.index(), candidate.replacement());
+			clearedTokens += candidate.estimatedTokens();
+			if (clearedTokens >= target) {
 				break;
 			}
-
-			indicesToClear.add(candidate.index);
-			clearedTokens += candidate.estimatedTokens;
 		}
 
-		// Build updated message list
-		List<Message> updatedMessages = new ArrayList<>();
-		for (int i = 0; i < messages.size(); i++) {
-			Message msg = messages.get(i);
-
-			if (indicesToClear.contains(i)) {
-				if (msg instanceof ToolResponseMessage) {
-					ToolResponseMessage toolMsg = (ToolResponseMessage) msg;
-					List<ToolResponseMessage.ToolResponse> clearedResponses = new ArrayList<>();
-
-					for (ToolResponseMessage.ToolResponse resp : toolMsg.getResponses()) {
-						clearedResponses.add(new ToolResponseMessage.ToolResponse(
-								resp.id(), resp.name(), placeholder));
-					}
-
-					updatedMessages.add(ToolResponseMessage.builder()
-						.responses(clearedResponses)
-						.metadata(toolMsg.getMetadata())
-						.build());
-				}
-				else if (msg instanceof AssistantMessage assistantMsg) {
-					List<AssistantMessage.ToolCall> clearedToolCalls = new ArrayList<>();
-
-					// Clear tool call arguments by replacing with placeholder
-					for (AssistantMessage.ToolCall toolCall : assistantMsg.getToolCalls()) {
-						clearedToolCalls.add(new AssistantMessage.ToolCall(
-								toolCall.id(), toolCall.type(), toolCall.name(), placeholder));
-					}
-
-					// Create new AssistantMessage with cleared tool calls
-					AssistantMessage clearedAssistantMsg = AssistantMessage.builder()
-						.content(assistantMsg.getText())
-						.properties(assistantMsg.getMetadata())
-						.toolCalls(clearedToolCalls)
-						.build();
-					updatedMessages.add(clearedAssistantMsg);
-				}
-			}
-			else {
-				updatedMessages.add(msg);
-			}
-		}
-
-		if (clearedTokens > 0) {
-			log.info("Cleared approximately {} tokens from {} tool messages",
-					clearedTokens, indicesToClear.size());
-
-			// Create a new request with updated messages
-			ModelRequest updatedRequest = ModelRequest.builder(request)
-					.messages(updatedMessages)
-					.build();
-
-			return handler.call(updatedRequest);
-		}
-
-		return handler.call(request);
+		return handler.call(ModelRequest.builder(request).messages(messages).build());
 	}
 
 	private List<ClearableToolMessage> findClearableCandidates(List<Message> messages) {
 		List<ClearableToolMessage> candidates = new ArrayList<>();
-
-		// Find all tool messages
 		for (int i = 0; i < messages.size(); i++) {
-			Message msg = messages.get(i);
-
-			if (msg instanceof ToolResponseMessage toolMsg) {
-
-				// Check if already cleared
-				boolean alreadyCleared = false;
-				for (ToolResponseMessage.ToolResponse resp : toolMsg.getResponses()) {
-					if (placeholder.equals(resp.responseData())) {
-						alreadyCleared = true;
-						break;
-					}
-				}
-
-				if (alreadyCleared) {
-					continue;
-				}
-
-				// Check if tool is excluded
-				boolean excluded = false;
-				for (ToolResponseMessage.ToolResponse resp : toolMsg.getResponses()) {
-					if (excludeTools.contains(resp.name())) {
-						excluded = true;
-						break;
-					}
-				}
-
-				if (excluded) {
-					continue;
-				}
-
-				int tokens = tokenCounter.countTokens(List.of(toolMsg));
-				candidates.add(new ClearableToolMessage(i, tokens));
-			}
-			else if (msg instanceof AssistantMessage assistantMsg) {
-
-				// Check if message has tool calls
-				if (assistantMsg.getToolCalls().isEmpty()) {
-					continue;
-				}
-
-				// Check if already cleared (tool calls have placeholder as arguments)
-				boolean alreadyCleared = false;
-				for (AssistantMessage.ToolCall toolCall : assistantMsg.getToolCalls()) {
-					if (placeholder.equals(toolCall.arguments())) {
-						alreadyCleared = true;
-						break;
-					}
-				}
-
-				if (alreadyCleared) {
-					continue;
-				}
-
-				// Check if tool is excluded
-				boolean excluded = false;
-				for (AssistantMessage.ToolCall toolCall : assistantMsg.getToolCalls()) {
-					if (excludeTools.contains(toolCall.name())) {
-						excluded = true;
-						break;
-					}
-				}
-
-				if (excluded) {
-					continue;
-				}
-
-				int tokens = tokenCounter.countTokens(List.of(assistantMsg));
-				candidates.add(new ClearableToolMessage(i, tokens));
+			Message original = messages.get(i);
+			Message replacement = clearToolContent(original);
+			if (replacement != original) {
+				candidates.add(new ClearableToolMessage(i, replacement, tokenCounter.countTokens(List.of(original))));
 			}
 		}
-
-		// Sort oldest first, exclude the most recent 'keep' messages
-		if (candidates.size() > keep) {
-			candidates = candidates.subList(0, candidates.size() - keep);
-		}
-		else {
-			candidates.clear();
-		}
-
-		return candidates;
+		return candidates.subList(0, Math.max(0, candidates.size() - keep));
 	}
 
+	private Message clearToolContent(Message message) {
+		if (message instanceof ToolResponseMessage response
+				&& response.getResults().stream().noneMatch(result -> excludeTools.contains(result.name()))) {
+			var edited = response.getParts().stream().map(this::clearResult).toList();
+			if (!edited.equals(response.getParts())) {
+				return ToolResponseMessage.builder().parts(edited).metadata(response.getMetadata()).build();
+			}
+		}
+		if (clearToolInputs && message instanceof AssistantMessage assistant
+				&& assistant.getToolCalls().stream().noneMatch(call -> excludeTools.contains(call.name()))) {
+			var edited = assistant.getParts().stream().map(this::clearCall).toList();
+			if (!edited.equals(assistant.getParts())) {
+				return AssistantMessage.builder().parts(edited).properties(assistant.getMetadata()).build();
+			}
+		}
+		return message;
+	}
+
+	private MessagePart clearResult(MessagePart part) {
+		if (part instanceof ToolResultPart result && result.payload() == null) {
+			return new ToolResultPart(result.id(), result.name(), List.of(TextPart.of(placeholder)),
+					result.isError(), null, result.attributes());
+		}
+		return part;
+	}
+
+	private MessagePart clearCall(MessagePart part) {
+		// A provider may verify the payload against the original call.
+		if (part instanceof ToolCallPart call && call.payload() == null) {
+			var original = call.toolCall();
+			var cleared = new AssistantMessage.ToolCall(original.id(), original.type(), original.name(), "{}");
+			return new ToolCallPart(cleared, null, call.attributes());
+		}
+		return part;
+	}
 
 	@Override
 	public String getName() {
 		return "ContextEditing";
 	}
 
-	private static class ClearableToolMessage {
-		final int index;
-		final int estimatedTokens;
-
-		ClearableToolMessage(int index, int estimatedTokens) {
-			this.index = index;
-			this.estimatedTokens = estimatedTokens;
-		}
+	private record ClearableToolMessage(int index, Message replacement, int estimatedTokens) {
 	}
 
 	public static class Builder {

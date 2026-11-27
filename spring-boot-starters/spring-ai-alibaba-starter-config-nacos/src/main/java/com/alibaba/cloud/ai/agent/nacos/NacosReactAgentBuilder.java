@@ -16,11 +16,9 @@
 
 package com.alibaba.cloud.ai.agent.nacos;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.alibaba.cloud.ai.agent.nacos.utils.ChatOptionsProxy;
 import com.alibaba.cloud.ai.agent.nacos.vo.AgentVO;
 import com.alibaba.cloud.ai.agent.nacos.vo.McpServersVO;
 import com.alibaba.cloud.ai.agent.nacos.vo.ModelVO;
@@ -28,6 +26,7 @@ import com.alibaba.cloud.ai.agent.nacos.vo.PromptVO;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
+import com.alibaba.cloud.ai.graph.agent.tool.ToolCallbackUtils;
 import com.alibaba.cloud.ai.observation.model.ObservationMetadataAwareOptions;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.api.config.listener.AbstractListener;
@@ -42,7 +41,6 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 
@@ -56,8 +54,6 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 	NacosContextHolder agentVOHolder = new NacosContextHolder();
 	private NacosOptions nacosOptions;
 	
-	private List<ToolCallback> localTools = new ArrayList<>();
-
 	public NacosReactAgentBuilder nacosOptions(NacosOptions nacosOptions) {
 		this.nacosOptions = nacosOptions;
 		return this;
@@ -98,7 +94,7 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 					.getChatClientObservationConvention(), this.advisorObservationConvention);
 		}
 
-		clientBuilder.defaultOptions(chatOptions);
+		clientBuilder.defaultOptions(chatOptions.mutate());
 		chatClient = clientBuilder.build();
 
 		//6.load mcp servers
@@ -107,16 +103,14 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		
 		separateInterceptorsByType();
 		
-		List<ToolCallback> allTools = new ArrayList<>();
-		this.localTools = gatherLocalTools();
+		List<ToolCallback> localTools = gatherLocalTools();
 		List<ToolCallback> mcpTools = convert(nacosOptions, mcpServersVO);
-		allTools.addAll(localTools);
-		if (mcpTools != null) {
-			allTools.addAll(mcpTools);
-		}
+		List<ToolCallback> allTools = ToolCallbackUtils.deduplicateByName(localTools, mcpTools);
+		this.dynamicTools = true;
 		
 		//7. build tools
 		AgentLlmNode.Builder llmNodeBuilder = AgentLlmNode.builder()
+				.agentName(this.name)
 				.chatClient(chatClient)
 				.systemPrompt(systemPrompt);
 		if (outputKey != null && !outputKey.isEmpty()) {
@@ -127,7 +121,13 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		}
 		AgentLlmNode llmNode = llmNodeBuilder.build();
 
-		AgentToolNode.Builder builder = AgentToolNode.builder();
+		AgentToolNode.Builder builder = AgentToolNode.builder()
+				.agentName(this.name)
+				.parallelToolExecution(this.parallelToolExecution)
+				.maxParallelTools(this.maxParallelTools)
+				.toolCallLimits(this.maxCallsPerTool, this.maxTotalToolCalls)
+				.toolExecutionTimeout(this.toolExecutionTimeout)
+				.wrapSyncToolsAsAsync(this.wrapSyncToolsAsAsync);
 		if (toolExecutionExceptionProcessor != null) {
 			builder.toolExecutionExceptionProcessor(toolExecutionExceptionProcessor);
 		} else {
@@ -151,7 +151,7 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		this.description = agentVO.getDescription();
 
 		//register mcp tools
-		registryMcpServerListener(llmNode, toolNode, nacosOptions);
+		registryMcpServerListener(llmNode, toolNode, localTools, nacosOptions);
 		ReactAgent reactAgent = new ReactAgent(llmNode, toolNode, buildConfig(),this);
 		agentVOHolder.setReactAgent(reactAgent);
 		//register agent base and prompt
@@ -159,7 +159,8 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		return reactAgent;
 	}
 
-	private void registryMcpServerListener(AgentLlmNode llmNode, AgentToolNode toolNode, NacosOptions nacosOptions) {
+	private void registryMcpServerListener(AgentLlmNode llmNode, AgentToolNode toolNode,
+			List<ToolCallback> localTools, NacosOptions nacosOptions) {
 
 		try {
 			String dataId = (nacosOptions.isMcpServersEncrypted() ? "cipher-kms-aes-256-" : "") + "mcp-servers.json";
@@ -168,14 +169,10 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 						@Override
 						public void receiveConfigInfo(String configInfo) {
 							McpServersVO mcpServersVO = JSON.parseObject(configInfo, McpServersVO.class);
-							List<ToolCallback> mcpTools = convert(nacosOptions, mcpServersVO);
-							if (mcpTools != null) {
-								List<ToolCallback> allTools = new ArrayList<>();
-								allTools.addAll(localTools);
-								allTools.addAll(mcpTools);
-								toolNode.setToolCallbacks(allTools);
-								llmNode.setToolCallbacks(allTools);
-							}
+							List<ToolCallback> allTools = ToolCallbackUtils.deduplicateByName(localTools,
+									convert(nacosOptions, mcpServersVO));
+							toolNode.setToolCallbacks(allTools);
+							llmNode.setToolCallbacks(allTools);
 
 						}
 					});
@@ -256,22 +253,25 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		if (model.getMaxTokens() != null) {
 			chatOptionsBuilder.maxTokens(Integer.parseInt(model.getMaxTokens()));
 		}
-		chatOptionsBuilder.internalToolExecutionEnabled(false);
+		if (model.getApiKey() != null) {
+			chatOptionsBuilder.apiKey(model.getApiKey());
+		}
+		if (model.getBaseUrl() != null) {
+			chatOptionsBuilder.baseUrl(model.getBaseUrl());
+		}
 		OpenAiChatOptions openaiChatOptions = chatOptionsBuilder
 				.model(model.getModel())
+				.strict(model.getStrict())
+				.replayReasoningContent(model.getReplayReasoningContent())
 				.build();
-		return (OpenAiChatOptions) ChatOptionsProxy.createProxy(openaiChatOptions, metadata);
+		return (OpenAiChatOptions) ObservationMetadataChatOptionsSupport.withObservationMetadata(openaiChatOptions,
+				metadata);
 
 	}
 
 	private static ChatModel createModel(NacosOptions nacosOptions, ModelVO model, OpenAiChatOptions openAiChatOptions) {
 
-		OpenAiApi openAiApi = OpenAiApi.builder()
-				.apiKey(model.getApiKey()).baseUrl(model.getBaseUrl())
-				.build();
-
-		OpenAiChatModel.Builder builder = OpenAiChatModel.builder().defaultOptions(openAiChatOptions)
-				.openAiApi(openAiApi);
+		OpenAiChatModel.Builder builder = OpenAiChatModel.builder().options(openAiChatOptions);
 		//inject observation config.
 		ObservationConfiguration observationConfiguration = nacosOptions.getObservationConfiguration();
 		if (observationConfiguration != null) {

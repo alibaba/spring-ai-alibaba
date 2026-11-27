@@ -21,7 +21,7 @@ import com.alibaba.cloud.ai.examples.multimodal.image.ImageService;
 import com.alibaba.cloud.ai.graph.agent.tool.multimodal.MultimodalToolCallResultConverter;
 import com.alibaba.cloud.ai.graph.agent.tool.multimodal.OutputFormat;
 import com.alibaba.cloud.ai.graph.agent.tool.multimodal.ToolMultimodalResult;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.content.Media;
@@ -160,8 +160,7 @@ public class MultimodalController {
 		ToolMultimodalResult result = audioService.synthesize(request.text(), request.voice(), format);
 		MultimodalToolCallResultConverter converter = new MultimodalToolCallResultConverter(format);
 		String json = converter.convert(result, null);
-		@SuppressWarnings("unchecked")
-		Map<String, Object> body = (Map<String, Object>) JsonParser.fromJson(json, Map.class);
+		Map<String, Object> body = new JsonHelper().fromJsonToMap(json);
 		return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(body);
 	}
 

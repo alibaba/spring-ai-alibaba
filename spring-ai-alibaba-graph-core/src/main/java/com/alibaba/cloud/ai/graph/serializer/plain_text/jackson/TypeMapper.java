@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
+import java.lang.reflect.Type;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
@@ -48,13 +49,25 @@ public class TypeMapper {
 
 		private final String typeName;
 
+		private final Type javaType;
+
 		public Reference(String typeName) {
+			this(typeName, null);
+		}
+
+		public Reference(String typeName, Type javaType) {
 			super();
 			this.typeName = Objects.requireNonNull(typeName, "typeName cannot be null");
+			this.javaType = javaType;
 		}
 
 		public String getTypeName() {
 			return typeName;
+		}
+
+		@Override
+		public Type getType() {
+			return this.javaType != null ? this.javaType : super.getType();
 		}
 
 	}

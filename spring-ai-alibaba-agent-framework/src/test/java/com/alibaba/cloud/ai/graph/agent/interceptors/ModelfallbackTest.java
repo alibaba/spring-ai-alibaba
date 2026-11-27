@@ -26,7 +26,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.openai.OpenAiChatOptions;
 
 import java.util.Optional;
 
@@ -55,8 +55,11 @@ class ModelfallbackTest {
 
 	@BeforeEach
 	void setUp() {
-		OpenAiApi openAiApi = OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build();
-		ChatModel openAiChatModel = OpenAiChatModel.builder().openAiApi(openAiApi).build();
+		ChatModel openAiChatModel = OpenAiChatModel.builder()
+				.options(OpenAiChatOptions.builder()
+						.apiKey(System.getenv("OPENAI_API_KEY"))
+						.build())
+				.build();
 		this.chatModel = new ChatModelCallCounter(openAiChatModel, "OpenAI");
 
 		// Create DashScopeApi instance using the API key from environment variable

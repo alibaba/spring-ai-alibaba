@@ -1259,16 +1259,16 @@ public class StateGraphTest {
 		errorNodeId.set(null);
 		listenerException.set(null);
 
-		Flux<NodeOutput> flux = app.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
+		List<Object> chunks = new ArrayList<>();
+		Flux<NodeOutput> flux = app.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"))
+				.doOnNext(output -> {
+					if (output instanceof StreamingOutput<?> streamingOutput) {
+						chunks.add(streamingOutput.getOriginData());
+					}
+				});
 
-		// 验证前两个元素正常输出
-		Flux<NodeOutput> fluxForFirstTwo = app.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
-		List<NodeOutput> firstTwoElements = fluxForFirstTwo.take(2).collectList().block();
-		assertNotNull(firstTwoElements);
-		assertEquals(2, firstTwoElements.size());
-
-		// 验证第三个元素会抛出异常
 		RuntimeException exception = assertThrows(RuntimeException.class, () -> flux.blockLast());
+		assertEquals(List.of("response1", "response2"), chunks);
 		assertEquals(sourceException.getMessage(), exception.getMessage());
 		assertEquals(1, errorCount.get());
 		assertEquals("agent_1", errorNodeId.get());

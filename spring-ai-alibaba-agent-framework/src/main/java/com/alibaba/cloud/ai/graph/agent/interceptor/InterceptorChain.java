@@ -18,10 +18,11 @@ package com.alibaba.cloud.ai.graph.agent.interceptor;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.MessageAggregator;
 
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.SynchronousSink;
 
 /**
  * Utility class for chaining model and tool interceptors.
@@ -114,8 +115,8 @@ public class InterceptorChain {
 	 *   <li>{@link StreamingModelInterceptor#onStreamChunk} is invoked per chunk via
 	 *       {@link Flux#handle}: returning the original/transformed chunk emits it
 	 *       downstream; returning {@code null} drops it (filter)</li>
-	 *   <li>{@link StreamingModelInterceptor#afterStreamComplete} receives an
-	 *       {@link AssistantMessage} built by concatenating each emitted chunk's text
+	 *   <li>{@link StreamingModelInterceptor#afterStreamComplete} receives the
+	 *       assistant message assembled from the emitted chunks
 	 *       (per-subscription, per-interceptor)</li>
 	 *   <li>{@link StreamingModelInterceptor#onStreamError} is invoked on error</li>
 	 * </ol>
@@ -179,25 +180,17 @@ public class InterceptorChain {
 
 			Flux<ChatResponse> current = flux;
 			for (StreamingModelInterceptor interceptor : interceptors) {
-				// Per-subscription, per-interceptor aggregator buffer
-				final StringBuilder aggregator = new StringBuilder();
-
-				current = current
-						.handle((ChatResponse chunk, reactor.core.publisher.SynchronousSink<ChatResponse> sink) -> {
-							ChatResponse transformed = interceptor.onStreamChunk(chunk, finalRequest);
-							if (transformed == null) {
-								// null = drop this chunk (filter); next interceptors won't see it
-								return;
-							}
-							if (transformed.getResult() != null
-									&& transformed.getResult().getOutput() != null
-									&& transformed.getResult().getOutput().getText() != null) {
-								aggregator.append(transformed.getResult().getOutput().getText());
-							}
-							sink.next(transformed);
-						})
-						.doOnComplete(() -> interceptor.afterStreamComplete(
-								new AssistantMessage(aggregator.toString()), finalRequest))
+				Flux<ChatResponse> transformed = current.handle((ChatResponse chunk, SynchronousSink<ChatResponse> sink) -> {
+					ChatResponse result = interceptor.onStreamChunk(chunk, finalRequest);
+					if (result != null) {
+						if (result.getResult() != null && result.getResult().getOutput() == null) {
+							result = new ChatResponse(List.of(), result.getMetadata());
+						}
+						sink.next(result);
+					}
+				});
+				current = new MessageAggregator().aggregate(transformed, aggregated ->
+						interceptor.afterStreamComplete(aggregated.getResult().getOutput(), finalRequest))
 						.doOnError(error -> interceptor.onStreamError(error, finalRequest));
 			}
 
@@ -213,8 +206,8 @@ public class InterceptorChain {
 	 * {@code tools}, {@code dynamicToolCallbacks}, {@code toolDescriptions}, and
 	 * {@code context}, but reuses the {@code messages} list and {@code options} object.
 	 * This helper additionally wraps {@code messages} in a fresh {@link ArrayList} and
-	 * invokes {@code options.copy()} so an interceptor that does e.g.
-	 * {@code request.getOptions().setTemperature(0.0)} or
+	 * invokes {@code options.mutate().build()} so an interceptor that does e.g.
+	 * {@code request.getOptions().mutate().temperature(0.0)} or
 	 * {@code request.getMessages().add(...)} mutates only this subscription's copy.
 	 *
 	 * <p>Note: individual {@link org.springframework.ai.chat.messages.Message} elements
@@ -227,7 +220,7 @@ public class InterceptorChain {
 		}
 		return ModelRequest.builder(src)
 				.messages(src.getMessages() != null ? new ArrayList<>(src.getMessages()) : null)
-				.options(src.getOptions() != null ? src.getOptions().copy() : null)
+				.options(src.getOptions() != null ? src.getOptions().mutate().build() : null)
 				.build();
 	}
 

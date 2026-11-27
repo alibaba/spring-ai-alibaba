@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import com.alibaba.cloud.ai.graph.serializer.MessagePartsCodec;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -55,7 +57,16 @@ import com.fasterxml.jackson.databind.ser.std.ObjectArraySerializer;
 import com.fasterxml.jackson.databind.util.BeanUtil;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 
+import org.springframework.ai.chat.messages.AbstractMessage;
+
 class SerializationHelper {
+
+	static final String PARTS_FIELD = "parts";
+
+	static void serializeParts(JsonGenerator gen, AbstractMessage message) throws IOException {
+		gen.writeFieldName(PARTS_FIELD);
+		gen.writeRawValue(MessagePartsCodec.write(message.getParts()));
+	}
 
 	static final String METADATA_FIELD = "metadata";
 
@@ -198,7 +209,8 @@ class SerializationHelper {
 								|| propertyWriter.getTypeSerializer() != null
 								|| (propertyValue == null
 										? propertyWriter.hasNullSerializer()
-										: propertyWriter.hasSerializer());
+										: propertyWriter.hasSerializer() && !usesIncompatibleContainerSerializer(
+												provider, propertyWriter, property, propertyValue));
 						if (hasAssignedSerializer) {
 							normalized.putAll(applyPropertyWriter(provider, propertyWriter, record));
 						}
@@ -251,6 +263,25 @@ class SerializationHelper {
 					|| hasIncompatibleValue(declaredType.getContentType(), map.values());
 		}
 		return false;
+	}
+
+	private static boolean usesIncompatibleContainerSerializer(SerializerProvider provider, BeanPropertyWriter writer,
+			BeanPropertyDefinition property, Object value) {
+		Class<?> serializerType = writer.getSerializer().getClass();
+		if (serializerType != CollectionSerializer.class && serializerType != IndexedListSerializer.class
+				&& serializerType != MapSerializer.class) {
+			return false;
+		}
+		var annotations = provider.getAnnotationIntrospector();
+		var accessor = property.getAccessor();
+		// Jackson can prebind a stock container serializer to the declared element
+		// type, even when older checkpoint metadata carries map-shaped elements.
+		return annotations.findSerializer(accessor) == null
+				&& annotations.findContentSerializer(accessor) == null
+				&& annotations.findKeySerializer(accessor) == null
+				&& annotations.findSerializationConverter(accessor) == null
+				&& annotations.findSerializationContentConverter(accessor) == null
+				&& hasIncompatibleContainerValue(property.getPrimaryType(), value);
 	}
 
 	private static boolean hasIncompatibleValue(JavaType declaredType, Collection<?> values) {

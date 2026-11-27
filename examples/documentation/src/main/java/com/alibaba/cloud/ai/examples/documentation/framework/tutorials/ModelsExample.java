@@ -109,10 +109,10 @@ public class ModelsExample {
 				.build();
 
 		DashScopeChatOptions options = DashScopeChatOptions.builder()
-				.withModel("qwen-plus")           // 模型名称
-				.withTemperature(0.7)              // 温度参数
-				.withMaxToken(2000)               // 最大令牌数
-				.withTopP(0.9)                     // Top-P 采样
+				.model("qwen-plus")           // 模型名称
+				.temperature(0.7)              // 温度参数
+				.maxCompletionTokens(2000)               // 最大令牌数
+				.topP(0.9)                     // Top-P 采样
 				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
@@ -135,8 +135,8 @@ public class ModelsExample {
 
 		// 创建带有特定选项的 Prompt
 		DashScopeChatOptions runtimeOptions = DashScopeChatOptions.builder()
-				.withTemperature(0.3)  // 更低的温度，更确定的输出
-				.withMaxToken(500)
+				.temperature(0.3)  // 更低的温度，更确定的输出
+				.maxCompletionTokens(500)
 				.build();
 
 		Prompt prompt = new Prompt(
@@ -230,7 +230,7 @@ public class ModelsExample {
 
 		// 使用函数
 		DashScopeChatOptions options = DashScopeChatOptions.builder()
-				.withToolCallbacks(List.of(weatherFunction))
+				.toolCallbacks(List.of(weatherFunction))
 				.build();
 
 		Prompt prompt = new Prompt("北京的天气怎么样?", options);
@@ -273,10 +273,10 @@ public class ModelsExample {
 
 		// 配置各种选项
 		DashScopeChatOptions options = DashScopeChatOptions.builder()
-				.withModel("qwen-max")              // 使用旗舰版模型
-				.withTemperature(0.7)               // 控制随机性
-				.withMaxToken(4000)                // 最大输出长度
-				.withTopP(0.9)                      // 核采样
+				.model("qwen-max")              // 使用旗舰版模型
+				.temperature(0.7)               // 控制随机性
+				.maxCompletionTokens(4000)                // 最大输出长度
+				.topP(0.9)                      // 核采样
 				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
@@ -308,7 +308,7 @@ public class ModelsExample {
 		ChatModel turboModel = DashScopeChatModel.builder()
 				.dashScopeApi(dashScopeApi)
 				.defaultOptions(DashScopeChatOptions.builder()
-						.withModel("qwen-turbo")
+						.model("qwen-turbo")
 						.build())
 				.build();
 
@@ -316,7 +316,7 @@ public class ModelsExample {
 		ChatModel plusModel = DashScopeChatModel.builder()
 				.dashScopeApi(dashScopeApi)
 				.defaultOptions(DashScopeChatOptions.builder()
-						.withModel("qwen-plus")
+						.model("qwen-plus")
 						.build())
 				.build();
 
@@ -324,7 +324,7 @@ public class ModelsExample {
 		ChatModel maxModel = DashScopeChatModel.builder()
 				.dashScopeApi(dashScopeApi)
 				.defaultOptions(DashScopeChatOptions.builder()
-						.withModel("qwen-max")
+						.model("qwen-max")
 						.build())
 				.build();
 
@@ -371,7 +371,7 @@ public class ModelsExample {
 		ChatModel conservativeModel = DashScopeChatModel.builder()
 				.dashScopeApi(dashScopeApi)
 				.defaultOptions(DashScopeChatOptions.builder()
-						.withTemperature(0.1)
+						.temperature(0.1)
 						.build())
 				.build();
 
@@ -379,7 +379,7 @@ public class ModelsExample {
 		ChatModel balancedModel = DashScopeChatModel.builder()
 				.dashScopeApi(dashScopeApi)
 				.defaultOptions(DashScopeChatOptions.builder()
-						.withTemperature(0.7)
+						.temperature(0.7)
 						.build())
 				.build();
 
@@ -387,7 +387,7 @@ public class ModelsExample {
 		ChatModel creativeModel = DashScopeChatModel.builder()
 				.dashScopeApi(dashScopeApi)
 				.defaultOptions(DashScopeChatOptions.builder()
-						.withTemperature(1.5)
+						.temperature(1.5)
 						.build())
 				.build();
 

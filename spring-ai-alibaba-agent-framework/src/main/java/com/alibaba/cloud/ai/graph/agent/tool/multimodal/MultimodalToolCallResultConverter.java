@@ -15,10 +15,12 @@
  */
 package com.alibaba.cloud.ai.graph.agent.tool.multimodal;
 
+import com.alibaba.cloud.ai.graph.agent.tool.multimodal.ToolMultimodalResult.FormattedMedia;
+import com.alibaba.cloud.ai.graph.agent.tool.multimodal.ToolMultimodalResult.MediaFormats;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
 
 import org.springframework.core.io.Resource;
 import org.springframework.lang.Nullable;
@@ -105,7 +107,7 @@ public class MultimodalToolCallResultConverter implements ToolCallResultConverte
 			}
 			map.put("media", mediaList);
 		}
-		return JsonParser.toJson(map);
+		return new JsonHelper().toJson(map);
 	}
 
 	private Map<String, Object> mediaToMap(Media media) {
@@ -120,8 +122,8 @@ public class MultimodalToolCallResultConverter implements ToolCallResultConverte
 		}
 
 		Object data = media.getData();
-		if (data instanceof ToolMultimodalResult.MediaFormats formats) {
-			handleMediaFormats(formats, mimeTypeStr, itemMap);
+		if (media instanceof FormattedMedia formattedMedia) {
+			handleMediaFormats(formattedMedia.formats(), mimeTypeStr, itemMap);
 		}
 		else if (data instanceof URI uri) {
 			putUriOrEncodeToDataUrl(uri, mimeTypeStr, itemMap);
@@ -136,6 +138,9 @@ public class MultimodalToolCallResultConverter implements ToolCallResultConverte
 		}
 		else if (data instanceof String s && isUriLike(s)) {
 			putUriOrEncodeToDataUrl(URI.create(s), mimeTypeStr, itemMap);
+		}
+		else if (data instanceof String base64 && !base64.isBlank()) {
+			handleBytes(() -> Base64.getDecoder().decode(base64), mimeTypeStr, itemMap);
 		}
 		else if (data instanceof Resource resource) {
 			handleBytes(() -> {
@@ -204,7 +209,7 @@ public class MultimodalToolCallResultConverter implements ToolCallResultConverte
 		}
 	}
 
-	private void handleMediaFormats(ToolMultimodalResult.MediaFormats formats, String mimeTypeStr,
+	private void handleMediaFormats(MediaFormats formats, String mimeTypeStr,
 			Map<String, Object> itemMap) {
 		String url = formats.url();
 		String base64 = formats.base64();

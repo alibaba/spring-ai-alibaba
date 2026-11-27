@@ -16,9 +16,9 @@
 package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeResponseFormat;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatApiSpec.ChatCompletionRequest.Parameters.ResponseFormat;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
@@ -29,6 +29,15 @@ import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.stream.LLmNodeAction;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.graph.utils.EdgeMappings;
+import org.jspecify.annotations.NonNull;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import java.util.HashMap;
 import java.util.List;
@@ -39,16 +48,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -182,7 +181,7 @@ public class StateGraphStreamTest {
 	 * Creates an asynchronous edge action for conditional routing decisions.
 	 * @return AsyncEdgeAction that determines the next node based on message content
 	 */
-	@NotNull
+	@NonNull
 	private static AsyncEdgeAction getAsyncEdgeAction() {
 		return t -> {
 			if (t.value("messages").isEmpty())
@@ -212,7 +211,10 @@ public class StateGraphStreamTest {
 		// Create real API client with API key from environment
 		realApi = DashScopeApi.builder().apiKey(API_KEY).build();
 		// Create chat model with default options
-		options = DashScopeChatOptions.builder().withResponseFormat(DashScopeResponseFormat.builder().type(DashScopeResponseFormat.Type.JSON_OBJECT).build()).withModel(TEST_MODEL).build();
+		options = DashScopeChatOptions.builder()
+			.responseFormat(ResponseFormat.builder().type(ResponseFormat.Type.JSON_OBJECT).build())
+			.model(TEST_MODEL)
+			.build();
 		chatModel = DashScopeChatModel.builder().dashScopeApi(realApi).defaultOptions(options).build();
 	}
 

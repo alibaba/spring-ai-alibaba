@@ -46,7 +46,7 @@ public class NacosModelInjector {
 	public static void replaceModel(ChatClient chatClient, ChatModel chatModel, OpenAiChatOptions openAiChatOptions) throws Exception {
 		Object defaultChatClientRequest = getField(chatClient, "defaultChatClientRequest");
 		modifyFinalField(defaultChatClientRequest, "chatModel", chatModel);
-		modifyFinalField(defaultChatClientRequest, "chatOptions", openAiChatOptions);
+		modifyFinalField(defaultChatClientRequest, "optionsCustomizer", openAiChatOptions.mutate());
 	}
 
 	private static Object getField(Object obj, String fieldName) throws Exception {

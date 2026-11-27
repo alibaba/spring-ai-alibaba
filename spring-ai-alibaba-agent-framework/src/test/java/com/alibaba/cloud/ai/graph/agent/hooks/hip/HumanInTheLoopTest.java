@@ -27,6 +27,7 @@ import com.alibaba.cloud.ai.graph.agent.hook.hip.ToolConfig;
 import com.alibaba.cloud.ai.graph.agent.tools.WeatherTool;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 
 import java.util.List;
@@ -454,6 +455,10 @@ public class HumanInTheLoopTest {
 			// Assert the result is NOT another interruption (execution should complete)
 			Assertions.assertNotEquals(InterruptionMetadata.class, finalOutput.getClass(),
 					"Final result should not be an InterruptionMetadata - execution should complete");
+
+			var message = Assertions.assertInstanceOf(AssistantMessage.class,
+					finalOutput.state().value("article").orElseThrow());
+			Assertions.assertFalse(message.getText().startsWith("Exception:"), message::getText);
 
 			System.out.println("Final result type: " + finalOutput.getClass().getSimpleName());
 			System.out.println("Final result node: " + finalOutput.node());

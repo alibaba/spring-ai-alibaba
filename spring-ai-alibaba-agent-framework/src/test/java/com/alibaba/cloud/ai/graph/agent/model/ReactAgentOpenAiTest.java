@@ -28,7 +28,6 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
@@ -93,15 +92,13 @@ class ReactAgentOpenAiTest {
 
 	@BeforeEach
 	void setUp() {
-		// Create OpenAiApi instance using the API key from environment variable
-		OpenAiApi openAiApi = OpenAiApi.builder()
-				.baseUrl("https://dashscope.aliyuncs.com/compatible-mode/")
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
-
 		OpenAiChatModel openAiChatModel = OpenAiChatModel.builder()
-				.defaultOptions(OpenAiChatOptions.builder().model("qwen-plus").build())
-				.openAiApi(openAiApi).build();
+				.options(OpenAiChatOptions.builder()
+						.baseUrl("https://dashscope.aliyuncs.com/compatible-mode/")
+						.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+						.model("qwen-plus")
+						.build())
+				.build();
 
 		// Create OpenAi ChatModel instance
 		this.chatModel = openAiChatModel;

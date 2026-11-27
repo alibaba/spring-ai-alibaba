@@ -15,18 +15,28 @@
  */
 package com.alibaba.cloud.ai.graph.agent.hook.toolcalllimit;
 
+import com.alibaba.cloud.ai.graph.GraphLifecycleListener;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
+import com.alibaba.cloud.ai.graph.agent.tool.ToolCallResults;
+import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolResultPart;
+import org.springframework.ai.model.tool.ToolCallDecisions;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -59,49 +69,19 @@ public class ToolCallLimitHook extends ModelHook {
 	}
 
 	private String getThreadCountKey() {
-		String trackKey = toolName != null ? toolName : "__all__";
-		return THREAD_COUNT_KEY_PREFIX + "_" + trackKey;
+		return THREAD_COUNT_KEY_PREFIX + getAgentName() + "_" + getName();
 	}
 
 	private String getRunCountKey() {
-		String trackKey = toolName != null ? toolName : "__all__";
-		return RUN_COUNT_KEY_PREFIX + "_" + trackKey;
+		return RUN_COUNT_KEY_PREFIX + getAgentName() + "_" + getName();
 	}
 
 	@Override
 	public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
-		// Read current counts from context
-		int threadCount = config.context().containsKey(getThreadCountKey())
-				? (int) config.context().get(getThreadCountKey()) : 0;
-		int runCount = config.context().containsKey(getRunCountKey())
-				? (int) config.context().get(getRunCountKey()) : 0;
-
-		boolean threadLimitExceeded = threadLimit != null && threadCount >= threadLimit;
-		boolean runLimitExceeded = runLimit != null && runCount >= runLimit;
-
-		if (threadLimitExceeded || runLimitExceeded) {
-			if (exitBehavior == ExitBehavior.ERROR) {
-				throw new ToolCallLimitExceededException(
-						threadCount,
-						runCount,
-						threadLimit,
-						runLimit,
-						toolName
-				);
-			}
-			else if (exitBehavior == ExitBehavior.END) {
-				String message = buildLimitExceededMessage(threadCount, runCount, threadLimit, runLimit, toolName);
-
-				// Do not copy old messages
-				List<Message> messages = new ArrayList<>();
-				// This new message will be appended to the messages list
-				messages.add(new AssistantMessage(message));
-
-				Map<String, Object> updates = new HashMap<>();
-				updates.put("messages", messages);
-				updates.put("jump_to", JumpTo.end);
-				return CompletableFuture.completedFuture(updates);
-			}
+		long threadCount = state.<Number>value(getThreadCountKey()).map(Number::longValue).orElse(0L);
+		long runCount = runCount(state);
+		if ((threadLimit != null && threadCount >= threadLimit) || (runLimit != null && runCount >= runLimit)) {
+			return CompletableFuture.completedFuture(limitExceeded(threadCount, runCount, List.of()));
 		}
 
 		return CompletableFuture.completedFuture(Map.of());
@@ -109,50 +89,104 @@ public class ToolCallLimitHook extends ModelHook {
 
 	@Override
 	public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
-		// Count new tool calls from the latest AI message
 		List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 		if (messages.isEmpty()) {
 			return CompletableFuture.completedFuture(Map.of());
 		}
 
-		// Get the last message (should be an AssistantMessage with tool calls)
 		Message lastMessage = messages.get(messages.size() - 1);
-		int newCalls = 0;
+		ToolResponseMessage settled = lastMessage instanceof ToolResponseMessage response ? response : null;
+		if (settled != null && messages.size() > 1) {
+			lastMessage = messages.get(messages.size() - 2);
+		}
+		if (!(lastMessage instanceof AssistantMessage assistant)) {
+			return CompletableFuture.completedFuture(Map.of());
+		}
 
-		if (lastMessage instanceof AssistantMessage) {
-			AssistantMessage aiMessage = (AssistantMessage) lastMessage;
-			if (aiMessage.getToolCalls() != null) {
-				if (toolName == null) {
-					// Count all tool calls
-					newCalls = aiMessage.getToolCalls().size();
-				} else {
-					// Count only calls to the specified tool
-					for (AssistantMessage.ToolCall toolCall : aiMessage.getToolCalls()) {
-						if (toolName.equals(toolCall.name())) {
-							newCalls++;
-						}
-					}
-				}
+		Set<String> completed = settled == null ? Set.of() : ToolCallResults.settledKeys(assistant, settled.getResults());
+		List<String> keys = ToolCallDecisions.toolCallKeys(assistant);
+		var calls = assistant.getToolCalls();
+		Map<String, AssistantMessage.ToolCall> pending = new LinkedHashMap<>();
+		for (int i = 0; i < keys.size(); i++) {
+			if (!completed.contains(keys.get(i))) {
+				pending.put(keys.get(i), calls.get(i));
 			}
 		}
-
-		// Increment counters if there are new tool calls
-		if (newCalls > 0) {
-			// Read current counts from context
-			int threadCount = config.context().containsKey(getThreadCountKey())
-					? (int) config.context().get(getThreadCountKey()) : 0;
-			int runCount = config.context().containsKey(getRunCountKey())
-					? (int) config.context().get(getRunCountKey()) : 0;
-
-			// Update context with incremented counts
-			config.context().put(getThreadCountKey(), threadCount + newCalls);
-			config.context().put(getRunCountKey(), runCount + newCalls);
+		long newCalls = pending.values().stream().filter(call -> toolName == null || toolName.equals(call.name())).count();
+		if (newCalls == 0) {
+			return CompletableFuture.completedFuture(Map.of());
 		}
 
-		return CompletableFuture.completedFuture(Map.of());
+		long threadCount = state.<Number>value(getThreadCountKey()).map(Number::longValue).orElse(0L);
+		long runCount = runCount(state);
+		long proposedThreadCount = threadCount + newCalls;
+		long proposedRunCount = runCount + newCalls;
+		if ((threadLimit != null && proposedThreadCount > threadLimit)
+				|| (runLimit != null && proposedRunCount > runLimit)) {
+			HumanInTheLoopHook.clearConfirmedCalls(config);
+			return CompletableFuture.completedFuture(limitExceeded(proposedThreadCount, proposedRunCount,
+					deniedResults(keys, settled, pending, buildLimitExceededMessage(proposedThreadCount, proposedRunCount,
+							threadLimit, runLimit, toolName))));
+		}
+
+		return CompletableFuture.completedFuture(Map.of(
+				getThreadCountKey(), proposedThreadCount,
+				getRunCountKey(), Map.of("executionId", executionId(state), "count", proposedRunCount)));
 	}
 
-	private String buildLimitExceededMessage(int threadCount, int runCount,
+	private String executionId(OverAllState state) {
+		return state.<String>value(GraphLifecycleListener.EXECUTION_ID_KEY).orElse("");
+	}
+
+	private long runCount(OverAllState state) {
+		Map<?, ?> counter = state.<Map<?, ?>>value(getRunCountKey()).orElse(Map.of());
+		if (executionId(state).equals(counter.get("executionId")) && counter.get("count") instanceof Number count) {
+			return count.longValue();
+		}
+		return 0;
+	}
+
+	@Override
+	public int getOrder() {
+		// AFTER_MODEL runs in reverse priority, after approval has settled denied calls.
+		return Integer.MIN_VALUE;
+	}
+
+	private List<Object> deniedResults(List<String> keys, ToolResponseMessage settled,
+			Map<String, AssistantMessage.ToolCall> pending, String reason) {
+		List<Object> updates = new ArrayList<>();
+		List<ToolResultPart> results = new ArrayList<>();
+		if (settled != null) {
+			updates.add(new RemoveByHash<>(settled));
+			results.addAll(settled.getResults());
+		}
+		pending.forEach((key, call) -> {
+			var result = new ToolResultPart(call.id(), call.name(), List.of(TextPart.of(reason)), true, null, Map.of());
+			results.add(ToolCallResults.withCallKey(result, key));
+		});
+		updates.add(ToolResponseMessage.builder().results(ToolCallResults.inCallOrder(keys, results))
+				.metadata(settled == null ? Map.of() : settled.getMetadata()).build());
+		return updates;
+	}
+
+	private Map<String, Object> limitExceeded(long threadCount, long runCount, List<Object> denied) {
+		if (exitBehavior == ExitBehavior.ERROR) {
+			throw new ToolCallLimitExceededException((int) Math.min(threadCount, Integer.MAX_VALUE),
+					(int) Math.min(runCount, Integer.MAX_VALUE), threadLimit, runLimit, toolName);
+		}
+
+		String message = buildLimitExceededMessage(threadCount, runCount, threadLimit, runLimit, toolName);
+		List<Object> updates = new ArrayList<>(denied);
+		AssistantMessage answer = new AssistantMessage(message);
+		updates.add(answer);
+		Map<String, Object> stateUpdates = new HashMap<>(Map.of("messages", updates, "jump_to", JumpTo.end));
+		if (getAgent() != null && getAgent().getOutputKey() != null && !getAgent().getOutputKey().isEmpty()) {
+			stateUpdates.put(getAgent().getOutputKey(), answer);
+		}
+		return stateUpdates;
+	}
+
+	private String buildLimitExceededMessage(long threadCount, long runCount,
 			Integer threadLimit, Integer runLimit, String toolName) {
 		String toolDesc = toolName != null ? "'" + toolName + "' tool call" : "Tool call";
 		List<String> exceededLimits = new ArrayList<>();

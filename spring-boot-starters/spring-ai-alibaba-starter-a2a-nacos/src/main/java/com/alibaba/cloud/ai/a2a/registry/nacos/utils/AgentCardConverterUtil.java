@@ -26,13 +26,15 @@ import com.alibaba.nacos.api.ai.model.a2a.AgentInterface;
 import com.alibaba.nacos.api.ai.model.a2a.AgentProvider;
 import com.alibaba.nacos.api.ai.model.a2a.AgentSkill;
 import com.alibaba.nacos.api.ai.model.a2a.SecurityScheme;
-import com.alibaba.nacos.common.utils.JacksonUtils;
-import com.fasterxml.jackson.core.type.TypeReference;
+import org.springframework.ai.util.JsonHelper;
+import org.springframework.core.ParameterizedTypeReference;
 
 /**
  * Agent card converter util.
  */
 public class AgentCardConverterUtil {
+
+	private static final JsonHelper JSON = new JsonHelper();
 
 	public static io.a2a.spec.AgentCard convertToA2aAgentCard(AgentCard agentCard) {
 		if (agentCard == null) {
@@ -65,8 +67,8 @@ public class AgentCardConverterUtil {
 		if (null == securitySchemes) {
 			return null;
 		}
-		String securitySchemesJson = JacksonUtils.toJson(securitySchemes);
-		return JacksonUtils.toObj(securitySchemesJson, new TypeReference<>() {
+		String securitySchemesJson = JSON.toJson(securitySchemes);
+		return JSON.fromJson(securitySchemesJson, new ParameterizedTypeReference<>() {
 		});
 	}
 
@@ -199,8 +201,8 @@ public class AgentCardConverterUtil {
 		if (securitySchemes == null) {
 			return null;
 		}
-		String originalJson = JacksonUtils.toJson(securitySchemes);
-		return JacksonUtils.toObj(originalJson, new TypeReference<>() {
+		String originalJson = JSON.toJson(securitySchemes);
+		return JSON.fromJson(originalJson, new ParameterizedTypeReference<>() {
 		});
 	}
 

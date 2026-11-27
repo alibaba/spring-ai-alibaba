@@ -208,10 +208,12 @@ public class ListFilesTool implements BiFunction<String, ToolContext, String> {
 	}
 
 	public static ToolCallback createListFilesToolCallback(String description) {
-		return FunctionToolCallback.builder("ls", new ListFilesTool())
-				.description(description)
-				.inputType(String.class)
-				.build();
+		var tool = new ListFilesTool();
+		return FunctionToolCallback.builder("ls", (Input input, ToolContext context) ->
+				tool.apply(input.path(), context)).description(description).inputType(Input.class).build();
 	}
+	private record Input(@ToolParam(description = "The directory path to list") String path) {
+	}
+
 }
 

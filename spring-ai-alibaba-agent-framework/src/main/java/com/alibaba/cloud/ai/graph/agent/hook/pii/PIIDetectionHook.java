@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent.hook.pii;
 
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
@@ -27,10 +28,16 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MessagePart;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolResultPart;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 /**
  * Detect and handle Personally Identifiable Information (PII) in agent conversations.
@@ -67,6 +74,11 @@ public class PIIDetectionHook extends MessagesModelHook {
 
 	public static Builder builder() {
 		return new Builder();
+	}
+
+	@Override
+	public List<UnaryOperator<AssistantMessage>> getStreamingOutputFilters() {
+		return applyToOutput ? List.of(this::processContent) : List.of();
 	}
 
 	@Override
@@ -115,40 +127,30 @@ public class PIIDetectionHook extends MessagesModelHook {
 			return new AgentCommand(previousMessages);
 		}
 
-		String content = aiMessage.getText();
-
-		if (content == null || content.isEmpty()) {
+		AssistantMessage updatedMessage = processContent(aiMessage);
+		if (updatedMessage == aiMessage) {
 			return new AgentCommand(previousMessages);
 		}
-
-		// Detect PII
-		ProcessResult result = processText(content);
-
-		if (!result.hasMatches) {
-			return new AgentCommand(previousMessages);
-		}
-
-		// Apply strategy
-		if (result.hasMatches && strategy == RedactionStrategy.BLOCK) {
-			throw new PIIDetectionException(piiType.name(), result.matches);
-		}
-
-		if (result.redactedText.equals(content)) {
-			return new AgentCommand(previousMessages);
-		}
-
-		// Create updated message
-		AssistantMessage updatedMessage = AssistantMessage.builder()
-			.content(result.redactedText)
-			.properties(aiMessage.getMetadata())
-			.toolCalls(aiMessage.getToolCalls())
-			.media(aiMessage.getMedia())
-			.build();
 
 		List<Message> updatedMessages = new ArrayList<>(previousMessages);
 		updatedMessages.set(lastIndex, updatedMessage);
-
 		return new AgentCommand(updatedMessages, UpdatePolicy.REPLACE);
+	}
+
+	@Override
+	protected Map<String, Object> afterModelStateUpdates(OverAllState state, List<Message> previous,
+			List<Message> updated) {
+		if (previous == updated || getAgent() == null) {
+			return Map.of();
+		}
+		String key = getAgent().getOutputKey();
+		if (key != null && !key.isEmpty() && state.value(key).orElse(null) instanceof AssistantMessage output) {
+			int index = previous.lastIndexOf(output);
+			if (index >= 0 && updated.get(index) != previous.get(index)) {
+				return Map.of(key, updated.get(index));
+			}
+		}
+		return Map.of();
 	}
 
 	private Message processMessage(Message message) {
@@ -165,116 +167,91 @@ public class PIIDetectionHook extends MessagesModelHook {
 	}
 
 	private UserMessage processContent(UserMessage message) {
-		String content = message.getText();
-		ProcessResult result = processText(content);
-
-		if (result.hasMatches && strategy == RedactionStrategy.BLOCK) {
-			throw new PIIDetectionException(piiType.name(), result.matches);
-		}
-
-		if (result.redactedText.equals(content)) {
-			return message;
-		}
-
-		return UserMessage.builder().text(result.redactedText).metadata(message.getMetadata()).build();
+		var parts = redactTextParts(message.getParts());
+		return parts == message.getParts() ? message : UserMessage.builder().parts(parts)
+				.metadata(message.getMetadata()).build();
 	}
 
 	private AssistantMessage processContent(AssistantMessage message) {
-		String content = message.getText();
-		ProcessResult result = processText(content);
-
-		if (result.hasMatches && strategy == RedactionStrategy.BLOCK) {
-			throw new PIIDetectionException(piiType.name(), result.matches);
-		}
-
-		if (result.redactedText.equals(content)) {
-			return message;
-		}
-
-		return AssistantMessage.builder()
-			.content(result.redactedText)
-			.properties(message.getMetadata())
-			.toolCalls(message.getToolCalls())
-			.media(message.getMedia())
-			.build();
+		var parts = redactTextParts(message.getParts());
+		return parts == message.getParts() ? message : AssistantMessage.builder().parts(parts)
+				.properties(message.getMetadata()).build();
 	}
 
 	private ToolResponseMessage processToolResponse(ToolResponseMessage message) {
-		// Process each tool response
-		List<ToolResponseMessage.ToolResponse> responses = new ArrayList<>();
-		boolean hasChanges = false;
-
-		for (ToolResponseMessage.ToolResponse response : message.getResponses()) {
-			String content = response.responseData();
-			ProcessResult result = processText(content);
-
-			if (result.hasMatches && strategy == RedactionStrategy.BLOCK) {
-				throw new PIIDetectionException(piiType.name(), result.matches);
+		List<MessagePart> parts = new ArrayList<>();
+		boolean edited = false;
+		for (MessagePart part : redactTextParts(message.getParts())) {
+			if (part instanceof ToolResultPart result) {
+				var content = redactTextParts(result.content());
+				if (content != result.content()) {
+					part = new ToolResultPart(result.id(), result.name(), content, result.isError(),
+							null, result.attributes());
+					edited = true;
+				}
 			}
-
-			if (!result.redactedText.equals(content)) {
-				responses.add(new ToolResponseMessage.ToolResponse(
-						response.id(), response.name(), result.redactedText));
-				hasChanges = true;
-			}
-			else {
-				responses.add(response);
-			}
+			parts.add(part);
 		}
-
-		return hasChanges
-			? ToolResponseMessage.builder()
-				.responses(responses)
-				.metadata(message.getMetadata())
-				.build()
-			: message;
+		return edited || !parts.equals(message.getParts())
+				? ToolResponseMessage.builder().parts(parts).metadata(message.getMetadata()).build() : message;
 	}
 
-	private ProcessResult processText(String text) {
-		List<PIIMatch> matches = detector.detect(text);
-
-		if (matches.isEmpty()) {
-			return new ProcessResult(text, false, matches);
+	private List<MessagePart> redactTextParts(List<MessagePart> parts) {
+		String text = parts.stream().filter(TextPart.class::isInstance).map(TextPart.class::cast)
+				.map(TextPart::text).collect(Collectors.joining());
+		if (text.isEmpty()) {
+			return parts;
 		}
 
-		String redacted = applyStrategy(text, matches);
-		return new ProcessResult(redacted, true, matches);
+		List<PIIMatch> matches = detector.detect(text).stream()
+				.sorted(Comparator.comparingInt(match -> match.start)).toList();
+		if (matches.isEmpty()) {
+			return parts;
+		}
+		if (strategy == RedactionStrategy.BLOCK) {
+			throw new PIIDetectionException(piiType.name(), matches);
+		}
+
+		// Detect on the joined text so a match split across parts is still redacted.
+		// Place its replacement in the part where it began and retain the other parts.
+		List<MessagePart> redacted = new ArrayList<>(parts.size());
+		int offset = 0;
+		int matchIndex = 0;
+		for (MessagePart part : parts) {
+			if (!(part instanceof TextPart textPart) || textPart.text().isEmpty()) {
+				redacted.add(part);
+				continue;
+			}
+			int end = offset + textPart.text().length();
+			int cursor = offset;
+			StringBuilder replacement = new StringBuilder();
+			while (matchIndex < matches.size() && matches.get(matchIndex).start < end) {
+				PIIMatch match = matches.get(matchIndex);
+				if (match.start >= cursor) {
+					replacement.append(text, cursor, match.start).append(replacementFor(match));
+				}
+				cursor = Math.max(cursor, Math.min(match.end, end));
+				if (match.end > end) {
+					break;
+				}
+				matchIndex++;
+			}
+			replacement.append(text, cursor, end);
+			String updatedText = replacement.toString();
+			redacted.add(updatedText.equals(textPart.text()) ? part
+					: new TextPart(updatedText, null, textPart.attributes()));
+			offset = end;
+		}
+		return redacted.equals(parts) ? parts : redacted;
 	}
 
-	private String applyStrategy(String text, List<PIIMatch> matches) {
-		if (matches.isEmpty()) {
-			return text;
-		}
-
-		StringBuilder result = new StringBuilder();
-		int lastEnd = 0;
-
-		// Sort matches by start position
-		matches.sort(Comparator.comparingInt(m -> m.start));
-
-		for (PIIMatch match : matches) {
-			result.append(text, lastEnd, match.start);
-
-			switch (strategy) {
-			case REDACT:
-				result.append("[REDACTED_").append(piiType.name()).append("]");
-				break;
-			case MASK:
-				result.append(maskValue(match.value));
-				break;
-			case HASH:
-				result.append(hashValue(match.value));
-				break;
-			case BLOCK:
-				// Already handled in processText
-				break;
-			}
-
-			lastEnd = match.end;
-		}
-
-		result.append(text.substring(lastEnd));
-		return result.toString();
+	private String replacementFor(PIIMatch match) {
+		return switch (strategy) {
+			case REDACT -> "[REDACTED_" + piiType.name() + "]";
+			case MASK -> maskValue(match.value);
+			case HASH -> hashValue(match.value);
+			case BLOCK -> throw new IllegalStateException("Blocked matches must not be rewritten");
+		};
 	}
 
 	private String maskValue(String value) {
@@ -318,17 +295,6 @@ public class PIIDetectionHook extends MessagesModelHook {
 		return List.of();
 	}
 
-	private static class ProcessResult {
-		final String redactedText;
-		final boolean hasMatches;
-		final List<PIIMatch> matches;
-
-		ProcessResult(String redactedText, boolean hasMatches, List<PIIMatch> matches) {
-			this.redactedText = redactedText;
-			this.hasMatches = hasMatches;
-			this.matches = matches;
-		}
-	}
 
 	public static class Builder {
 		private PIIType piiType;

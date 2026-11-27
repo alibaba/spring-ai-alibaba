@@ -15,6 +15,5 @@ spring:
       api-key: ${AI_DASHSCOPE_API_KEY:}
       # Use vision model (qwen-vl-plus) for multimodal image understanding
       chat:
-        options:
-          model: ${DASHSCOPE_VISION_MODEL:qwen-vl-plus}
-          multi-model: true # IMPORTANT: Enable multi-model to use vision capabilities
+        model: ${DASHSCOPE_VISION_MODEL:qwen-vl-plus}
+        multi-model: true # IMPORTANT: Enable multi-model to use vision capabilities
