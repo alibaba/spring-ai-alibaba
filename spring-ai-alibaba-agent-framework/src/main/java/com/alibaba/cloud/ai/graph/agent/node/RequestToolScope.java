@@ -28,6 +28,8 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
@@ -64,19 +66,21 @@ final class RequestToolScope {
 	}
 
 	ToolsAdvisor prepareAdvisor(List<ToolCallback> requestCallbacks, List<ToolCallback> dynamicCallbacks,
-			boolean replaceDefaults, List<String> selection) {
+			boolean replaceDefaults, List<String> selection, ChatOptions targetOptions) {
 		return new ToolsAdvisor("PrepareRequestTools", Ordered.HIGHEST_PRECEDENCE, request -> {
 			var options = request.prompt().getOptions();
 			var defaults = options instanceof ToolCallingChatOptions toolOptions ? toolOptions.getToolCallbacks() : null;
 			var callbacks = replaceDefaults ? requestCallbacks
 					: ToolCallbackUtils.deduplicateByName(requestCallbacks, defaults);
 			var prepared = select(ToolCallbackUtils.deduplicateByName(callbacks, dynamicCallbacks), selection);
-			legacyCallbacks = options instanceof ToolCallingChatOptions ? List.of() : prepared;
-			return withCallbacks(request, prepared);
+			var outbound = targetOptions == null ? request : new ChatClientRequest(
+					new Prompt(request.prompt().getInstructions(), targetOptions), request.context());
+			legacyCallbacks = outbound.prompt().getOptions() instanceof ToolCallingChatOptions ? List.of() : prepared;
+			return withCallbacks(outbound, prepared);
 		});
 	}
 
-	Advisor captureAdvisor(List<String> selection, ContextWindowPolicy policy) {
+	Advisor captureAdvisor(List<String> selection, ContextWindowPolicy policy, ChatModel target) {
 		var capture = new ToolsAdvisor("CaptureRequestTools", Ordered.LOWEST_PRECEDENCE - 1, request -> {
 			var options = request.prompt().getOptions();
 			var callbacks = options instanceof ToolCallingChatOptions toolOptions
@@ -94,7 +98,7 @@ final class RequestToolScope {
 			captured = new CapturedTools(Map.copyOf(active), Map.copyOf(resumable));
 			return withCallbacks(request, callbacks);
 		});
-		return policy == null ? capture : new ContextWindowAdvisor(policy, capture);
+		return policy == null && target == null ? capture : new ContextWindowAdvisor(policy, capture, target);
 	}
 
 	private static List<ToolCallback> select(List<ToolCallback> callbacks, List<String> selection) {

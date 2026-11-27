@@ -26,6 +26,8 @@ import com.alibaba.cloud.ai.graph.agent.tool.ToolCallResults;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
+import org.springframework.ai.chat.client.advisor.ChatModelCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ChatModelStreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
@@ -37,6 +39,7 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.part.MessagePart;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolResultPart;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallDecisions;
 
@@ -50,9 +53,15 @@ final class ContextWindowAdvisor implements CallAdvisor, StreamAdvisor {
 
 	private final RequestToolScope.ToolsAdvisor capture;
 
-	ContextWindowAdvisor(ContextWindowPolicy policy, RequestToolScope.ToolsAdvisor capture) {
+	private final CallAdvisor targetCall;
+
+	private final StreamAdvisor targetStream;
+
+	ContextWindowAdvisor(ContextWindowPolicy policy, RequestToolScope.ToolsAdvisor capture, ChatModel target) {
 		this.policy = policy;
 		this.capture = capture;
+		this.targetCall = target == null ? null : ChatModelCallAdvisor.builder().chatModel(target).build();
+		this.targetStream = target == null ? null : ChatModelStreamAdvisor.builder().chatModel(target).build();
 	}
 
 	@Override
@@ -67,9 +76,12 @@ final class ContextWindowAdvisor implements CallAdvisor, StreamAdvisor {
 
 	@Override
 	public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
+		if (this.policy == null) {
+			return call(this.capture.prepare().apply(request), chain, false);
+		}
 		Attempt first = prepare(request);
 		try {
-			return chain.nextCall(first.request());
+			return call(first.request(), chain, false);
 		}
 		catch (RuntimeException ex) {
 			if (!this.policy.isInputOverflow(ex)) {
@@ -77,7 +89,7 @@ final class ContextWindowAdvisor implements CallAdvisor, StreamAdvisor {
 			}
 			Attempt retry = retryAttempt(first, ex);
 			try {
-				return chain.copy((CallAdvisor) this).nextCall(retry.request());
+				return call(retry.request(), chain, true);
 			}
 			catch (RuntimeException retryError) {
 				if (this.policy.isInputOverflow(retryError)) {
@@ -91,28 +103,46 @@ final class ContextWindowAdvisor implements CallAdvisor, StreamAdvisor {
 	@Override
 	public Flux<ChatClientResponse> adviseStream(ChatClientRequest request, StreamAdvisorChain chain) {
 		return Flux.defer(() -> {
+			if (this.policy == null) {
+				return stream(this.capture.prepare().apply(request), chain, false);
+			}
 			Attempt first = prepare(request);
 			AtomicBoolean emitted = new AtomicBoolean();
-			return Flux.defer(() -> chain.nextStream(first.request()))
+			return Flux.defer(() -> stream(first.request(), chain, false))
 				.doOnNext(response -> emitted.set(true))
 				.onErrorResume(this.policy::isInputOverflow, error -> {
 					if (emitted.get()) {
 						return Flux.error(exceeded(first, error));
 					}
 					Attempt retry = retryAttempt(first, error);
-					return Flux.defer(() -> chain.copy((StreamAdvisor) this).nextStream(retry.request()))
+					return Flux.defer(() -> stream(retry.request(), chain, true))
 						.onErrorMap(this.policy::isInputOverflow, retryError -> exceeded(retry, retryError));
 				});
 		});
 	}
 
+	private ChatClientResponse call(ChatClientRequest request, CallAdvisorChain chain, boolean retry) {
+		if (this.targetCall != null) {
+			return this.targetCall.adviseCall(request, chain);
+		}
+		return (retry ? chain.copy((CallAdvisor) this) : chain).nextCall(request);
+	}
+
+	private Flux<ChatClientResponse> stream(ChatClientRequest request, StreamAdvisorChain chain, boolean retry) {
+		if (this.targetStream != null) {
+			return this.targetStream.adviseStream(request, chain);
+		}
+		return (retry ? chain.copy((StreamAdvisor) this) : chain).nextStream(request);
+	}
+
 	private Attempt prepare(ChatClientRequest request) {
 		ChatClientRequest outbound = this.capture.prepare().apply(request);
 		Attempt attempt = new Attempt(outbound, this.policy.estimateInputTokens(outbound.prompt()));
-		if (attempt.tokens() > this.policy.targetInputTokens()) {
+		int limit = this.policy.inputLimit(outbound.prompt());
+		if (attempt.tokens() > Math.min(this.policy.targetInputTokens(), limit)) {
 			attempt = compact(attempt);
 		}
-		if (attempt.tokens() > this.policy.maxInputTokens()) {
+		if (attempt.tokens() > limit || limit == 0) {
 			throw exceeded(attempt, null);
 		}
 		return attempt;
@@ -120,14 +150,15 @@ final class ContextWindowAdvisor implements CallAdvisor, StreamAdvisor {
 
 	private Attempt retryAttempt(Attempt first, Throwable cause) {
 		Attempt retry = compact(first);
-		if (retry.tokens() >= first.tokens() || retry.tokens() > this.policy.maxInputTokens()) {
+		if (retry.tokens() >= first.tokens() || retry.tokens() > this.policy.inputLimit(retry.request().prompt())) {
 			throw exceeded(first, cause);
 		}
 		return retry;
 	}
 
 	private ContextWindowExceededException exceeded(Attempt attempt, Throwable cause) {
-		return new ContextWindowExceededException(attempt.tokens(), this.policy.maxInputTokens(), cause);
+		return new ContextWindowExceededException(attempt.tokens(), this.policy.inputLimit(attempt.request().prompt()),
+				cause);
 	}
 
 	private Attempt compact(Attempt attempt) {

@@ -35,6 +35,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.Interceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.StreamingModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
+import com.alibaba.cloud.ai.graph.agent.model.ModelRoutingPolicy;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 
@@ -76,6 +77,8 @@ public abstract class Builder {
 	protected TemplateRenderer templateRenderer;
 
 	protected ChatModel model;
+
+	protected ModelRoutingPolicy modelRoutingPolicy;
 
 	protected ChatOptions chatOptions;
 
@@ -160,6 +163,12 @@ public abstract class Builder {
 
 	public Builder model(ChatModel model) {
 		this.model = model;
+		return this;
+	}
+
+	/** Selects a model once per execution and persists the route for checkpoint resume. */
+	public Builder modelRouting(ModelRoutingPolicy policy) {
+		this.modelRoutingPolicy = Objects.requireNonNull(policy, "model routing policy must not be null");
 		return this;
 	}
 
