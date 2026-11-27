@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.agent.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.agent.context.CheckpointContextCompaction;
 import com.alibaba.cloud.ai.graph.agent.context.ContextWindowPolicy;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
@@ -102,6 +103,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	private final ContextWindowPolicy contextWindowPolicy;
 
+	private final CheckpointContextCompaction checkpointContextCompaction;
+
 	public AgentLlmNode(Builder builder) {
 		this.agentName = builder.agentName;
 		this.outputKey = builder.outputKey;
@@ -125,6 +128,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		this.chatOptions = builder.chatOptions instanceof ToolCallingChatOptions options ? options : null;
 		this.enableReasoningLog = builder.enableReasoningLog;
 		this.contextWindowPolicy = builder.contextWindowPolicy;
+		this.checkpointContextCompaction = builder.checkpointContextCompaction;
 	}
 
 	public static Builder builder() {
@@ -180,6 +184,16 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				messages.add(new UserMessage(state.value("input").get().toString()));
 			} else {
 				throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be set for Agent.");
+			}
+		}
+
+		Map<String, Object> updatedState = new HashMap<>();
+		if (this.checkpointContextCompaction != null) {
+			String key = CheckpointContextCompaction.stateKey(this.agentName);
+			var prepared = this.checkpointContextCompaction.prepare(messages, state.value(key).orElse(null));
+			messages = new ArrayList<>(prepared.messages());
+			if (!prepared.checkpointUpdate().isEmpty()) {
+				updatedState.put(key, prepared.checkpointUpdate());
 			}
 		}
 
@@ -285,7 +299,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			else if (output instanceof AssistantMessage assistant && assistant.hasToolCalls()) {
 				output = scope.mark(assistant, config);
 			}
-			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", output);
+			updatedState.put(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", output);
+			return updatedState;
 		} else {
 			// Create base handler that actually calls the model
 			ModelCallHandler baseHandler = request -> {
@@ -330,7 +345,6 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			Usage tokenUsage = modelResponse.getChatResponse() != null ? modelResponse.getChatResponse().getMetadata()
 					.getUsage() : new EmptyUsage();
 
-			Map<String, Object> updatedState = new HashMap<>();
 			updatedState.put("_TOKEN_USAGE_", tokenUsage);
 			var output = modelResponse.getMessage() instanceof AssistantMessage assistant && assistant.hasToolCalls()
 					? scope.mark(assistant, config) : modelResponse.getMessage();
@@ -541,6 +555,13 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		private ChatOptions chatOptions;
 
 		private ContextWindowPolicy contextWindowPolicy;
+
+		private CheckpointContextCompaction checkpointContextCompaction;
+
+		public Builder checkpointContextCompaction(CheckpointContextCompaction compaction) {
+			this.checkpointContextCompaction = compaction;
+			return this;
+		}
 
 		public Builder contextWindowPolicy(ContextWindowPolicy policy) {
 			this.contextWindowPolicy = policy;
