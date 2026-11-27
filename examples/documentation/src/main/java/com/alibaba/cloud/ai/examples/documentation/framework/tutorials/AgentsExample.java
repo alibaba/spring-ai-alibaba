@@ -125,11 +125,12 @@ public class AgentsExample {
 				.inputType(String.class)
 				.build();
 
-		// 使用多个工具
+		// ReactAgent owns its Graph tool loop and per-turn limits.
 		ReactAgent agent = ReactAgent.builder()
 				.name("my_agent")
 				.model(chatModel)
 				.tools(searchTool)
+				.toolCallLimits(3, 10)
 				.build();
 	}
 

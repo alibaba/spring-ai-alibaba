@@ -23,10 +23,20 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallDecisions;
+import org.springframework.ai.model.tool.ToolCallLimitBehavior;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.annotation.Tool;
@@ -54,6 +64,8 @@ import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_
  * 来源：tools.md
  */
 public class ToolsExample {
+
+	private static final Logger logger = LoggerFactory.getLogger(ToolsExample.class);
 
 	// ==================== 基础工具定义 ====================
 
@@ -86,8 +98,12 @@ public class ToolsExample {
 				.inputType(WeatherRequest.class)
 				.build();
 
-		// Note: ChatClient usage would be shown here in actual implementation
-		// This is a simplified example
+		ChatClient client = toolClient(chatModel, toolCallingManager());
+		ChatResponse reply = callWithTools(client, "What is the weather in Beijing?", toolCallback);
+		var generation = reply.getResult();
+		if (generation != null) {
+			logger.info("Weather reply: {}", generation.getOutput().getText());
+		}
 	}
 
 	/**
@@ -569,6 +585,48 @@ public class ToolsExample {
 				.description("Get user information by ID")
 				.inputType(String.class)
 				.build();
+	}
+
+	/**
+	 * Configure the Spring AI tool loop, then bind callbacks to this request.
+	 */
+	public static ChatClient toolClient(ChatModel model, ToolCallingManager manager) {
+		return ChatClient.builder(model)
+				.defaultAdvisors(ToolCallingAdvisor.builder().toolCallingManager(manager).build())
+				.build();
+	}
+
+	public static ChatResponse callWithTools(ChatClient client, String question, ToolCallback... callbacks) {
+		return client.prompt(question)
+				.tools((Object[]) callbacks)
+				.call()
+				.chatResponse();
+	}
+
+	public static ToolCallingManager toolCallingManager() {
+		return ToolCallingManager.builder()
+				.maxCallsPerTool(40)
+				.maxCallsPerTool("currentWeather", 3)
+				.maxTotalToolCalls(150)
+				.onLimitExceeded(ToolCallLimitBehavior.RETURN_ERROR_RESPONSE)
+				.build();
+	}
+
+	/**
+	 * Supply the original prompt, paused response and one decision for each call.
+	 */
+	public static ToolExecutionResult resumeApprovedTools(ToolCallingManager manager, Prompt originalPrompt,
+			ChatResponse pausedReply, ToolCallDecisions decisions) {
+		return manager.executeToolCalls(originalPrompt, pausedReply, decisions);
+	}
+
+	public static final class ReviewTools {
+
+		@Tool(description = "Prepare a local review note", requiresConfirmation = true)
+		public String prepareReviewNote(@ToolParam(description = "Title for the note") String title) {
+			return "Prepared review note: " + title;
+		}
+
 	}
 
 	public static void main(String[] args) {

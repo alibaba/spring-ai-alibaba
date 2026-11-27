@@ -28,6 +28,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.redis.RedisSaver;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -36,6 +37,13 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.session.DefaultSessionService;
+import org.springframework.ai.session.InMemorySessionRepository;
+import org.springframework.ai.session.SessionService;
+import org.springframework.ai.session.advisor.SessionAdvisors;
+import org.springframework.ai.session.compaction.TurnCountTrigger;
+import org.springframework.ai.session.compaction.WindowCompactionStrategy;
+import org.springframework.ai.session.tool.SessionRecallTools;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
@@ -276,6 +284,28 @@ public class MemoryExample {
 				.description("Get user information")
 				.inputType(String.class)
 				.build();
+	}
+
+	public static SessionService inMemorySessions() {
+		return DefaultSessionService.builder().sessionRepository(InMemorySessionRepository.builder().build()).build();
+	}
+
+	public static ChatClient sessionClient(ChatModel model, SessionService sessions) {
+		return ChatClient.builder(model)
+				.defaultAdvisors(SessionAdvisors.builder(sessions)
+						.compaction(new TurnCountTrigger(20),
+								WindowCompactionStrategy.builder().lastTurns(10).build())
+						.sessionIdInToolContext(true)
+						.build())
+				.defaultTools(SessionRecallTools.builder(sessions).build())
+				.build();
+	}
+
+	public static ChatResponse sessionTurn(ChatClient client, String sessionId, String userText) {
+		return client.prompt(userText)
+				.advisors(SessionAdvisors.session(sessionId))
+				.call()
+				.chatResponse();
 	}
 
 	public static void main(String[] args) {

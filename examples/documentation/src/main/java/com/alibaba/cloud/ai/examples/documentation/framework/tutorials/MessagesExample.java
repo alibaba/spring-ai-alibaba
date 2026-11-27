@@ -20,14 +20,23 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.OpaquePayload;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.StreamingParts;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
+import org.springframework.ai.chat.messages.part.ToolResultPart;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 
@@ -38,6 +47,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import reactor.core.publisher.Flux;
 
@@ -48,6 +58,8 @@ import reactor.core.publisher.Flux;
  * 来源：messages.md
  */
 public class MessagesExample {
+
+	private static final Logger logger = LoggerFactory.getLogger(MessagesExample.class);
 
 	// ==================== 基础使用 ====================
 
@@ -315,16 +327,9 @@ public class MessagesExample {
 				.dashScopeApi(dashScopeApi)
 				.build();
 
-		Flux<ChatResponse> responseStream = chatModel.stream(new Prompt("你好"));
-
-		StringBuilder fullResponse = new StringBuilder();
-		responseStream.subscribe(
-				chunk -> {
-					String content = chunk.getResult().getOutput().getText();
-					fullResponse.append(content);
-					System.out.print(content);
-				}
-		);
+		Flux<ChatResponse> responseStream = streamWithFinalMessage(chatModel, new Prompt("你好"),
+				response -> logger.info("Final usage: {}", response.getMetadata().getUsage()));
+		responseStream.blockLast();
 	}
 
 	// ==================== Tool Response Message ====================
@@ -525,6 +530,42 @@ public class MessagesExample {
 				new UserMessage("写一首关于春天的诗")
 		);
 		AssistantMessage response3 = agent.call(messages);
+	}
+
+	// ==================== Spring AI 2.1 ====================
+
+	public static AssistantMessage orderedAssistantMessage() {
+		// Illustrative payload. Real payloads are received from a provider.
+		var reasoning = new ReasoningPart(null, "Looking up the order",
+				new OpaquePayload("example-provider", "reasoning", "opaque-example"), Map.of());
+		return AssistantMessage.builder()
+				.part(reasoning)
+				.part(TextPart.of("I will check the order."))
+				.part(ToolCallPart.of(new AssistantMessage.ToolCall(
+						"order-1", "function", "lookupOrder", "{\"orderId\":\"42\"}")))
+				.build();
+	}
+
+	public static AssistantMessage updateAssistantText(AssistantMessage message, String text) {
+		return message.mutate().content(text).build();
+	}
+
+	public static AssistantMessage streamedArguments() {
+		var delta = ToolCallPart.of(new AssistantMessage.ToolCall(
+				"order-1", "function", "lookupOrder", "{\"orderId\":"));
+		return AssistantMessage.builder().part(StreamingParts.partial(delta, 0)).build();
+	}
+
+	public static ToolResponseMessage failedToolResult(String id, String name) {
+		return ToolResponseMessage.builder()
+				.result(new ToolResultPart(id, name, List.of(TextPart.of("Order not found")),
+						true, null, Map.of()))
+				.build();
+	}
+
+	public static Flux<ChatResponse> streamWithFinalMessage(ChatModel model, Prompt prompt,
+			Consumer<ChatResponse> completed) {
+		return new MessageAggregator().aggregate(model.stream(prompt), completed);
 	}
 
 	// ==================== Main 方法 ====================
