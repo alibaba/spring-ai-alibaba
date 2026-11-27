@@ -50,6 +50,9 @@ import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.skills.registry.classpath.ClasspathSkillRegistry;
 import com.alibaba.cloud.ai.graph.store.StoreItem;
 import com.alibaba.cloud.ai.graph.store.stores.FileSystemStore;
+import com.openai.client.OpenAIClient;
+import com.openai.client.OpenAIClientImpl;
+import com.openai.core.ClientOptions;
 import com.openai.errors.OpenAIServiceException;
 
 import org.slf4j.Logger;
@@ -59,6 +62,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.http.okhttp.SpringAiOpenAiHttpClient;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 
@@ -79,6 +83,8 @@ public final class OpenAiContextManagementExample implements AutoCloseable {
 
 	private static final Duration RUN_TIMEOUT = Duration.ofMinutes(2);
 
+	private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
+
 	private static final String COORDINATOR_PROMPT = """
 			You coordinate a report audit. Use one tool at a time.
 			Discover the inventory report tool with search_tools and load it with load_tools before fetching.
@@ -97,7 +103,9 @@ public final class OpenAiContextManagementExample implements AutoCloseable {
 
 	private final Settings settings;
 
-	private final ExecutorService dispatcher = Executors.newCachedThreadPool();
+	private final ExecutorService streamExecutor = Executors.newCachedThreadPool();
+
+	private final OpenAIClient client;
 
 	final AtomicInteger routeSelections = new AtomicInteger();
 
@@ -110,6 +118,10 @@ public final class OpenAiContextManagementExample implements AutoCloseable {
 	public OpenAiContextManagementExample(Path workspace, Settings settings) {
 		this.workspace = workspace;
 		this.settings = settings;
+		var transport = SpringAiOpenAiHttpClient.builder().timeout(REQUEST_TIMEOUT).build();
+		this.client = new OpenAIClientImpl(ClientOptions.builder().httpClient(transport)
+			.baseUrl(settings.baseUrl()).apiKey(settings.apiKey()).maxRetries(0).timeout(REQUEST_TIMEOUT)
+			.streamHandlerExecutor(this.streamExecutor).build());
 	}
 
 	public InterruptionMetadata start(String threadId) throws GraphRunnerException {
@@ -189,10 +201,9 @@ public final class OpenAiContextManagementExample implements AutoCloseable {
 
 	private OpenAiChatModel openAi(String model, int outputTokens) {
 		return OpenAiChatModel.builder()
-			.httpClientBuilderCustomizer(client -> client.dispatcherExecutorService(this.dispatcher))
-			.options(OpenAiChatOptions.builder().baseUrl(this.settings.baseUrl())
-				.apiKey(this.settings.apiKey()).model(model).maxTokens(outputTokens).maxRetries(0)
-				.timeout(Duration.ofSeconds(30)).build()).build();
+			.openAiClient(this.client).openAiClientAsync(this.client.async())
+			.options(OpenAiChatOptions.builder().model(model).maxTokens(outputTokens).build())
+			.build();
 	}
 
 	private ContextWindowPolicy budget(int inputLimit, int reserved) {
@@ -229,7 +240,12 @@ public final class OpenAiContextManagementExample implements AutoCloseable {
 
 	@Override
 	public void close() {
-		this.dispatcher.shutdownNow();
+		try {
+			this.client.close();
+		}
+		finally {
+			this.streamExecutor.shutdownNow();
+		}
 	}
 
 	public static void main(String[] args) throws Exception {
