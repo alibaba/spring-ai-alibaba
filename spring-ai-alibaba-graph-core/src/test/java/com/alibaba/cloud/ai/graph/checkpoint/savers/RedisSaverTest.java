@@ -36,6 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -43,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -120,6 +122,86 @@ class RedisSaverTest {
 		if (redisson != null) {
 			redisson.shutdown();
 		}
+	}
+
+	@Test
+	void durableExecutionsUseAThreadLeaseAcrossRedisClients() throws Exception {
+		var otherClient = Redisson.create(new Config(redisson.getConfig()));
+		try {
+			var otherSaver = RedisSaver.builder().redisson(otherClient).stateSerializer(serializer).build();
+			var held = new CompletableFuture<Map<String, Object>>();
+			var definition = new StateGraph()
+					.addNode("work", (state, run) -> state.value("hold").isPresent()
+							? held : CompletableFuture.completedFuture(Map.of("done", true)))
+					.addEdge(START, "work").addEdge("work", END);
+			var first = definition.compile(durableConfig(redisSaver));
+			var second = definition.compile(durableConfig(otherSaver));
+			var config = RunnableConfig.builder().threadId("execution-lease-" + UUID.randomUUID()).build();
+			var subscription = first.stream(Map.of("hold", true), config).subscribe();
+			try {
+				assertThrows(IllegalStateException.class, () -> second.stream(Map.of(), config)
+						.blockLast(Duration.ofSeconds(5)));
+				var unrelated = RunnableConfig.builder().threadId("different-thread-" + UUID.randomUUID()).build();
+				assertEquals(true, second.stream(Map.of(), unrelated).blockLast(Duration.ofSeconds(5)).state()
+						.value("done").orElseThrow());
+			}
+			finally {
+				CompletableFuture.runAsync(subscription::dispose).get(5, TimeUnit.SECONDS);
+			}
+			assertEquals(true, second.stream(Map.of("hold", OverAllState.MARK_FOR_REMOVAL), config)
+					.blockLast(Duration.ofSeconds(5)).state().value("done").orElseThrow());
+		}
+		finally {
+			otherClient.shutdown();
+		}
+	}
+
+	private static CompileConfig durableConfig(BaseCheckpointSaver saver) {
+		return CompileConfig.builder().saverConfig(SaverConfig.builder().register(saver).build())
+				.taskCheckpoints(true).build();
+	}
+
+	@Test
+	void anExpiredRedisLeaseCannotCommitOrReleaseItsSuccessor() throws Exception {
+		var otherClient = Redisson.create(new Config(redisson.getConfig()));
+		try {
+			var firstSaver = RedisSaver.builder().redisson(redisson).stateSerializer(serializer)
+					.ttl(10, TimeUnit.SECONDS).build();
+			var secondSaver = RedisSaver.builder().redisson(otherClient).stateSerializer(serializer)
+					.ttl(10, TimeUnit.SECONDS).build();
+			String thread = "expired-lease-" + UUID.randomUUID();
+			var run = RunnableConfig.builder().threadId(thread).build();
+			try (var first = firstSaver.acquireExecutionLease(run)) {
+				var stale = first.configure(run);
+				var previous = checkpointWithValue("first");
+				firstSaver.put(stale, previous);
+				var threadId = redisson.<String, String>getMap("graph:thread:meta:" + thread).get("thread_id");
+				var contentKey = "graph:checkpoint:content:" + threadId;
+				var leaseKey = "{" + contentKey + "}:graph:execution";
+				assertTrue(redisson.getBucket(leaseKey, ByteArrayCodec.INSTANCE).expire(Duration.ZERO));
+				assertThrows(IllegalStateException.class, () -> firstSaver.put(stale, checkpointWithValue("expired")));
+
+				try (var second = secondSaver.acquireExecutionLease(run)) {
+					var current = second.configure(run);
+					secondSaver.put(current, checkpointWithValue("successor"));
+					assertThrows(IllegalStateException.class, () -> firstSaver.put(stale, checkpointWithValue("stale")));
+					assertThrows(IllegalStateException.class, () -> firstSaver.release(stale));
+					first.close();
+					secondSaver.put(current, checkpointWithValue("still active"));
+				}
+				assertEquals(3, firstSaver.list(run).size());
+				assertEquals("still active", firstSaver.get(run).orElseThrow().getState().get("value"));
+				long ttl = redisson.getBucket(contentKey, ByteArrayCodec.INSTANCE).remainTimeToLive();
+				assertTrue(ttl > 0 && ttl <= 10_000);
+			}
+		}
+		finally {
+			otherClient.shutdown();
+		}
+	}
+
+	private static Checkpoint checkpointWithValue(String value) {
+		return Checkpoint.builder().nodeId("work").nextNodeId(END).state(Map.of("value", value)).build();
 	}
 
 	@Test
