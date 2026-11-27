@@ -29,6 +29,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.InterceptorChain;
+import com.alibaba.cloud.ai.graph.agent.tool.DeferredToolCatalog;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolCallbackUtils;
 import com.alibaba.cloud.ai.graph.agent.interceptor.StreamingModelInterceptor;
 
@@ -78,6 +79,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	private List<Advisor> advisors = new ArrayList<>();
 
+	private final DeferredToolCatalog deferredToolCatalog;
+
 	private volatile List<ToolCallback> toolCallbacks = List.of();
 
 	private List<ModelInterceptor> modelInterceptors = new ArrayList<>();
@@ -118,6 +121,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		if (builder.toolCallbacks != null) {
 			this.toolCallbacks = List.copyOf(builder.toolCallbacks);
 		}
+		this.deferredToolCatalog = builder.deferredToolCatalog;
 		if (builder.modelInterceptors != null) {
 			this.modelInterceptors = builder.modelInterceptors;
 		}
@@ -206,8 +210,13 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		if (!metadata.isEmpty()) {
 			contextMap.putAll(metadata);
 		}
+		List<ToolCallback> loaded = List.of();
+		if (this.deferredToolCatalog != null) {
+			contextMap.put(DeferredToolCatalog.DISCOVERY_CONTEXT_KEY, true);
+			loaded = this.deferredToolCatalog.activeCallbacks(state, this.agentName);
+		}
 		var configuredCallbacks = ToolCallbackUtils.deduplicateByName(this.toolCallbacks,
-				this.chatOptions != null ? this.chatOptions.getToolCallbacks() : null);
+				this.chatOptions != null ? this.chatOptions.getToolCallbacks() : null, loaded);
 		var initialOptions = this.chatOptions != null
 				? this.chatOptions.mutate().toolCallbacks(configuredCallbacks).build() : null;
 		var scope = new RequestToolScope(agentName, configuredCallbacks);
@@ -544,6 +553,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		private List<ToolCallback> toolCallbacks;
 
+		private DeferredToolCatalog deferredToolCatalog;
+
 		private List<ModelInterceptor> modelInterceptors;
 
 		private List<StreamingModelInterceptor> streamingInterceptors;
@@ -600,6 +611,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
 			this.toolCallbacks = toolCallbacks;
+			return this;
+		}
+
+		public Builder deferredToolCatalog(DeferredToolCatalog deferredToolCatalog) {
+			this.deferredToolCatalog = deferredToolCatalog;
 			return this;
 		}
 

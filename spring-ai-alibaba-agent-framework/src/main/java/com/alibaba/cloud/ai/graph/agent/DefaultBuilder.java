@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
+import com.alibaba.cloud.ai.graph.agent.tool.DeferredToolCatalog;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolCallbackUtils;
 import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.collections4.CollectionUtils;
@@ -150,6 +151,18 @@ public class DefaultBuilder extends Builder {
 			allTools.add(this.toolResultArchive.createReadTool(this.name));
 		}
 		
+		if (this.deferredToolCatalog != null) {
+			for (ToolCallback tool : allTools) {
+				String name = tool.getToolDefinition().name();
+				if (DeferredToolCatalog.DISCOVERY_TOOLS.contains(name) || this.deferredToolCatalog.names().contains(name)) {
+					throw new IllegalArgumentException("Duplicate deferred tool name: " + name);
+				}
+			}
+			allTools = new ArrayList<>(allTools);
+			allTools.addAll(this.deferredToolCatalog.discoveryTools(this.name));
+			llmNodeBuilder.deferredToolCatalog(this.deferredToolCatalog);
+		}
+
 		// Set combined tools to LLM node
 		if (CollectionUtils.isNotEmpty(allTools)) {
 			llmNodeBuilder.toolCallbacks(Collections.unmodifiableList(allTools));
@@ -166,6 +179,7 @@ public class DefaultBuilder extends Builder {
 		AgentToolNode.Builder toolBuilder = AgentToolNode.builder()
 				.agentName(this.name)
 				.toolResultArchive(this.toolResultArchive)
+				.deferredToolCatalog(this.deferredToolCatalog)
 				.parallelToolExecution(this.parallelToolExecution)
 				.maxParallelTools(this.maxParallelTools)
 				.toolCallLimits(this.maxCallsPerTool, this.maxTotalToolCalls)

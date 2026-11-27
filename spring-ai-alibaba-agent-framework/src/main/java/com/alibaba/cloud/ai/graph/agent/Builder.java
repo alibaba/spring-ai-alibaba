@@ -40,6 +40,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
+import com.alibaba.cloud.ai.graph.agent.tool.DeferredToolCatalog;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -86,6 +87,8 @@ public abstract class Builder {
 	protected ChatClient chatClient;
 
 	protected List<ToolCallback> tools = new ArrayList<>();
+
+	protected DeferredToolCatalog deferredToolCatalog;
 
 	protected List<ToolCallbackProvider> toolCallbackProviders = new ArrayList<>();
 
@@ -179,6 +182,12 @@ public abstract class Builder {
 		Assert.notNull(tools, "tools cannot be null");
 		Assert.noNullElements(tools, "tools cannot contain null elements");
 		this.tools.addAll(List.of(tools));
+		return this;
+	}
+
+	/** Adds tools that become available after the model discovers and loads them. */
+	public Builder deferredTools(DeferredToolCatalog catalog) {
+		this.deferredToolCatalog = Objects.requireNonNull(catalog, "deferred tool catalog must not be null");
 		return this;
 	}
 

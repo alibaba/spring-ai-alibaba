@@ -51,6 +51,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.StreamingModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
+import com.alibaba.cloud.ai.graph.agent.tool.DeferredToolCatalog;
 import com.alibaba.cloud.ai.graph.checkpoint.CheckpointWrite;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
@@ -113,6 +114,8 @@ public class ReactAgent extends BaseAgent {
 
 	private final AgentToolNode toolNode;
 
+	private final boolean deferredToolsEnabled;
+
 	private List<? extends Hook> hooks;
 
 	private List<ModelInterceptor> modelInterceptors;
@@ -134,6 +137,7 @@ public class ReactAgent extends BaseAgent {
 		this.instruction = builder.instruction;
 		this.llmNode = llmNode;
 		this.toolNode = toolNode;
+		this.deferredToolsEnabled = builder.deferredToolCatalog != null;
 		this.compileConfig = compileConfig;
 		this.hooks = builder.hooks;
 		this.modelInterceptors = builder.modelInterceptors;
@@ -763,6 +767,9 @@ public class ReactAgent extends BaseAgent {
 				keyStrategyHashMap.put(outputKey, outputKeyStrategy == null ? new ReplaceStrategy() : outputKeyStrategy);
 			}
 			keyStrategyHashMap.put("messages", new MessageIdStrategy());
+			if (this.deferredToolsEnabled) {
+				keyStrategyHashMap.put(DeferredToolCatalog.stateKey(this.name), DeferredToolCatalog.activationStrategy());
+			}
 
 			// Iterate through hooks and collect their key strategies
 			if (hooks != null) {

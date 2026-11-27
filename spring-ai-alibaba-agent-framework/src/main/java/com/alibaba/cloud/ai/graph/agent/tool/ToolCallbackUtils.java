@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.agent.tool;
 
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.ToolDefinition;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -28,6 +29,18 @@ import java.util.Map;
 public final class ToolCallbackUtils {
 
 	private ToolCallbackUtils() {
+	}
+
+	public static long estimateSchemaTokens(ToolDefinition definition) {
+		return estimateSchemaTokens(definition.name(), definition.description(), definition.inputSchema());
+	}
+
+	public static long estimateSchemaTokens(String name, String description, String schema) {
+		return 4 + textTokens(name) + textTokens(description) + textTokens(schema);
+	}
+
+	private static long textTokens(String text) {
+		return text == null ? 0 : (text.length() + 3L) / 4;
 	}
 
 	@SafeVarargs

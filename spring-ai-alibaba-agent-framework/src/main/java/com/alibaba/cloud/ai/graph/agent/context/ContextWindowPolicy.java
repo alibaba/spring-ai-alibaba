@@ -20,6 +20,7 @@ import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
 
 import com.alibaba.cloud.ai.graph.agent.hook.TokenCounter;
+import com.alibaba.cloud.ai.graph.agent.tool.ToolCallbackUtils;
 
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
@@ -82,9 +83,7 @@ public final class ContextWindowPolicy {
 		long tokens = MESSAGE_TOKENS.countTokens(prompt.getInstructions()) + 4L * messages + 3;
 		if (prompt.getOptions() instanceof ToolCallingChatOptions options && options.getToolCallbacks() != null) {
 			for (var callback : options.getToolCallbacks()) {
-				var definition = callback.getToolDefinition();
-				tokens += 4L + textTokens(definition.name()) + textTokens(definition.description())
-						+ textTokens(definition.inputSchema());
+				tokens += ToolCallbackUtils.estimateSchemaTokens(callback.getToolDefinition());
 			}
 		}
 		if (prompt.getOptions() instanceof StructuredOutputChatOptions options) {

@@ -35,6 +35,7 @@ import com.alibaba.cloud.ai.graph.agent.tool.AsyncToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.AsyncToolCallbackAdapter;
 import com.alibaba.cloud.ai.graph.agent.tool.CancellableAsyncToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.CancellationToken;
+import com.alibaba.cloud.ai.graph.agent.tool.DeferredToolCatalog;
 import com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken;
 import com.alibaba.cloud.ai.graph.agent.tool.StateAwareToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolCancelledException;
@@ -121,6 +122,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 	private final ToolResultArchive toolResultArchive;
 
+	private final DeferredToolCatalog deferredToolCatalog;
+
 	private final String budgetStateKey;
 	private final String pendingAgentToolsStateKey;
 	private final int maxCallsPerTool;
@@ -149,6 +152,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 	public AgentToolNode(Builder builder) {
 		this.agentName = builder.agentName;
 		this.toolResultArchive = builder.toolResultArchive;
+		this.deferredToolCatalog = builder.deferredToolCatalog;
 		this.budgetStateKey = "_TOOL_CALL_BUDGET_:" + Objects.toString(agentName, "");
 		this.pendingAgentToolsStateKey = "_PENDING_AGENT_TOOLS_:" + Objects.toString(agentName, "");
 		this.maxCallsPerTool = builder.maxCallsPerTool;
@@ -890,8 +894,14 @@ public class AgentToolNode implements NodeActionWithConfig {
 			return null;
 		}
 		return RequestToolScope.isScoped(message)
-				? RequestToolScope.resolve(message, agentName, toolName, config, resolveRegistered(toolName))
+				? RequestToolScope.resolve(message, agentName, toolName, config, () -> resolveBound(toolName))
 				: resolve(toolName, config);
+	}
+
+	private ToolCallback resolveBound(String toolName) {
+		ToolCallback registered = resolveRegistered(toolName);
+		return registered == null && this.deferredToolCatalog != null
+				? this.deferredToolCatalog.resolve(toolName) : registered;
 	}
 
 	private ToolCallback resolveRegistered(String toolName) {
@@ -1004,6 +1014,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		private ToolResultArchive toolResultArchive;
 
+		private DeferredToolCatalog deferredToolCatalog;
+
 		private boolean enableActingLog;
 
 		private boolean parallelToolExecution = false;
@@ -1035,6 +1047,11 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		public Builder toolResultArchive(ToolResultArchive toolResultArchive) {
 			this.toolResultArchive = toolResultArchive;
+			return this;
+		}
+
+		public Builder deferredToolCatalog(DeferredToolCatalog deferredToolCatalog) {
+			this.deferredToolCatalog = deferredToolCatalog;
 			return this;
 		}
 
