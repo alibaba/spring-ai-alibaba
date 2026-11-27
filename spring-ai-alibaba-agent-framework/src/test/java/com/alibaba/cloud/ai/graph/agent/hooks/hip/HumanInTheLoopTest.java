@@ -28,7 +28,10 @@ import com.alibaba.cloud.ai.graph.agent.tools.WeatherTool;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 
 import java.util.List;
 import java.util.Map;
@@ -127,7 +130,16 @@ public class HumanInTheLoopTest {
 	 */
 	@Test
 	public void testMultipleToolcallsInAssistantMessage() throws Exception {
-		ReactAgent agent = createAgentWithMultipleTools();
+		ChatModel batchModel = prompt -> {
+			boolean hasToolResults = prompt.getInstructions().stream().anyMatch(ToolResponseMessage.class::isInstance);
+			var reply = hasToolResults ? new AssistantMessage("Both tool calls completed")
+					: AssistantMessage.builder().toolCalls(List.of(
+							new AssistantMessage.ToolCall("poem-call", "function", "poem", "{\"topic\":\"北京\"}"),
+							new AssistantMessage.ToolCall("weather-call", "function", "weather_tool",
+									"{\"location\":\"北京\"}"))).build();
+			return new ChatResponse(List.of(new Generation(reply)));
+		};
+		ReactAgent agent = createAgentWithMultipleTools(batchModel);
 
 		printGraphRepresentation(agent);
 
@@ -144,10 +156,11 @@ public class HumanInTheLoopTest {
 		// Only approve the first tool
 		InterruptionMetadata feedbackMetadata = buildFeedbackWithOnlyOneApproval(interruptionMetadata);
 
-		// Second invocation should still require approval for the second tool
+		// Partial feedback returns the original batch.
 		InterruptionMetadata interruptionMetadata2 = performSecondInvocationAndCheckApprovalRequiredAgain(agent, threadId, feedbackMetadata);
+		Assertions.assertEquals(interruptionMetadata.interruptionId(), interruptionMetadata2.interruptionId());
 
-		// Approve the second tool
+		// Submit a complete set of approvals.
 		InterruptionMetadata feedbackMetadata2 = buildApprovalFeedback(interruptionMetadata2);
 
 		// Third invocation should complete successfully
@@ -159,7 +172,7 @@ public class HumanInTheLoopTest {
 	 */
 	@Test
 	public void testMultipleRoundAssistantMessages() throws Exception {
-		ReactAgent agent = createAgentWithMultipleTools();
+		ReactAgent agent = createAgentWithMultipleTools(chatModel);
 
 		printGraphRepresentation(agent);
 
@@ -202,7 +215,7 @@ public class HumanInTheLoopTest {
 				.build();
 	}
 
-	private ReactAgent createAgentWithMultipleTools() {
+	private ReactAgent createAgentWithMultipleTools(ChatModel model) {
 		Map approvalOn = Map.of(
 				"poem", ToolConfig.builder().description("请确认诗歌工具执行").build(),
 				"weather_tool", ToolConfig.builder().description("请确认天气工具执行").build()
@@ -210,7 +223,7 @@ public class HumanInTheLoopTest {
 
 		return ReactAgent.builder()
 				.name("single_agent")
-				.model(chatModel)
+				.model(model)
 				.saver(new MemorySaver())
 				.tools(List.of(createPoetToolCallback(), WeatherTool.createWeatherTool("weather_tool", new WeatherTool())))
 				.hooks(HumanInTheLoopHook.builder().approvalOn(approvalOn).build())
@@ -525,12 +538,12 @@ public class HumanInTheLoopTest {
 			Assertions.assertNotNull(interruptionMetadata.node(), "Interruption should have node id");
 			Assertions.assertNotNull(interruptionMetadata.state(), "Interruption should have state");
 
-			// Assert tool feedbacks are present (should be for the remaining tool)
+			// The unresolved batch still contains both calls.
 			List<InterruptionMetadata.ToolFeedback> toolFeedbacks = interruptionMetadata.toolFeedbacks();
 			Assertions.assertNotNull(toolFeedbacks, "Tool feedbacks should not be null");
 			Assertions.assertFalse(toolFeedbacks.isEmpty(), "Tool feedbacks should not be empty");
 			Assertions.assertEquals(2, toolFeedbacks.size(),
-					"Should have exactly one tool feedback for the remaining tool");
+					"Should return the entire tool call batch");
 
 			return interruptionMetadata;
 

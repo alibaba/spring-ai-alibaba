@@ -214,27 +214,9 @@ public class ExecutionController {
 				metadataBuilder.interruptionId(request.getInterruptionId());
 			}
 
-			// Convert ToolFeedback from request to InterruptionMetadata.ToolFeedback
-			if (request.toolFeedbacks != null && !request.toolFeedbacks.isEmpty()) {
-				for (ToolRequestConfirmMessageDTO.ToolFeedback toolFeedback : request.toolFeedbacks) {
-					// Convert FeedbackResult from DTO to InterruptionMetadata enum
-					InterruptionMetadata.ToolFeedback.FeedbackResult result =
-							toolFeedback.getResult() != null
-									? InterruptionMetadata.ToolFeedback.FeedbackResult.valueOf(toolFeedback.getResult()
-									.name())
-									: InterruptionMetadata.ToolFeedback.FeedbackResult.APPROVED;
-
-					// Create InterruptionMetadata.ToolFeedback
-					InterruptionMetadata.ToolFeedback feedback = new InterruptionMetadata.ToolFeedback(
-							toolFeedback.getId(),
-							toolFeedback.getName(),
-							toolFeedback.getArguments(),
-							result,
-							toolFeedback.getDescription()
-					);
-
-					metadataBuilder.addToolFeedback(feedback);
-				}
+			if (request.toolFeedbacks != null) {
+				metadataBuilder.toolFeedbacks(request.toolFeedbacks.stream()
+						.map(ToolRequestConfirmMessageDTO.ToolFeedback::toGraphFeedback).toList());
 			}
 
 			RunnableConfig runnableConfig = RunnableConfig.builder()

@@ -406,6 +406,7 @@ public class ReactAgent extends BaseAgent {
 			if (hook instanceof ModelHook modelHook) {
 				if (hook instanceof HumanInTheLoopHook humanInTheLoopHook) {
 					graph.addNode(Hook.getFullHookName(hook) + ".afterModel", humanInTheLoopHook);
+					toolNode.setConfiguredToolReview(humanInTheLoopHook::requiresConfiguredReview);
 				} else {
 					graph.addNode(Hook.getFullHookName(hook) + ".afterModel", modelHook::afterModel);
 				}

@@ -24,6 +24,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -218,18 +219,29 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 	}
 
 	public static class ToolFeedback {
+		public static final List<FeedbackResult> DEFAULT_ALLOWED_DECISIONS =
+				List.of(FeedbackResult.APPROVED, FeedbackResult.EDITED, FeedbackResult.REJECTED);
+
 		String id;
 		String name;
 		String arguments;
 		FeedbackResult result;
 		String description;
+		private final List<FeedbackResult> allowedDecisions;
+		private final String response;
 
 		public ToolFeedback(String id, String name, String arguments, FeedbackResult result, String description) {
-			this.id = id;
-			this.name = name;
-			this.arguments = arguments;
-			this.result = result;
-			this.description = description;
+			this(new Builder().id(id).name(name).arguments(arguments).result(result).description(description));
+		}
+
+		private ToolFeedback(Builder builder) {
+			this.id = builder.id;
+			this.name = builder.name;
+			this.arguments = builder.arguments;
+			this.result = builder.result;
+			this.description = builder.description;
+			this.allowedDecisions = builder.allowedDecisions;
+			this.response = builder.response;
 		}
 
 		public String getId() {
@@ -252,6 +264,14 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 			return description;
 		}
 
+		public List<FeedbackResult> getAllowedDecisions() {
+			return allowedDecisions;
+		}
+
+		public String getResponse() {
+			return response;
+		}
+
 		public static Builder builder() {
 			return new Builder();
 		}
@@ -262,7 +282,9 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 				.name(toolFeedback.getName())
 				.arguments(toolFeedback.getArguments())
 				.result(toolFeedback.getResult())
-				.description(toolFeedback.getDescription());
+				.description(toolFeedback.getDescription())
+				.allowedDecisions(toolFeedback.getAllowedDecisions())
+				.response(toolFeedback.getResponse());
 		}
 
 		public static class Builder {
@@ -271,6 +293,8 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 			String arguments;
 			FeedbackResult result;
 			String description;
+			List<FeedbackResult> allowedDecisions = DEFAULT_ALLOWED_DECISIONS;
+			String response;
 
 			public Builder id(String id) {
 				this.id = id;
@@ -293,7 +317,13 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 			}
 
 			public Builder type(String type) {
-				this.result = FeedbackResult.valueOf(type.toUpperCase());
+				this.result = switch (type.toUpperCase(Locale.ROOT)) {
+					case "APPROVE" -> FeedbackResult.APPROVED;
+					case "EDIT" -> FeedbackResult.EDITED;
+					case "REJECT" -> FeedbackResult.REJECTED;
+					case "RESPOND" -> FeedbackResult.RESPONDED;
+					default -> FeedbackResult.valueOf(type.toUpperCase(Locale.ROOT));
+				};
 				return this;
 			}
 
@@ -302,15 +332,26 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 				return this;
 			}
 
+			public Builder allowedDecisions(List<FeedbackResult> allowedDecisions) {
+				this.allowedDecisions = List.copyOf(allowedDecisions);
+				return this;
+			}
+
+			public Builder response(String response) {
+				this.response = response;
+				return this;
+			}
+
 			public ToolFeedback build() {
-				return new ToolFeedback(id, name, arguments, result, description);
+				return new ToolFeedback(this);
 			}
 		}
 
 		public enum FeedbackResult {
 			APPROVED,
 			REJECTED,
-			EDITED;
+			EDITED,
+			RESPONDED
 		}
 	}
 

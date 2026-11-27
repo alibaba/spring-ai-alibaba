@@ -16,33 +16,62 @@
 package com.alibaba.cloud.ai.graph.agent.hook.hip;
 
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback.FeedbackResult;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 public class ConsoleInteractionHandler implements HumanInteractionHandler {
+
+	private final Scanner scanner = new Scanner(System.in);
+
 	@Override
 	public List<ToolFeedback> handleInterrupts(List<ToolFeedback> requests) {
 		List<ToolFeedback> responses = new ArrayList<>();
-		Scanner scanner = new Scanner(System.in);
 
 		for (ToolFeedback request : requests) {
-			System.out.println("\n" + "=".repeat(50));
-			System.out.println("HUMAN INTERVENTION REQUIRED");
-			System.out.println("=".repeat(50));
 			System.out.println(request.getDescription());
-			System.out.println("\nAvailable actions:");
-
-			System.out.println("- 'accept': Approve the action as-is");
-			System.out.println("- 'edit': Approve with modifications");
-			System.out.println("- 'respond': Reject with feedback");
-
-			System.out.print("\nYour choice: ");
-			String choice = scanner.nextLine().trim().toLowerCase();
-
+			var decision = readDecision(request);
+			var response = ToolFeedback.builder(request).result(decision);
+			switch (decision) {
+				case EDITED -> response.arguments(readLine("Edited arguments (JSON): "));
+				case REJECTED -> response.description(readLine("Rejection reason: "));
+				case RESPONDED -> response.response(readLine("Your response: "));
+				case APPROVED -> { }
+			}
+			responses.add(response.build());
 		}
 
 		return responses;
+	}
+
+	private FeedbackResult readDecision(ToolFeedback request) {
+		var allowed = request.getAllowedDecisions();
+		String choices = allowed.stream().map(ConsoleInteractionHandler::choice).collect(Collectors.joining("/"));
+		while (true) {
+			String answer = readLine("Your decision (" + choices + "): ").trim().toLowerCase(Locale.ROOT);
+			for (FeedbackResult decision : allowed) {
+				if (choice(decision).equals(answer)) {
+					return decision;
+				}
+			}
+		}
+	}
+
+	private String readLine(String prompt) {
+		System.out.print(prompt);
+		return scanner.nextLine();
+	}
+
+	private static String choice(FeedbackResult decision) {
+		return switch (decision) {
+			case APPROVED -> "approve";
+			case EDITED -> "edit";
+			case REJECTED -> "reject";
+			case RESPONDED -> "respond";
+		};
 	}
 }

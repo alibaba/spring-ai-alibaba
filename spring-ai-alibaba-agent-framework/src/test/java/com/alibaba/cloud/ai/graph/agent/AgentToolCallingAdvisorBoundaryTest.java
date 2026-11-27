@@ -31,12 +31,17 @@ import com.alibaba.cloud.ai.graph.action.Send;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback.FeedbackResult;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
+import com.alibaba.cloud.ai.graph.agent.hook.hip.ToolConfig;
 import com.alibaba.cloud.ai.graph.agent.hook.toolcalllimit.ToolCallLimitHook;
 import com.alibaba.cloud.ai.graph.agent.hook.toolcalllimit.ToolCallLimitExceededException;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallHandler;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallResponse;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.agent.tool.CancellableAsyncToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.CancellationToken;
 import com.alibaba.cloud.ai.graph.agent.tools.ToolContextHelper;
@@ -96,6 +101,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -518,6 +524,153 @@ class AgentToolCallingAdvisorBoundaryTest {
 		var config = RunnableConfig.builder().threadId("limit-batch").addMetadata("_stream_", false).build();
 		assertTrue(agent.call("request two calls", config).getText().contains("run limit (2/1)"));
 		assertEquals(0, tools.agentToolNodeExecutions.get());
+	}
+
+	@Test
+	void restoresConditionalReviewAndReturnsTheHumanResponseWithoutRunningTheReviewedCall(@TempDir Path directory)
+			throws Exception {
+		var tools = new BoundaryTools();
+		var model = new ScriptedToolModel(List.of(List.of(toolCall("automatic", "boundary_tool"),
+				new AssistantMessage.ToolCall("question", "function", "boundary_tool", "{\"question\":\"Which option?\"}"))));
+		var evaluations = new AtomicInteger();
+		var initialPolicy = ToolConfig.builder().allowedDecisions(FeedbackResult.RESPONDED).when(request -> {
+			evaluations.incrementAndGet();
+			return request.getArguments().contains("question");
+		}).build();
+		var config = RunnableConfig.builder().threadId("conditional-review").build();
+		var initial = approvalAgent(directory, model, tools, initialPolicy);
+
+		var pause = assertInstanceOf(InterruptionMetadata.class, initial.invokeAndGetOutput("choose", config).orElseThrow());
+		var action = pause.toolFeedbacks().get(0);
+		assertEquals(1, pause.toolFeedbacks().size());
+		assertEquals("question", action.getId());
+		assertEquals(List.of(FeedbackResult.RESPONDED), action.getAllowedDecisions());
+		assertEquals(List.of("automatic"), pause.getToolsAutomaticallyApproved().stream()
+				.map(AssistantMessage.ToolCall::id).toList());
+		assertEquals(0, tools.agentToolNodeExecutions.get());
+
+		var changedPolicy = ToolConfig.builder().when(request -> {
+			throw new AssertionError("A pending review must use its checkpointed policy");
+		}).build();
+		var restored = approvalAgent(directory, model, tools, changedPolicy);
+		var readback = assertInstanceOf(InterruptionMetadata.class,
+				restored.invokeAndGetOutput("", config.withResume()).orElseThrow());
+		assertEquals(pause.interruptionId(), readback.interruptionId());
+		assertEquals(List.of(FeedbackResult.RESPONDED), readback.toolFeedbacks().get(0).getAllowedDecisions());
+		assertThrows(IllegalArgumentException.class, () -> restored.invokeAndGetOutput("",
+				review(config, pause, ToolFeedback.builder(action).result(FeedbackResult.APPROVED).build())));
+		assertThrows(IllegalArgumentException.class, () -> restored.invokeAndGetOutput("",
+				review(config, pause, ToolFeedback.builder(action).result(FeedbackResult.RESPONDED).build())));
+		assertEquals(0, tools.agentToolNodeExecutions.get());
+
+		restored.invokeAndGetOutput("", review(config, pause,
+				ToolFeedback.builder(action).type("respond").response("Option B").build())).orElseThrow();
+		assertEquals(2, evaluations.get());
+		assertEquals(1, tools.agentToolNodeExecutions.get());
+		var results = toolResults(model, 1);
+		assertEquals(List.of("automatic", "question"), results.stream().map(ToolResultPart::id).toList());
+		assertFalse(results.get(1).isError());
+		assertEquals("Option B", results.get(1).toToolResponse().responseData());
+	}
+
+	@Test
+	void validatesTheEntireReviewBeforeRunningAnyToolAndRejectsStaleBatchIds() throws Exception {
+		var tools = new BoundaryTools();
+		var batch = List.of(toolCall("first", "boundary_tool"), toolCall("second", "boundary_tool"));
+		var model = new ScriptedToolModel(List.of(batch, batch));
+		var agent = ReactAgent.builder().name("review-validation").model(model).tools(ToolCallbacks.from(tools))
+				.hooks(HumanInTheLoopHook.builder().approvalOn("boundary_tool", "Review").build())
+				.saver(new MemorySaver()).build();
+		var config = RunnableConfig.builder().threadId("review-validation").build();
+		var pause = assertInstanceOf(InterruptionMetadata.class, agent.invokeAndGetOutput("review batch", config).orElseThrow());
+		var first = ToolFeedback.builder(pause.toolFeedbacks().get(0)).type("approve").build();
+		var second = ToolFeedback.builder(pause.toolFeedbacks().get(1)).type("approve").build();
+		var partial = assertInstanceOf(InterruptionMetadata.class,
+				agent.invokeAndGetOutput("", review(config, pause, first)).orElseThrow());
+		assertEquals(pause.interruptionId(), partial.interruptionId());
+		assertEquals(List.of("first", "second"), partial.toolFeedbacks().stream().map(ToolFeedback::getId).toList());
+		assertThrows(IllegalArgumentException.class,
+				() -> agent.invokeAndGetOutput("", review(config, pause, first, first, second)));
+		assertThrows(IllegalArgumentException.class, () -> agent.invokeAndGetOutput("", review(config, pause, first,
+				ToolFeedback.builder(second).id("other").build())));
+		for (String arguments : List.of("", "{", "{} {}")) {
+			var invalidEdit = ToolFeedback.builder(second).type("edit").arguments(arguments).build();
+			assertThrows(IllegalArgumentException.class,
+					() -> agent.invokeAndGetOutput("", review(config, pause, first, invalidEdit)));
+		}
+		assertEquals(0, tools.agentToolNodeExecutions.get());
+
+		var next = assertInstanceOf(InterruptionMetadata.class,
+				agent.invokeAndGetOutput("", review(config, pause, second, first)).orElseThrow());
+		assertFalse(pause.interruptionId().equals(next.interruptionId()));
+		assertEquals(2, tools.agentToolNodeExecutions.get());
+		assertThrows(IllegalArgumentException.class,
+				() -> agent.invokeAndGetOutput("", review(config, pause, first, second)));
+		assertEquals(2, tools.agentToolNodeExecutions.get());
+		agent.invokeAndGetOutput("", review(config, next, first, second)).orElseThrow();
+		assertEquals(4, tools.agentToolNodeExecutions.get());
+	}
+
+	@Test
+	void restoresApprovedArgumentsFromACheckpointBeforeToolDispatch(@TempDir Path directory) throws Exception {
+		var tools = new ConfirmationTools();
+		var model = new ScriptedToolModel(List.of(List.of(toolCall("call", "boundary_tool"))));
+		var config = RunnableConfig.builder().threadId("approval-dispatch").build();
+		var first = approvalDispatchAgent(directory, model, tools);
+		var pause = assertInstanceOf(InterruptionMetadata.class, first.invokeAndGetOutput("run tool", config).orElseThrow());
+		var edited = ToolFeedback.builder(pause.toolFeedbacks().get(0)).type("edit").arguments("{\"edited\":true}").build();
+		var beforeTool = assertInstanceOf(InterruptionMetadata.class,
+				first.invokeAndGetOutput("", review(config, pause, edited)).orElseThrow());
+		assertTrue(beforeTool.toolFeedbacks().isEmpty());
+		assertEquals(0, tools.executions.get());
+
+		approvalDispatchAgent(directory, model, tools).invokeAndGetOutput("", config.withResume()).orElseThrow();
+		assertEquals(1, tools.executions.get());
+		assertFalse(toolResults(model, 1).get(0).isError());
+	}
+
+	private static ReactAgent approvalDispatchAgent(Path directory, ChatModel model, ConfirmationTools tools) {
+		var saver = FileSystemSaver.builder().targetFolder(directory).build();
+		var compileConfig = CompileConfig.builder().saverConfig(SaverConfig.builder().register(saver).build())
+				.interruptsBefore(List.of(RunnableConfig.AGENT_TOOL_NAME)).build();
+		return ReactAgent.builder().name("approval-dispatch").model(model).tools(ToolCallbacks.from(tools))
+				.compileConfig(compileConfig).build();
+	}
+
+	@Test
+	void rejectsAnInterceptorRewriteThatWouldRequireReview() throws Exception {
+		var tools = new BoundaryTools();
+		var model = new ScriptedToolModel(List.of(List.of(toolCall("call", "boundary_tool"))));
+		var interceptor = new ToolInterceptor() {
+			@Override
+			public ToolCallResponse interceptToolCall(ToolCallRequest request, ToolCallHandler handler) {
+				return handler.call(ToolCallRequest.builder(request).arguments("{\"requiresReview\":true}").build());
+			}
+
+			@Override
+			public String getName() {
+				return "rewrite-arguments";
+			}
+		};
+		var policy = ToolConfig.builder().when(request -> request.getArguments().contains("requiresReview")).build();
+		var agent = ReactAgent.builder().name("rewrite-review").model(model).tools(ToolCallbacks.from(tools))
+				.hooks(HumanInTheLoopHook.builder().approvalOn("boundary_tool", policy).build())
+				.interceptors(interceptor).saver(new MemorySaver()).build();
+		agent.invokeAndGetOutput("run ordinary call", RunnableConfig.builder().threadId("rewrite-review").build()).orElseThrow();
+
+		assertEquals(0, tools.agentToolNodeExecutions.get());
+		assertTrue(toolResults(model, 1).get(0).isError());
+	}
+
+	private static ReactAgent approvalAgent(Path directory, ChatModel model, BoundaryTools tools, ToolConfig policy) {
+		return ReactAgent.builder().name("conditional-review").model(model).tools(ToolCallbacks.from(tools))
+				.hooks(HumanInTheLoopHook.builder().approvalOn("boundary_tool", policy).build())
+				.saver(FileSystemSaver.builder().targetFolder(directory).build()).build();
+	}
+
+	private static RunnableConfig review(RunnableConfig config, InterruptionMetadata request, ToolFeedback... decisions) {
+		return RunnableConfig.builder(config).addHumanFeedback(InterruptionMetadata.builder(request)
+				.toolFeedbacks(List.of(decisions)).build()).build();
 	}
 
 	@Test

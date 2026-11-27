@@ -48,6 +48,15 @@ public interface InterruptableAction {
 	Optional<InterruptionMetadata> interrupt(String nodeId, OverAllState state, RunnableConfig config);
 
 	/**
+	 * Checks for an interruption with the request saved for this node, if any.
+	 * A pre-execution interruption with an ID is recorded in the checkpoint.
+	 */
+	default Optional<InterruptionMetadata> interrupt(String nodeId, OverAllState state, RunnableConfig config,
+			Optional<InterruptionMetadata> pending) {
+		return interrupt(nodeId, state, config);
+	}
+
+	/**
 	 * Determines whether the graph execution should be interrupted AFTER the current node executes.
 	 * <p>
 	 * This method is called after the node action's {@code apply()} method has completed,

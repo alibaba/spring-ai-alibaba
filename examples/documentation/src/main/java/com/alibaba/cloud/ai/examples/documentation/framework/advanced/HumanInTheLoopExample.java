@@ -26,6 +26,8 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback.FeedbackResult;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
@@ -33,6 +35,10 @@ import com.alibaba.cloud.ai.graph.agent.hook.hip.ToolConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
@@ -45,25 +51,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
- * 人工介入（Human-in-the-Loop）示例
- *
- * 演示如何使用人工介入Hook为Agent工具调用添加人工监督，包括：
- * 1. 配置中断和审批
- * 2. 批准（approve）决策
- * 3. 编辑（edit）决策
- * 4. 拒绝（reject）决策
- * 5. 处理多个工具调用
- * 6. Workflow中嵌套ReactAgent的人工中断
- * 7. 实用工具方法
- *
- * 参考文档: advanced_doc/human-in-the-loop.md
+ * 演示 ReactAgent 的条件审批、批次决策、人工回答和嵌套工作流恢复。
  */
 public class HumanInTheLoopExample {
+
+	private static final ObjectReader ARGUMENTS =
+			new ObjectMapper().reader().with(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
 
 	private final ChatModel chatModel;
 
@@ -72,17 +71,15 @@ public class HumanInTheLoopExample {
 	}
 
 	/**
-	 * 实用工具方法：批准所有工具调用
+	 * 为允许批准的批次生成逐项批准决策。
 	 */
 	public static InterruptionMetadata approveAll(InterruptionMetadata interruptionMetadata) {
-		InterruptionMetadata.Builder builder = InterruptionMetadata.builder()
-				.nodeId(interruptionMetadata.node())
-				.state(interruptionMetadata.state());
+		InterruptionMetadata.Builder builder = InterruptionMetadata.builder(interruptionMetadata);
 
 		interruptionMetadata.toolFeedbacks().forEach(toolFeedback -> {
 			builder.addToolFeedback(
-					InterruptionMetadata.ToolFeedback.builder(toolFeedback)
-							.result(InterruptionMetadata.ToolFeedback.FeedbackResult.APPROVED)
+					ToolFeedback.builder(toolFeedback)
+							.result(FeedbackResult.APPROVED)
 							.build()
 			);
 		});
@@ -91,17 +88,15 @@ public class HumanInTheLoopExample {
 	}
 
 	/**
-	 * 实用工具方法：拒绝所有工具调用
+	 * 为允许拒绝的批次生成逐项拒绝决策。
 	 */
 	public static InterruptionMetadata rejectAll(InterruptionMetadata interruptionMetadata, String reason) {
-		InterruptionMetadata.Builder builder = InterruptionMetadata.builder()
-				.nodeId(interruptionMetadata.node())
-				.state(interruptionMetadata.state());
+		InterruptionMetadata.Builder builder = InterruptionMetadata.builder(interruptionMetadata);
 
 		interruptionMetadata.toolFeedbacks().forEach(toolFeedback -> {
 			builder.addToolFeedback(
-					InterruptionMetadata.ToolFeedback.builder(toolFeedback)
-							.result(InterruptionMetadata.ToolFeedback.FeedbackResult.REJECTED)
+					ToolFeedback.builder(toolFeedback)
+							.result(FeedbackResult.REJECTED)
 							.description(reason)
 							.build()
 			);
@@ -111,35 +106,59 @@ public class HumanInTheLoopExample {
 	}
 
 	/**
-	 * 实用工具方法：编辑特定工具的参数
+	 * 按调用 ID 编辑一项，并为批次中的其余调用生成批准决策。
 	 */
-	public static InterruptionMetadata editTool(
+	public static InterruptionMetadata editCall(
 			InterruptionMetadata interruptionMetadata,
-			String toolName,
+			String callId,
 			String newArguments) {
-		InterruptionMetadata.Builder builder = InterruptionMetadata.builder()
-				.nodeId(interruptionMetadata.node())
-				.state(interruptionMetadata.state());
+		if (interruptionMetadata.toolFeedbacks().stream().noneMatch(request -> request.getId().equals(callId))) {
+			throw new IllegalArgumentException("Unknown tool call ID " + callId);
+		}
+		var decisions = interruptionMetadata.toolFeedbacks().stream().map(request -> {
+			var decision = ToolFeedback.builder(request);
+			return request.getId().equals(callId)
+					? decision.result(FeedbackResult.EDITED).arguments(newArguments).build()
+					: decision.result(FeedbackResult.APPROVED).build();
+		}).toList();
+		return InterruptionMetadata.builder(interruptionMetadata).toolFeedbacks(decisions).build();
+	}
 
-		interruptionMetadata.toolFeedbacks().forEach(toolFeedback -> {
-			if (toolFeedback.getName().equals(toolName)) {
-				builder.addToolFeedback(
-						InterruptionMetadata.ToolFeedback.builder(toolFeedback)
-								.arguments(newArguments)
-								.result(InterruptionMetadata.ToolFeedback.FeedbackResult.EDITED)
-								.build()
-				);
-			}
-			else {
-				builder.addToolFeedback(
-						InterruptionMetadata.ToolFeedback.builder(toolFeedback)
-								.result(InterruptionMetadata.ToolFeedback.FeedbackResult.APPROVED)
-								.build()
-				);
-			}
-		});
+	/**
+	 * 创建仅接受人工回答的提问工具。
+	 */
+	public ReactAgent createQuestionAgent() {
+		var askUser = FunctionToolCallback.builder("ask_user", (Question question) -> {
+			throw new IllegalStateException("The answer must come from the user");
+		})
+				.description("需要用户做选择时，提交问题和选项")
+				.inputType(Question.class)
+				.build();
+		var review = HumanInTheLoopHook.builder().approvalOn("ask_user", ToolConfig.builder()
+				.description("请回答 Agent 的问题")
+				.allowedDecisions(FeedbackResult.RESPONDED)
+				.build()).build();
+		return ReactAgent.builder().name("question_agent").model(chatModel).tools(askUser).hooks(review)
+				.saver(new MemorySaver()).build();
+	}
 
-		return builder.build();
+	/**
+	 * 对中断中的每个问题提交回答，供 Agent 作为对应的工具结果继续处理。
+	 */
+	public static RunnableConfig answerQuestions(RunnableConfig thread, InterruptionMetadata interruption,
+			Map<String, String> answersByCallId) {
+		var answers = interruption.toolFeedbacks().stream()
+				.map(request -> ToolFeedback.builder(request).result(FeedbackResult.RESPONDED)
+						.response(answersByCallId.get(request.getId())).build())
+				.toList();
+		return resumeWith(thread, InterruptionMetadata.builder(interruption).toolFeedbacks(answers).build());
+	}
+
+	record Question(String question, List<String> options) {
+	}
+
+	private static RunnableConfig resumeWith(RunnableConfig thread, InterruptionMetadata feedback) {
+		return RunnableConfig.builder(thread).addHumanFeedback(feedback).build();
 	}
 
 	/**
@@ -172,50 +191,68 @@ public class HumanInTheLoopExample {
 	}
 
 	/**
-	 * 示例1：配置中断和基本使用
-	 *
-	 * 为特定工具配置人工审批
+	 * 预览公告直接执行，模拟发布须经批准或拒绝。
 	 */
-	public void example1_basicConfiguration() {
-		// 配置检查点保存器（人工介入需要检查点来处理中断）
-		MemorySaver memorySaver = new MemorySaver();
-
-		// 创建工具回调（示例）
-		ToolCallback writeFileTool = FunctionToolCallback.builder("write_file", (args) -> "文件已写入")
-				.description("写入文件")
-				.inputType(String.class)
+	public ReactAgent createPublishingAgent() {
+		var publishNotice = FunctionToolCallback.builder("publish_notice",
+				(PublishNotice request) -> (request.preview() ? "预览 " : "模拟发布 ") + request.content())
+				.description("将公告生成预览或模拟发布，preview 字段指定是否仅预览")
+				.inputType(PublishNotice.class)
 				.build();
-
-		ToolCallback executeSqlTool = FunctionToolCallback.builder("execute_sql", (args) -> "SQL已执行")
-				.description("执行SQL语句")
-				.inputType(String.class)
-				.build();
-
-		ToolCallback readDataTool = FunctionToolCallback.builder("read_data", (args) -> "数据已读取")
-				.description("读取数据")
-				.inputType(String.class)
-				.build();
-
-		// 创建人工介入Hook
-		HumanInTheLoopHook humanInTheLoopHook = HumanInTheLoopHook.builder()
-				.approvalOn("write_file", ToolConfig.builder()
-						.description("文件写入操作需要审批")
-						.build())
-				.approvalOn("execute_sql", ToolConfig.builder()
-						.description("SQL执行操作需要审批")
+		var review = HumanInTheLoopHook.builder()
+				.approvalOn("publish_notice", ToolConfig.builder()
+						.description("请审核要发布的公告")
+						.allowedDecisions(FeedbackResult.APPROVED, FeedbackResult.REJECTED)
+						.when(request -> requiresPublishReview(request.getArguments()))
 						.build())
 				.build();
-
-		// 创建Agent
-		ReactAgent agent = ReactAgent.builder()
-				.name("approval_agent")
+		return ReactAgent.builder()
+				.name("publication_agent")
 				.model(chatModel)
-				.tools(writeFileTool, executeSqlTool, readDataTool)
-				.hooks(List.of(humanInTheLoopHook))
-				.saver(memorySaver)
+				.tools(publishNotice)
+				.hooks(review)
+				.saver(new MemorySaver())
 				.build();
+	}
 
-		System.out.println("人工介入Hook配置示例完成");
+	private static boolean requiresPublishReview(String arguments) {
+		if (arguments == null || arguments.isBlank()) {
+			return true;
+		}
+		try {
+			var preview = ARGUMENTS.readTree(arguments).path("preview");
+			return !preview.isBoolean() || !preview.booleanValue();
+		}
+		catch (JsonProcessingException ex) {
+			return true;
+		}
+	}
+
+	record PublishNotice(String content, boolean preview) {
+	}
+
+	public void example1_basicConfiguration() throws Exception {
+		var agent = createPublishingAgent();
+		var config = RunnableConfig.builder().threadId("publication-session").build();
+		var preview = agent.invokeAndGetOutput("用 publish_notice 预览公告「周五发布新版本」，设置 preview 为 true。", config);
+		if (preview.orElse(null) instanceof InterruptionMetadata interruption) {
+			printReview(interruption);
+			return;
+		}
+		var output = agent.invokeAndGetOutput("用 publish_notice 模拟发布这条公告，设置 preview 为 false。", config);
+		if (output.orElse(null) instanceof InterruptionMetadata interruption) {
+			printReview(interruption);
+			// 模拟审查者批准发布。
+			agent.invokeAndGetOutput("", resumeWith(config, approveAll(interruption)));
+		}
+	}
+
+	private static void printReview(InterruptionMetadata interruption) {
+		System.out.printf("中断 ID %s%n", interruption.interruptionId().orElseThrow());
+		for (var request : interruption.toolFeedbacks()) {
+			System.out.printf("%s %s %s %s %s%n", request.getId(), request.getName(),
+					request.getArguments(), request.getDescription(), request.getAllowedDecisions());
+		}
 	}
 
 	/**
@@ -257,49 +294,9 @@ public class HumanInTheLoopExample {
 				config
 		);
 
-		// 检查中断并处理
-		if (result.isPresent() && result.get() instanceof InterruptionMetadata) {
-			InterruptionMetadata interruptionMetadata = (InterruptionMetadata) result.get();
-
-			System.out.println("检测到中断，需要人工审批");
-			List<InterruptionMetadata.ToolFeedback> toolFeedbacks =
-					interruptionMetadata.toolFeedbacks();
-
-			for (InterruptionMetadata.ToolFeedback feedback : toolFeedbacks) {
-				System.out.println("工具: " + feedback.getName());
-				System.out.println("参数: " + feedback.getArguments());
-				System.out.println("描述: " + feedback.getDescription());
-			}
-
-			// 构建批准反馈
-			InterruptionMetadata.Builder feedbackBuilder = InterruptionMetadata.builder()
-					.nodeId(interruptionMetadata.node())
-					.state(interruptionMetadata.state());
-
-			// 对每个工具调用设置批准决策
-			interruptionMetadata.toolFeedbacks().forEach(toolFeedback -> {
-				InterruptionMetadata.ToolFeedback approvedFeedback =
-						InterruptionMetadata.ToolFeedback.builder(toolFeedback)
-								.result(InterruptionMetadata.ToolFeedback.FeedbackResult.APPROVED)
-								.build();
-				feedbackBuilder.addToolFeedback(approvedFeedback);
-			});
-
-			InterruptionMetadata approvalMetadata = feedbackBuilder.build();
-
-			// 使用批准决策恢复执行
-			RunnableConfig resumeConfig = RunnableConfig.builder()
-					.threadId(threadId) // 相同的线程ID以恢复暂停的对话
-					.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, approvalMetadata)
-					.build();
-
-			// 第二次调用以恢复执行
-			System.out.println("\n=== 第二次调用：使用批准决策恢复 ===");
-			Optional<NodeOutput> finalResult = agent.invokeAndGetOutput("", resumeConfig);
-
-			if (finalResult.isPresent()) {
-				System.out.println("执行完成");
-			}
+		if (result.orElse(null) instanceof InterruptionMetadata interruption) {
+			printReview(interruption);
+			agent.invokeAndGetOutput("", resumeWith(config, approveAll(interruption)));
 		}
 
 		System.out.println("批准决策示例执行完成");
@@ -313,9 +310,9 @@ public class HumanInTheLoopExample {
 	public void example3_editDecision() throws Exception {
 		MemorySaver memorySaver = new MemorySaver();
 
-		ToolCallback executeSqlTool = FunctionToolCallback.builder("execute_sql", (args) -> "SQL执行结果")
-				.description("执行SQL语句")
-				.inputType(String.class)
+		var executeSqlTool = FunctionToolCallback.builder("execute_sql", (SqlQuery request) -> "模拟执行 " + request.query())
+				.description("模拟执行给定的 SQL")
+				.inputType(SqlQuery.class)
 				.build();
 
 		HumanInTheLoopHook humanInTheLoopHook = HumanInTheLoopHook.builder()
@@ -343,51 +340,28 @@ public class HumanInTheLoopExample {
 				config
 		);
 
-		if (result.isPresent() && result.get() instanceof InterruptionMetadata) {
-			InterruptionMetadata interruptionMetadata = (InterruptionMetadata) result.get();
-
-			// 构建编辑反馈
-			InterruptionMetadata.Builder feedbackBuilder = InterruptionMetadata.builder()
-					.nodeId(interruptionMetadata.node())
-					.state(interruptionMetadata.state());
-
-			interruptionMetadata.toolFeedbacks().forEach(toolFeedback -> {
-				// 修改工具参数
-				String editedArguments = toolFeedback.getArguments()
-						.replace("DELETE FROM records", "DELETE FROM old_records");
-
-				InterruptionMetadata.ToolFeedback editedFeedback =
-						InterruptionMetadata.ToolFeedback.builder(toolFeedback)
-								.arguments(editedArguments)
-								.result(InterruptionMetadata.ToolFeedback.FeedbackResult.EDITED)
-								.build();
-				feedbackBuilder.addToolFeedback(editedFeedback);
-			});
-
-			InterruptionMetadata editMetadata = feedbackBuilder.build();
-
-			// 使用编辑决策恢复执行
-			RunnableConfig resumeConfig = RunnableConfig.builder()
-					.threadId(threadId)
-					.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, editMetadata)
-					.build();
-
-			Optional<NodeOutput> finalResult = agent.invokeAndGetOutput("", resumeConfig);
-
+		if (result.orElse(null) instanceof InterruptionMetadata interruption) {
+			printReview(interruption);
+			var callId = interruption.toolFeedbacks().get(0).getId();
+			var review = editCall(interruption, callId, "{\"query\":\"SELECT * FROM records LIMIT 10\"}");
+			agent.invokeAndGetOutput("", resumeWith(config, review));
 			System.out.println("编辑决策示例执行完成");
 		}
+	}
+
+	record SqlQuery(String query) {
 	}
 
 	/**
 	 * 示例4：拒绝（reject）决策
 	 *
-	 * 人工拒绝工具调用并终止当前流程
+	 * 跳过被拒绝的工具调用，将拒绝理由返回给模型。
 	 */
 	public void example4_rejectDecision() throws Exception {
 		MemorySaver memorySaver = new MemorySaver();
 
-		ToolCallback deleteTool = FunctionToolCallback.builder("delete_data", (args) -> "数据已删除")
-				.description("删除数据")
+		ToolCallback deleteTool = FunctionToolCallback.builder("delete_data", (args) -> "模拟删除")
+				.description("模拟删除数据")
 				.inputType(String.class)
 				.build();
 
@@ -416,33 +390,10 @@ public class HumanInTheLoopExample {
 				config
 		);
 
-		if (result.isPresent() && result.get() instanceof InterruptionMetadata) {
-			InterruptionMetadata interruptionMetadata = (InterruptionMetadata) result.get();
-
-			// 构建拒绝反馈
-			InterruptionMetadata.Builder feedbackBuilder = InterruptionMetadata.builder()
-					.nodeId(interruptionMetadata.node())
-					.state(interruptionMetadata.state());
-
-			interruptionMetadata.toolFeedbacks().forEach(toolFeedback -> {
-				InterruptionMetadata.ToolFeedback rejectedFeedback =
-						InterruptionMetadata.ToolFeedback.builder(toolFeedback)
-								.result(InterruptionMetadata.ToolFeedback.FeedbackResult.REJECTED)
-								.description("不允许删除操作，请使用归档功能代替。")
-								.build();
-				feedbackBuilder.addToolFeedback(rejectedFeedback);
-			});
-
-			InterruptionMetadata rejectMetadata = feedbackBuilder.build();
-
-			// 使用拒绝决策恢复执行
-			RunnableConfig resumeConfig = RunnableConfig.builder()
-					.threadId(threadId)
-					.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, rejectMetadata)
-					.build();
-
-			Optional<NodeOutput> finalResult = agent.invokeAndGetOutput("", resumeConfig);
-
+		if (result.orElse(null) instanceof InterruptionMetadata interruption) {
+			printReview(interruption);
+			var feedback = rejectAll(interruption, "请先归档数据。");
+			agent.invokeAndGetOutput("", resumeWith(config, feedback));
 			System.out.println("拒绝决策示例执行完成");
 		}
 	}
@@ -478,56 +429,20 @@ public class HumanInTheLoopExample {
 				.threadId(threadId)
 				.build();
 
-		Optional<NodeOutput> result = agent.invokeAndGetOutput("执行所有工具", config);
-
-		if (result.isPresent() && result.get() instanceof InterruptionMetadata) {
-			InterruptionMetadata interruptionMetadata = (InterruptionMetadata) result.get();
-
-			InterruptionMetadata.Builder feedbackBuilder = InterruptionMetadata.builder()
-					.nodeId(interruptionMetadata.node())
-					.state(interruptionMetadata.state());
-
-			List<InterruptionMetadata.ToolFeedback> feedbacks = interruptionMetadata.toolFeedbacks();
-
-			// 第一个工具：批准
-			if (feedbacks.size() > 0) {
-				feedbackBuilder.addToolFeedback(
-						InterruptionMetadata.ToolFeedback.builder(feedbacks.get(0))
-								.result(InterruptionMetadata.ToolFeedback.FeedbackResult.APPROVED)
-								.build()
-				);
-			}
-
-			// 第二个工具：编辑
-			if (feedbacks.size() > 1) {
-				feedbackBuilder.addToolFeedback(
-						InterruptionMetadata.ToolFeedback.builder(feedbacks.get(1))
-								.arguments("{\"param\": \"new_value\"}")
-								.result(InterruptionMetadata.ToolFeedback.FeedbackResult.EDITED)
-								.build()
-				);
-			}
-
-			// 第三个工具：拒绝
-			if (feedbacks.size() > 2) {
-				feedbackBuilder.addToolFeedback(
-						InterruptionMetadata.ToolFeedback.builder(feedbacks.get(2))
-								.result(InterruptionMetadata.ToolFeedback.FeedbackResult.REJECTED)
-								.description("不允许此操作")
-								.build()
-				);
-			}
-
-			InterruptionMetadata decisionsMetadata = feedbackBuilder.build();
-
-			RunnableConfig resumeConfig = RunnableConfig.builder()
-					.threadId(threadId)
-					.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, decisionsMetadata)
-					.build();
-
-			Optional<NodeOutput> outputOptional = agent.invokeAndGetOutput("", resumeConfig);
-
-			System.out.println("多个决策示例执行完成，最终状态：\n\n" + outputOptional.get().state());
+		var output = agent.invokeAndGetOutput("在一轮中调用 tool1、tool2 和 tool3。", config);
+		if (output.orElse(null) instanceof InterruptionMetadata interruption) {
+			printReview(interruption);
+			var decisions = interruption.toolFeedbacks().stream().map(request -> {
+				var decision = ToolFeedback.builder(request);
+				return switch (request.getName()) {
+					case "tool1" -> decision.result(FeedbackResult.APPROVED).build();
+					case "tool2" -> decision.result(FeedbackResult.EDITED).arguments("{\"content\":\"修订内容\"}").build();
+					case "tool3" -> decision.result(FeedbackResult.REJECTED).description("请跳过此操作。").build();
+					default -> throw new IllegalArgumentException("Unexpected tool " + request.getName());
+				};
+			}).toList();
+			var feedback = InterruptionMetadata.builder(interruption).toolFeedbacks(decisions).build();
+			agent.invokeAndGetOutput("", resumeWith(config, feedback));
 		}
 	}
 
@@ -637,60 +552,30 @@ public class HumanInTheLoopExample {
 						.build()
 		);
 
-		String threadId = "workflow-hilt-001";
+		var config = RunnableConfig.builder().threadId("workflow-hitl-001").build();
 		Map<String, Object> input = Map.of("input", "请解释量子计算的基本原理");
 
-		// 第一次调用 - 可能触发中断
-		System.out.println("=== 第一次调用工作流：可能触发中断 ===");
-		Optional<NodeOutput> nodeOutputOptional = compiledGraph.invokeAndGetOutput(
-				input,
-				RunnableConfig.builder().threadId(threadId).build()
-		);
-
-		// 检查是否发生中断
-		if (nodeOutputOptional.isPresent() && nodeOutputOptional.get() instanceof InterruptionMetadata interruptionMetadata) {
-			System.out.println("\n工作流被中断，等待人工审核。");
-			System.out.println("中断节点: " + interruptionMetadata.node());
-			System.out.println("中断状态: " + interruptionMetadata.state());
-
-			List<InterruptionMetadata.ToolFeedback> feedbacks = interruptionMetadata.toolFeedbacks();
-			System.out.println("需要审批的工具调用数量: " + feedbacks.size());
-
-			// 显示所有需要审批的工具调用
-			for (InterruptionMetadata.ToolFeedback feedback : feedbacks) {
-				System.out.println("\n工具名称: " + feedback.getName());
-				System.out.println("工具参数: " + feedback.getArguments());
-				System.out.println("工具描述: " + feedback.getDescription());
-			}
-
-			// 构建人工反馈（批准所有工具调用）
-			InterruptionMetadata.Builder feedbackBuilder = InterruptionMetadata.builder()
-					.nodeId(interruptionMetadata.node())
-					.state(interruptionMetadata.state());
-
-			// 对每个工具调用设置批准决策
-			feedbacks.forEach(toolFeedback -> {
-				feedbackBuilder.addToolFeedback(
-						InterruptionMetadata.ToolFeedback.builder(toolFeedback)
-								.result(InterruptionMetadata.ToolFeedback.FeedbackResult.APPROVED)
-								.build()
-				);
-			});
-
-			InterruptionMetadata approvalMetadata = feedbackBuilder.build();
-
-			// 使用批准决策恢复执行
-			System.out.println("\n=== 第二次调用：使用批准决策恢复工作流 ===");
-			RunnableConfig resumableConfig = RunnableConfig.builder()
-					.threadId(threadId)
-					.addHumanFeedback(approvalMetadata)
-					.build();
-
-			nodeOutputOptional = compiledGraph.invokeAndGetOutput(Map.of(), resumableConfig);
-			System.out.println("\n工作流中嵌套ReactAgent的人工中断示例执行完成");
-
+		var output = compiledGraph.invokeAndGetOutput(input, config);
+		if (output.orElse(null) instanceof InterruptionMetadata interruption) {
+			printReview(interruption);
+			compiledGraph.invokeAndGetOutput(Map.of(), resumeWith(config, approveAll(interruption)));
 		}
+	}
 
+	/**
+	 * 用示例答案恢复提问工具。实际应用由界面按调用 ID 收集答案。
+	 */
+	public Optional<NodeOutput> example7_respondDecision(String answer) throws Exception {
+		var agent = createQuestionAgent();
+		var config = RunnableConfig.builder().threadId("question-session").build();
+		var output = agent.invokeAndGetOutput("调用 ask_user，询问用户希望用简体中文还是英语接收摘要。", config);
+		if (output.orElse(null) instanceof InterruptionMetadata interruption) {
+			printReview(interruption);
+			var answers = interruption.toolFeedbacks().stream()
+					.collect(Collectors.toMap(ToolFeedback::getId, request -> answer));
+			return agent.invokeAndGetOutput("", answerQuestions(config, interruption, answers));
+		}
+		return output;
 	}
 
 	/**
@@ -724,6 +609,8 @@ public class HumanInTheLoopExample {
 			example6_workflowWithHumanInTheLoop();
 			System.out.println();
 
+			System.out.println("示例7 人工回答");
+			example7_respondDecision("简体中文");
 		}
 		catch (Exception e) {
 			System.err.println("执行示例时出错: " + e.getMessage());
@@ -743,7 +630,7 @@ public class HumanInTheLoopExample {
 
 		@Tool(name = "tool2", description = "工具2")
 		public String tool2(@ToolParam(description = "输入工具2模拟审批内容") String content) {
-			return "工具2结果";
+			return "工具2收到 " + content;
 		}
 
 		@Tool(name = "tool3", description = "工具3")

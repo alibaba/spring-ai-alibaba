@@ -124,9 +124,11 @@ public class ToolCallLimitHook extends ModelHook {
 		if ((threadLimit != null && proposedThreadCount > threadLimit)
 				|| (runLimit != null && proposedRunCount > runLimit)) {
 			HumanInTheLoopHook.clearConfirmedCalls(config);
-			return CompletableFuture.completedFuture(limitExceeded(proposedThreadCount, proposedRunCount,
+			var updates = limitExceeded(proposedThreadCount, proposedRunCount,
 					deniedResults(keys, settled, pending, buildLimitExceededMessage(proposedThreadCount, proposedRunCount,
-							threadLimit, runLimit, toolName))));
+							threadLimit, runLimit, toolName)));
+			HumanInTheLoopHook.removeConfirmedCalls(state, getAgentName(), updates);
+			return CompletableFuture.completedFuture(updates);
 		}
 
 		return CompletableFuture.completedFuture(Map.of(

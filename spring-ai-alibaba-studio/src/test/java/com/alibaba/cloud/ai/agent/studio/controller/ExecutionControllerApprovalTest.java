@@ -21,10 +21,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import com.alibaba.cloud.ai.agent.studio.loader.AgentLoader;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback.FeedbackResult;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.AgentTool;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
+import com.alibaba.cloud.ai.graph.agent.hook.hip.ToolConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -71,19 +73,7 @@ class ExecutionControllerApprovalTest {
 							new AssistantMessage.ToolCall("same-call", "function", "worker", "{\"input\":\"left\"}"),
 							new AssistantMessage.ToolCall("same-call", "function", "worker", "{\"input\":\"right\"}")))))
 			.tools(AgentTool.create(worker)).parallelToolExecution(true).saver(saver).build();
-		var mvc = MockMvcBuilders.standaloneSetup(new ExecutionController(new AgentLoader() {
-
-			@Override
-			public List<String> listAgents() {
-				return List.of(agent.name());
-			}
-
-			@Override
-			public Agent loadAgent(String name) {
-				return agent;
-			}
-
-		})).build();
+		var mvc = mvc(agent);
 
 		var started = sse(mvc, "/run_sse", """
 				{"appName":"parent","userId":"user","threadId":"thread",
@@ -109,6 +99,55 @@ class ExecutionControllerApprovalTest {
 		var finished = sse(mvc, "/resume_sse", approve(leftId));
 		assertThat(finished).contains("parent complete");
 		assertThat(tools.executions.get()).isEqualTo(2);
+	}
+
+	@Test
+	void exposesAllowedDecisionsAndResumesWithAHumanResponseOverSse() throws Exception {
+		var tools = new CountingTools();
+		var policy = ToolConfig.builder().allowedDecisions(FeedbackResult.RESPONDED).build();
+		var agent = ReactAgent.builder().name("parent")
+			.model(model(prompt -> prompt.getInstructions().stream().filter(ToolResponseMessage.class::isInstance)
+				.map(ToolResponseMessage.class::cast).findFirst()
+				.map(result -> reply(new AssistantMessage(result.getResponses().get(0).responseData())))
+				.orElseGet(() -> reply(toolCalls(new AssistantMessage.ToolCall("review-call", "function", "review", "{}"))))))
+			.tools(ToolCallbacks.from(tools)[0])
+			.hooks(HumanInTheLoopHook.builder().approvalOn("review", policy).build())
+			.saver(new MemorySaver()).build();
+		var mvc = mvc(agent);
+
+		var started = sse(mvc, "/run_sse", """
+				{"appName":"parent","userId":"user","threadId":"thread",
+				 "newMessage":{"messageType":"user","content":"ask"}}
+				""");
+		var approval = approvalMessage(started);
+		assertThat(approval.path("toolFeedback").get(0).path("allowedDecisions").toString()).isEqualTo("[\"RESPONDED\"]");
+		String id = approval.path("interruptionId").asText();
+		assertThat(sse(mvc, "/resume_sse", approve(id))).contains("APPROVED is not allowed");
+		assertThat(sse(mvc, "/resume_sse", """
+				{"appName":"parent","userId":"user","threadId":"thread","interruptionId":"%s",
+				 "toolFeedbacks":[{"id":"review-call","name":"review"}]}
+				""".formatted(id))).contains("Decision null is not allowed");
+		assertThat(sse(mvc, "/resume_sse", """
+				{"appName":"parent","userId":"user","threadId":"thread","interruptionId":"%s",
+				 "toolFeedbacks":[{"id":"review-call","name":"review","result":"RESPONDED","response":"Option B"}]}
+				""".formatted(id))).contains("Option B");
+		assertThat(tools.executions.get()).isZero();
+	}
+
+	private static MockMvc mvc(Agent agent) {
+		return MockMvcBuilders.standaloneSetup(new ExecutionController(new AgentLoader() {
+
+			@Override
+			public List<String> listAgents() {
+				return List.of(agent.name());
+			}
+
+			@Override
+			public Agent loadAgent(String name) {
+				return agent;
+			}
+
+		})).build();
 	}
 
 	private String sse(MockMvc mvc, String path, String body) throws Exception {

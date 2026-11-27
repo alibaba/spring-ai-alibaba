@@ -82,6 +82,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.IntStream;
 
 import static com.alibaba.cloud.ai.graph.RunnableConfig.AGENT_TOOL_NAME;
@@ -185,6 +186,12 @@ public class AgentToolNode implements NodeActionWithConfig {
 	}
 
 	private static final ToolCallConfirmationPolicy CONFIRMATION_POLICY = ToolCallConfirmationPolicy.fromToolMetadata();
+
+	private Predicate<ToolCallRequest> configuredToolReview = request -> false;
+
+	public void setConfiguredToolReview(Predicate<ToolCallRequest> configuredToolReview) {
+		this.configuredToolReview = configuredToolReview;
+	}
 
 	public boolean requiresConfirmation(AssistantMessage.ToolCall call, RunnableConfig config) {
 		ToolCallback callback = resolve(call.name(), config);
@@ -492,6 +499,9 @@ public class AgentToolNode implements NodeActionWithConfig {
 		}
 
 		var updates = new HashMap<>(batch.updates());
+		if (pending.isEmpty()) {
+			HumanInTheLoopHook.removeConfirmedCalls(state, agentName, updates);
+		}
 		if (!pending.isEmpty() || continuations.hasSavedState()) {
 			updates.put(pendingAgentToolsStateKey, pending.isEmpty() ? OverAllState.MARK_FOR_REMOVAL
 					: continuations.save(pending, returnDirect));
@@ -576,10 +586,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 					.build();
 			}
 
-			var requested = new AssistantMessage.ToolCall(req.getToolCallId(), toolCall.type(),
-					req.getToolName(), req.getArguments());
-			if (continuation == null && CONFIRMATION_POLICY.requiresConfirmation(requested, toolCallback.getToolMetadata())
-					&& (!toolCall.equals(requested) || !HumanInTheLoopHook.isConfirmed(config, requested))) {
+			if (continuation == null && requiresUnresolvedConfirmation(dispatch, req, toolCallback, state, config)) {
 				return ToolCallResponse.error(req.getToolCallId(), req.getToolName(), "Tool call requires confirmation");
 			}
 
@@ -640,6 +647,23 @@ public class AgentToolNode implements NodeActionWithConfig {
 		}
 		extraStateFromToolCall.clear();
 		return new ToolOutcome(null, pause.get());
+	}
+
+	private boolean requiresUnresolvedConfirmation(ToolDispatch dispatch, ToolCallRequest request,
+			ToolCallback callback, OverAllState state, RunnableConfig config) {
+		var call = dispatch.call();
+		var requested = new AssistantMessage.ToolCall(request.getToolCallId(), call.type(), request.getToolName(),
+				request.getArguments());
+		var priorApproval = HumanInTheLoopHook.matchesSavedApproval(state, agentName, dispatch.key(), requested);
+		if (priorApproval.isPresent()) {
+			return !priorApproval.get();
+		}
+		boolean metadataRequiresReview = CONFIRMATION_POLICY.requiresConfirmation(requested, callback.getToolMetadata());
+		if (call.equals(requested)) {
+			return metadataRequiresReview;
+		}
+		return metadataRequiresReview || configuredToolReview.test(ToolCallRequest.builder(request)
+				.executionContext(new ToolCallExecutionContext(config, state)).build());
 	}
 
 	/**

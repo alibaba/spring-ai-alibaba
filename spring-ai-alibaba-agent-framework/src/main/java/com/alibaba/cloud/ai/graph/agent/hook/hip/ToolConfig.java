@@ -15,14 +15,29 @@
  */
 package com.alibaba.cloud.ai.graph.agent.hook.hip;
 
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback.FeedbackResult;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Predicate;
+
 public class ToolConfig {
-	private String description;
+	private final String description;
+
+	private final List<FeedbackResult> allowedDecisions;
+
+	private final Predicate<ToolCallRequest> when;
 
 	public ToolConfig() {
+		this(new Builder());
 	}
 
 	private ToolConfig(Builder builder) {
 		this.description = builder.description;
+		this.allowedDecisions = builder.allowedDecisions;
+		this.when = builder.when;
 	}
 
 	public static Builder builder() {
@@ -33,15 +48,39 @@ public class ToolConfig {
 		return description;
 	}
 
-	void setDescription(String description) {
-		this.description = description;
+	List<FeedbackResult> getAllowedDecisions() {
+		return allowedDecisions;
+	}
+
+	boolean requiresReview(ToolCallRequest request) {
+		return when.test(request);
 	}
 
 	public static class Builder {
 		private String description;
 
+		private List<FeedbackResult> allowedDecisions = ToolFeedback.DEFAULT_ALLOWED_DECISIONS;
+
+		private Predicate<ToolCallRequest> when = request -> true;
+
 		public Builder description(String description) {
 			this.description = description;
+			return this;
+		}
+
+		/** Sets the decisions a reviewer can submit for this tool. */
+		public Builder allowedDecisions(FeedbackResult... decisions) {
+			var allowed = List.of(decisions);
+			if (allowed.isEmpty() || allowed.stream().distinct().count() != allowed.size()) {
+				throw new IllegalArgumentException("Allowed decisions must be non-empty and unique");
+			}
+			this.allowedDecisions = allowed;
+			return this;
+		}
+
+		/** Limits review to calls that satisfy the predicate. Tool metadata can independently require confirmation. */
+		public Builder when(Predicate<ToolCallRequest> when) {
+			this.when = Objects.requireNonNull(when);
 			return this;
 		}
 

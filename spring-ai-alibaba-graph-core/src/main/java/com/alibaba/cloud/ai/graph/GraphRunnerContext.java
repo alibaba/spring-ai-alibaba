@@ -17,9 +17,11 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.checkpoint.CheckpointWrite;
+import com.alibaba.cloud.ai.graph.checkpoint.InterruptionCheckpointCodec;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.ParallelBranchPath;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
@@ -69,6 +71,8 @@ public class GraphRunnerContext {
 
 	// A false value records a checkpoint taken before the child ran. Older checkpoints have no flag.
 	static final String SUBGRAPH_PAUSED = "_graph_subgraph_paused_";
+
+	private static final String PENDING_INTERRUPTION = "_graph_pending_interruption_";
 
 	private static final Logger log = LoggerFactory.getLogger(GraphRunner.class);
 
@@ -313,10 +317,10 @@ public class GraphRunnerContext {
 	// ================================================================================================================
 
 	public Optional<Checkpoint> addCheckpoint(String nodeId, String nextNodeId) throws Exception {
-		return addCheckpoint(nodeId, nextNodeId, false);
+		return addCheckpoint(nodeId, nextNodeId, Map.of());
 	}
 
-	private Optional<Checkpoint> addCheckpoint(String nodeId, String nextNodeId, boolean subgraphPaused)
+	private Optional<Checkpoint> addCheckpoint(String nodeId, String nextNodeId, Map<String, Object> runtimeUpdate)
 			throws Exception {
 		if (branchPath != null && !compiledGraph.compileConfig.taskCheckpoints()) {
 			return Optional.empty();
@@ -326,8 +330,9 @@ public class GraphRunnerContext {
 					.build();
 			var runtime = new HashMap<>(branchCompletionMetadata());
 			if (compiledGraph.isCompiledSubgraph(nextNodeId)) {
-				runtime.put(SUBGRAPH_PAUSED, subgraphPaused);
+				runtime.put(SUBGRAPH_PAUSED, false);
 			}
+			runtime.putAll(runtimeUpdate);
 			if (!runtime.isEmpty()) {
 				cp = cp.withRuntimeData(runtime);
 			}
@@ -347,30 +352,41 @@ public class GraphRunnerContext {
 	}
 
 	public void checkpointPausedNode() throws Exception {
-		checkpointPausedNode(false);
+		checkpointPausedNode(Map.of());
+	}
+
+	public void checkpointPendingInterruption(InterruptionMetadata interruption) throws Exception {
+		checkpointPausedNode(Map.of(PENDING_INTERRUPTION, InterruptionCheckpointCodec.encodeRequest(interruption)));
+	}
+
+	@SuppressWarnings("unchecked")
+	public Optional<InterruptionMetadata> pendingInterruption(OverAllState state) {
+		if (currentCheckpoint != null && currentCheckpoint.getNextNodeId().equals(currentNodeId)
+				&& currentCheckpoint.runtimeData().get(PENDING_INTERRUPTION) instanceof Map<?, ?> request) {
+			return Optional.of(InterruptionCheckpointCodec.decodeRequest((Map<String, Object>) request, state));
+		}
+		return Optional.empty();
 	}
 
 	public void checkpointPausedSubgraph() throws Exception {
 		if (compiledGraph.isCompiledSubgraph(currentNodeId)) {
-			checkpointPausedNode(true);
+			checkpointPausedNode(Map.of(SUBGRAPH_PAUSED, true));
 		}
 	}
 
-	private void checkpointPausedNode(boolean subgraphPaused) throws Exception {
+	private void checkpointPausedNode(Map<String, Object> runtimeUpdate) throws Exception {
 		var saver = compiledGraph.compileConfig.checkpointSaver();
 		if (saver.isEmpty()) {
 			return;
 		}
 		if (currentCheckpoint == null || replayingHistoricalCheckpoint
 				|| !currentNodeId.equals(currentCheckpoint.getNextNodeId())) {
-			addCheckpoint(currentNodeId, currentNodeId, subgraphPaused);
+			addCheckpoint(currentNodeId, currentNodeId, runtimeUpdate);
 			return;
 		}
 		var runtime = new HashMap<>(currentCheckpoint.runtimeData());
 		runtime.putAll(branchCompletionMetadata());
-		if (subgraphPaused) {
-			runtime.put(SUBGRAPH_PAUSED, true);
-		}
+		runtime.putAll(runtimeUpdate);
 		var checkpoint = Checkpoint.builder().id(currentCheckpoint.getId()).nodeId(currentCheckpoint.getNodeId())
 				.nextNodeId(currentNodeId).state(cloneState(overallState.data())).build().withRuntimeData(runtime);
 		saver.get().put(config.withCheckPointId(checkpoint.getId()), checkpoint);
