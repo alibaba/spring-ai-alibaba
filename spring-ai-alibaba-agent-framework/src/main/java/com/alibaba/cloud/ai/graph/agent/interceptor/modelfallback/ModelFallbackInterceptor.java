@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor.modelfallback;
 
+import com.alibaba.cloud.ai.graph.agent.context.ContextWindowExceededException;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
@@ -63,10 +64,10 @@ public class ModelFallbackInterceptor extends ModelInterceptor {
 		// Try primary model first
 		try {
 			ModelResponse modelResponse = handler.call(request);
-			Message message = (Message) modelResponse.getMessage();
 			
 			// Check if response contains error indicator
-			if (message.getText() != null && message.getText().contains("Exception:")) {
+			if (modelResponse.getMessage() instanceof Message message && message.getText() != null
+					&& message.getText().contains("Exception:")) {
 				throw new RuntimeException(message.getText());
 			}
 			
@@ -74,6 +75,9 @@ public class ModelFallbackInterceptor extends ModelInterceptor {
 			return modelResponse;
 		}
 		catch (Exception e) {
+			if (e instanceof ContextWindowExceededException exceeded) {
+				throw exceeded;
+			}
 			log.warn("Primary model failed: {}", e.getMessage());
 			lastException = e;
 		}

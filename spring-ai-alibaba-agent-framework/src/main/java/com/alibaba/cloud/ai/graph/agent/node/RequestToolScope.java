@@ -17,10 +17,12 @@
 package com.alibaba.cloud.ai.graph.agent.node;
 
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.agent.context.ContextWindowPolicy;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolCallbackUtils;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
@@ -74,8 +76,8 @@ final class RequestToolScope {
 		});
 	}
 
-	ToolsAdvisor captureAdvisor(List<String> selection) {
-		return new ToolsAdvisor("CaptureRequestTools", Ordered.LOWEST_PRECEDENCE - 1, request -> {
+	Advisor captureAdvisor(List<String> selection, ContextWindowPolicy policy) {
+		var capture = new ToolsAdvisor("CaptureRequestTools", Ordered.LOWEST_PRECEDENCE - 1, request -> {
 			var options = request.prompt().getOptions();
 			var callbacks = options instanceof ToolCallingChatOptions toolOptions
 					? select(ToolCallbackUtils.deduplicateByName(toolOptions.getToolCallbacks()), selection)
@@ -92,6 +94,7 @@ final class RequestToolScope {
 			captured = new CapturedTools(Map.copyOf(active), Map.copyOf(resumable));
 			return withCallbacks(request, callbacks);
 		});
+		return policy == null ? capture : new ContextWindowAdvisor(policy, capture);
 	}
 
 	private static List<ToolCallback> select(List<ToolCallback> callbacks, List<String> selection) {

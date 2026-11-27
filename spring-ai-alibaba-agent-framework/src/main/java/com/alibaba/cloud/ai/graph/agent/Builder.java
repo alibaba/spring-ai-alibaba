@@ -27,6 +27,7 @@ import java.util.concurrent.Executor;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.agent.context.ContextWindowPolicy;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.Interceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
@@ -73,6 +74,8 @@ public abstract class Builder {
 	protected ChatModel model;
 
 	protected ChatOptions chatOptions;
+
+	protected ContextWindowPolicy contextWindowPolicy;
 
 	protected ChatClient chatClient;
 
@@ -303,6 +306,16 @@ public abstract class Builder {
 	 */
 	public Builder assistantMessageSanitizerEnabled(boolean assistantMessageSanitizerEnabled) {
 		this.assistantMessageSanitizerEnabled = assistantMessageSanitizerEnabled;
+		return this;
+	}
+
+	/**
+	 * Enables input budgeting and context-window recovery for this agent's model requests.
+	 * @param policy the context window policy
+	 * @return this builder instance
+	 */
+	public Builder contextWindowPolicy(ContextWindowPolicy policy) {
+		this.contextWindowPolicy = Objects.requireNonNull(policy, "policy must not be null");
 		return this;
 	}
 

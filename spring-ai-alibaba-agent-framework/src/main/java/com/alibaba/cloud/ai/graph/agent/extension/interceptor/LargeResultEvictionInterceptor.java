@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.graph.agent.extension.interceptor;
 
 import com.alibaba.cloud.ai.graph.agent.extension.file.FilesystemBackend;
 import com.alibaba.cloud.ai.graph.agent.extension.file.LocalFilesystemBackend;
-import com.alibaba.cloud.ai.graph.agent.extension.file.WriteResult;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallResponse;
@@ -28,6 +27,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Tool interceptor that automatically evicts large tool results to the filesystem.
  *
@@ -35,7 +37,7 @@ import java.util.Set;
  * token limit, it automatically saves the full result to a file and returns a truncated
  * message with a pointer to the file location.
  *
- * Key Features (from Python's FilesystemMiddleware.wrap_tool_call):
+ * Features:
  * - Automatic detection of large results (>20000 tokens by default)
  * - Eviction to /large_tool_results/ directory
  * - Content sample (first 10 lines) included in response
@@ -52,7 +54,8 @@ import java.util.Set;
  */
 public class LargeResultEvictionInterceptor extends ToolInterceptor {
 
-	// Constants from Python implementation
+	private static final Logger logger = LoggerFactory.getLogger(LargeResultEvictionInterceptor.class);
+
 	private static final int MAX_LINE_LENGTH = 2000;
 	private static final int LINE_NUMBER_WIDTH = 6;
 	private static final int DEFAULT_TOOL_TOKEN_LIMIT = 20000;
@@ -97,7 +100,7 @@ public class LargeResultEvictionInterceptor extends ToolInterceptor {
 		ToolCallResponse response = handler.call(request);
 
 		// Check if we should evict the result
-		if (!shouldEvictResult(request.getToolName(), response.getResult())) {
+		if (response.isError() || !shouldEvictResult(request.getToolName(), response.getResult())) {
 			return response;
 		}
 
@@ -129,7 +132,7 @@ public class LargeResultEvictionInterceptor extends ToolInterceptor {
 		}
 
 		// Check if content exceeds token limit (approximation: 4 chars per token)
-		return result.length() > 4 * toolTokenLimitBeforeEvict;
+		return result.length() > 4L * toolTokenLimitBeforeEvict;
 	}
 
 	/**
@@ -146,15 +149,21 @@ public class LargeResultEvictionInterceptor extends ToolInterceptor {
 		String sanitizedId = sanitizeToolCallId(toolCallId);
 		String filePath = LARGE_RESULTS_DIR + sanitizedId;
 
-		// Write content to filesystem via backend
-		if (backend != null) {
-			WriteResult writeResult = backend.write(filePath, content);
-			if (writeResult.getError() != null) {
-				// Log warning but continue with eviction message
-				System.err.println("Warning: Failed to write large result to filesystem: " + writeResult.getError());
+		if (backend == null) {
+			return response;
+		}
+		try {
+			var writeResult = backend.write(filePath, content);
+			if (writeResult == null || writeResult.getError() != null || writeResult.getPath() == null
+					|| writeResult.getPath().isBlank()) {
+				logger.warn("Could not store oversized tool result");
+				return response;
 			}
-		} else {
-			System.err.println("Warning: Backend not configured, large result not persisted to filesystem");
+			filePath = writeResult.getPath();
+		}
+		catch (RuntimeException ex) {
+			logger.warn("Could not store oversized tool result ({})", ex.getClass().getSimpleName());
+			return response;
 		}
 
 		// Extract first N lines as sample
@@ -170,13 +179,13 @@ public class LargeResultEvictionInterceptor extends ToolInterceptor {
 			.toolName(response.getToolName())
 			.toolCallId(response.getToolCallId())
 			.status("evicted_to_filesystem")
+			.metadata(response.getMetadata())
 			.build();
 	}
 
 	/**
 	 * Sanitize tool call ID for use in file paths.
 	 * Removes non-alphanumeric characters except underscore and hyphen.
-	 * Equivalent to Python's sanitize_tool_call_id.
 	 *
 	 * @param toolCallId Original tool call ID
 	 * @return Sanitized ID safe for file paths
@@ -190,7 +199,6 @@ public class LargeResultEvictionInterceptor extends ToolInterceptor {
 
 	/**
 	 * Extract a sample of content (first N lines, truncated).
-	 * Equivalent to Python's format_content_with_line_numbers.
 	 *
 	 * @param content Full content
 	 * @return Formatted sample with line numbers
@@ -247,8 +255,6 @@ public class LargeResultEvictionInterceptor extends ToolInterceptor {
 		 *
 		 * Set to null to disable automatic eviction.
 		 * Default: 20000 tokens
-		 *
-		 * Equivalent to Python's tool_token_limit_before_evict parameter.
 		 */
 		public Builder toolTokenLimitBeforeEvict(Integer toolTokenLimitBeforeEvict) {
 			this.toolTokenLimitBeforeEvict = toolTokenLimitBeforeEvict;
@@ -292,9 +298,7 @@ public class LargeResultEvictionInterceptor extends ToolInterceptor {
 		 * Set custom backend for file storage operations.
 		 * The backend is used to write large results to persistent storage.
 		 *
-		 * NOTE: Backend implementation is optional. If not provided, eviction
-		 * will still work by replacing the result text, but the full content
-		 * won't be persisted to storage.
+		 * The local filesystem backend is used by default when eviction is enabled.
 		 */
 		public Builder backend(FilesystemBackend backend) {
 			this.backend = backend;

@@ -32,6 +32,7 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -121,7 +122,7 @@ public class SummarizationHook extends MessagesModelHook {
 
 		UserMessage firstUserMessage = null;
 		if (keepFirstUserMessage) {
-			for (Message msg : previousMessages) {
+			for (Message msg : previousMessages.subList(0, cutoffIndex)) {
 				if (msg instanceof UserMessage) {
 					firstUserMessage = (UserMessage) msg;
 					break;
@@ -138,6 +139,9 @@ public class SummarizationHook extends MessagesModelHook {
 		}
 
 		String summary = createSummary(toSummarize);
+		if (!StringUtils.hasText(summary)) {
+			return new AgentCommand(null, UpdatePolicy.REPLACE);
+		}
 
 		SystemMessage summaryMessage = new SystemMessage(summaryPrefix + "\n" + summary);
 
@@ -190,7 +194,7 @@ public class SummarizationHook extends MessagesModelHook {
 
 	private String createSummary(List<Message> messages) {
 		if (messages.isEmpty()) {
-			return "No previous conversation.";
+			return null;
 		}
 
 		StringBuilder messageText = new StringBuilder();
@@ -204,12 +208,14 @@ public class SummarizationHook extends MessagesModelHook {
 		try {
 			Prompt summaryPromptObj = new Prompt(List.of(new UserMessage(prompt)));
 			var response = model.call(summaryPromptObj);
-			return response.getResult().getOutput().getText();
+			if (response != null && response.getResult() != null && response.getResult().getOutput() != null) {
+				return response.getResult().getOutput().getText();
+			}
 		}
-		catch (Exception e) {
-			log.error("Failed to create summary: {}", e.getMessage());
-			return "Summary generation failed: " + e.getMessage();
+		catch (RuntimeException ex) {
+			log.warn("Conversation summary failed ({})", ex.getClass().getSimpleName());
 		}
+		return null;
 	}
 
 	private String getRoleName(Message message) {
