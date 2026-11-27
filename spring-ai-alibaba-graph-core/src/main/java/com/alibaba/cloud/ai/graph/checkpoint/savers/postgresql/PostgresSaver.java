@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.checkpoint.savers.postgresql;
 
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.jdbc.AbstractJdbcCheckpointSaver;
@@ -345,12 +346,14 @@ public class PostgresSaver extends AbstractJdbcCheckpointSaver {
 				log.trace("Executing drop tables:\n---\n{}---", DROP_TABLES);
 				sqlCommand = DROP_TABLES;
 				statement.executeUpdate(sqlCommand);
+				statement.executeUpdate(DROP_EXECUTION_LEASE);
 			}
 			if (createOption == CreateOption.CREATE_OR_REPLACE ||
 				createOption == CreateOption.CREATE_IF_NOT_EXISTS) {
 				log.trace("Executing create tables:\n---\n{}---", CREATE_TABLES);
 				sqlCommand = CREATE_TABLES;
 				statement.executeUpdate(sqlCommand);
+				statement.executeUpdate(CREATE_EXECUTION_LEASE.formatted("TIMESTAMP WITH TIME ZONE"));
 
 				log.trace("Ensuring checkpoint sequence column exists");
 				sqlCommand = ADD_CHECKPOINT_SEQUENCE_COLUMN;
@@ -386,7 +389,7 @@ public class PostgresSaver extends AbstractJdbcCheckpointSaver {
 				.id(resultSet.getString(1))
 				.nodeId(resultSet.getString(2))
 				.nextNodeId(resultSet.getString(3))
-				.state(decodeState(resultSet.getBytes(4), resultSet.getString(5)))
+				.stateFromStorage(decodeState(resultSet.getBytes(4), resultSet.getString(5)))
 				.build();
 	}
 
@@ -453,7 +456,7 @@ public class PostgresSaver extends AbstractJdbcCheckpointSaver {
 	protected void insertCheckpoint(String threadId, Checkpoint checkpoint) throws Exception {
 		Connection conn = null;
 		try (Connection ignored = conn = getConnection()) {
-			conn.setAutoCommit(false);
+			beginCheckpointWrite(conn);
 			insertCheckpoint(conn, threadId, checkpoint);
 			conn.commit();
 			log.debug("Checkpoint {} for thread {} inserted successfully.", checkpoint.getId(), threadId);
@@ -503,7 +506,7 @@ public class PostgresSaver extends AbstractJdbcCheckpointSaver {
 			// next_node_id
 			ps.setString(++field, checkpoint.getNextNodeId());
 			// state_data
-			ps.setString(++field, encodeState(checkpoint.getState()));
+			ps.setString(++field, encodeState(checkpoint.stateForStorage()));
 			// state_content_type
 			ps.setString(++field, stateSerializer.contentType());
 
@@ -522,13 +525,13 @@ public class PostgresSaver extends AbstractJdbcCheckpointSaver {
 	protected void updateCheckpoint(String threadId, String checkpointId, Checkpoint checkpoint) throws Exception {
 		Connection conn = null;
 		try (Connection ignored = conn = getConnection()) {
-			conn.setAutoCommit(false);
+			beginCheckpointWrite(conn);
 			try (PreparedStatement ps = conn.prepareStatement(UPDATE_CHECKPOINT)) {
 				var field = 0;
 				ps.setObject(++field, UUID.fromString(checkpoint.getId()), Types.OTHER);
 				ps.setString(++field, checkpoint.getNodeId());
 				ps.setString(++field, checkpoint.getNextNodeId());
-				ps.setString(++field, encodeState(checkpoint.getState()));
+				ps.setString(++field, encodeState(checkpoint.stateForStorage()));
 				ps.setString(++field, stateSerializer.contentType());
 				ps.setString(++field, threadId);
 				ps.setObject(++field, UUID.fromString(checkpointId), Types.OTHER);
@@ -559,12 +562,14 @@ public class PostgresSaver extends AbstractJdbcCheckpointSaver {
 		try (Connection conn = getConnection();
 				PreparedStatement ps = conn.prepareStatement(
 						DELETE_CHECKPOINTS.formatted(String.join(", ", Collections.nCopies(checkpointIds.size(), "?"))))) {
+			beginCheckpointWrite(conn);
 			ps.setString(1, threadId);
 			int index = 2;
 			for (String checkpointId : checkpointIds) {
 				ps.setObject(index++, UUID.fromString(checkpointId), Types.OTHER);
 			}
 			ps.executeUpdate();
+			conn.commit();
 		}
 		catch (SQLException ex) {
 			throw new Exception("Unable to delete retained checkpoints", ex);
@@ -575,7 +580,7 @@ public class PostgresSaver extends AbstractJdbcCheckpointSaver {
 	protected void releaseThread(String threadId) throws Exception {
 		Connection conn = null;
 		try (Connection ignored = conn = getConnection()) {
-			conn.setAutoCommit(false);
+			beginCheckpointWrite(conn);
 			log.trace("Executing release Thread:\n---\n{}---", RELEASE_THREAD);
 			try (PreparedStatement ps = conn.prepareStatement(RELEASE_THREAD)) {
 				ps.setString(1, threadId);
@@ -593,6 +598,17 @@ public class PostgresSaver extends AbstractJdbcCheckpointSaver {
 			rollback(conn, threadId);
 			throw new Exception("Unable to release checkpoint", ex);
 		}
+	}
+
+	@Override
+	public ExecutionLease acquireExecutionLease(RunnableConfig config) throws SQLException {
+		return acquireJdbcExecutionLease(config, "clock_timestamp()",
+				"clock_timestamp() + INTERVAL '%d seconds'".formatted(EXECUTION_LEASE_SECONDS));
+	}
+
+	@Override
+	protected Connection openLeaseConnection() throws SQLException {
+		return getConnection();
 	}
 
 	/**

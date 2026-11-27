@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.serializer.Serializer;
 import com.alibaba.cloud.ai.graph.serializer.std.MessageSerializer;
 import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 
@@ -69,6 +70,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -93,6 +95,39 @@ class SpringAIJacksonStateSerializerTest {
 	void setUp() {
 		AgentStateFactory<OverAllState> stateFactory = OverAllState::new;
 		serializer = new SpringAIJacksonStateSerializer(stateFactory);
+	}
+
+	@Test
+	void readsMessageHistoriesWrittenByReleasedJsonAndBinarySerializers() throws Exception {
+		for (String release : List.of("2.0.3.0", "2.1.0.0")) {
+			verifyReleasedHistory(release, "json", serializer);
+			verifyReleasedHistory(release, "binary", new SpringAIStateSerializer());
+		}
+	}
+
+	private void verifyReleasedHistory(String release, String format, StateSerializer codec) throws Exception {
+		var resource = "/checkpoint-compatibility/" + release + "-" + format + ".b64";
+		try (var input = getClass().getResourceAsStream(resource)) {
+			assertNotNull(input, resource);
+			var state = codec.dataFromBytes(Base64.getMimeDecoder().decode(input.readAllBytes()));
+			assertEquals(release, state.get("revision"));
+			var messages = assertInstanceOf(List.class, state.get("messages"));
+			assertEquals(4, messages.size());
+			assertEquals("policy", assertInstanceOf(SystemMessage.class, messages.get(0)).getText());
+			var user = assertInstanceOf(UserMessage.class, messages.get(1));
+			assertEquals("user-1", user.getMetadata().get("messageId"));
+			assertEquals("look up", user.getText());
+			var assistant = assertInstanceOf(AssistantMessage.class, messages.get(2));
+			assertEquals("assistant-1", assistant.getMetadata().get("messageId"));
+			var call = assistant.getToolCalls().get(0);
+			assertEquals("{\"q\":\"café\"}", call.arguments());
+			var tool = assertInstanceOf(ToolResponseMessage.class, messages.get(3));
+			assertEquals("tool-1", tool.getMetadata().get("messageId"));
+			var response = tool.getResponses().get(0);
+			assertEquals("call-7", call.id());
+			assertEquals(call.id(), response.id());
+			assertEquals("找到", response.responseData());
+		}
 	}
 
 	@Test
@@ -130,7 +165,8 @@ class SpringAIJacksonStateSerializerTest {
 
 	@Test
 	void writesPlainBinaryMessagesWithTheLegacyTypeDiscriminator() throws Exception {
-		var messages = List.of(new UserMessage("plain"), new AssistantMessage("reply"));
+		var messages = List.of(new SystemMessage("instruction"), new UserMessage("plain"),
+				new AssistantMessage("reply"));
 		for (var original : messages) {
 			var bytes = new ByteArrayOutputStream();
 			try (var out = new ObjectOutputStream(bytes)) {
@@ -143,6 +179,27 @@ class SpringAIJacksonStateSerializerTest {
 				assertEquals(original, new MessageSerializer().read(in));
 			}
 		}
+	}
+
+	@Test
+	void allowsLegacyBinaryWritesDuringARollingUpgradeWhileReadingNewSystemMetadata() throws Exception {
+		var system = SystemMessage.builder().text("policy").metadata(Map.of("source", "rules")).build();
+		var legacy = new SpringAIStateSerializer(OverAllState::new, false);
+		var current = new SpringAIStateSerializer();
+		var input = Map.<String, Object>of("messages", List.of(system));
+		var baseline = Map.<String, Object>of("messages", List.of(new SystemMessage("policy")));
+		assertArrayEquals(current.dataToBytes(baseline), legacy.dataToBytes(input));
+		assertEquals(List.of(system), legacy.dataFromBytes(current.dataToBytes(input)).get("messages"));
+	}
+
+	@Test
+	void preservesSystemMessageMetadataInBinaryCheckpoints() throws Exception {
+		var original = SystemMessage.builder().text("instruction")
+				.metadata(Map.of("source", "fixture", "labels", List.of("first", "second")))
+				.build();
+		var codec = new SpringAIStateSerializer();
+		var data = codec.dataFromBytes(codec.dataToBytes(Map.of("messages", List.of(original))));
+		assertEquals(List.of(original), data.get("messages"));
 	}
 
 	@Test

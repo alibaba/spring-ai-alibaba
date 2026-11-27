@@ -23,6 +23,9 @@ import io.micrometer.observation.ObservationRegistry;
 
 import java.util.Collection;
 import java.util.Deque;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
@@ -44,6 +47,8 @@ public class CompileConfig {
 
 	private SaverConfig saverConfig = new SaverConfig().register(MemorySaver.builder().build());
 	private boolean releaseThread = false;
+	private boolean taskCheckpoints;
+	private Map<String, NodeExecutionPolicy> nodePolicies = Map.of();
 	private Store store;
 
 	private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
@@ -72,6 +77,14 @@ public class CompileConfig {
 	 */
 	public boolean releaseThread() {
 		return releaseThread;
+	}
+
+	public boolean taskCheckpoints() {
+		return taskCheckpoints;
+	}
+
+	public Optional<NodeExecutionPolicy> nodePolicy(String nodeId) {
+		return ofNullable(nodePolicies.get(nodeId));
 	}
 
 	/**
@@ -182,6 +195,33 @@ public class CompileConfig {
 				throw new IllegalArgumentException("recursionLimit must be > 0!");
 			}
 			this.config.recursionLimit = recursionLimit;
+			return this;
+		}
+
+		/**
+		 * Saves completed parallel task writes before the step is committed so a
+		 * resumed run can reuse them. Enable after the checkpoint readers have been upgraded.
+		 * JDBC savers running with schema creation disabled require the
+		 * {@code graph_execution_lease} table defined by the saver.
+		 * @param enabled whether to persist task progress
+		 * @return this builder
+		 */
+		public Builder taskCheckpoints(boolean enabled) {
+			this.config.taskCheckpoints = enabled;
+			return this;
+		}
+
+		/**
+		 * Configures execution options for the node with this ID.
+		 * @param nodeId the node ID
+		 * @param policy execution options
+		 * @return this builder
+		 */
+		public Builder nodePolicy(String nodeId, NodeExecutionPolicy policy) {
+			var policies = new HashMap<>(config.nodePolicies);
+			policies.put(Objects.requireNonNull(nodeId, "Node ID must not be null"),
+					Objects.requireNonNull(policy, "Node policy must not be null"));
+			config.nodePolicies = Map.copyOf(policies);
 			return this;
 		}
 
@@ -328,6 +368,9 @@ public class CompileConfig {
 		this.interruptsBefore = config.interruptsBefore;
 		this.interruptsAfter = config.interruptsAfter;
 		this.releaseThread = config.releaseThread;
+		this.taskCheckpoints = config.taskCheckpoints;
+		this.nodePolicies = config.nodePolicies;
+		this.recursionLimit = config.recursionLimit;
 		this.lifecycleListeners = config.lifecycleListeners;
 		this.observationRegistry = config.observationRegistry;
 		this.interruptBeforeEdge = config.interruptBeforeEdge;

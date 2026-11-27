@@ -41,6 +41,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -90,6 +91,8 @@ public class StateGraph {
 	 * Collection of edges in the graph.
 	 */
 	final Edges edges = new Edges();
+
+	final Map<String, String> parallelJoins = new LinkedHashMap<>();
 
 	/**
 	 * Factory for providing key strategies.
@@ -416,6 +419,23 @@ public class StateGraph {
 	}
 
 	/**
+	 * Declares where all paths from a parallel fork converge. The join runs once
+	 * after the selected branches complete and their writes have been merged.
+	 * @param forkId source of the static or conditional parallel edges
+	 * @param joinId the shared successor or {@link #END}
+	 * @return this state graph
+	 */
+	public StateGraph addParallelJoin(String forkId, String joinId) {
+		Objects.requireNonNull(forkId, "forkId");
+		Objects.requireNonNull(joinId, "joinId");
+		String previous = parallelJoins.putIfAbsent(forkId, joinId);
+		if (previous != null && !previous.equals(joinId)) {
+			throw new IllegalArgumentException("Parallel fork '%s' already joins at '%s'".formatted(forkId, previous));
+		}
+		return this;
+	}
+
+	/**
 	 * Adds conditional edges to the graph based on the provided condition and mappings.
 	 * @param sourceId the identifier of the source node
 	 * @param condition the command action used to determine the target node
@@ -478,8 +498,8 @@ public class StateGraph {
 	 * Adds conditional edges to the graph that can route to multiple nodes in parallel.
 	 * This method is used when the condition action can return multiple target nodes
 	 * that should be executed in parallel.
-	 * All mapped target nodes must have outgoing edges to the same immediate
-	 * convergence node.
+	 * Mapped nodes with different successors can use {@link #addParallelJoin}
+	 * to declare the convergence point explicitly.
 	 *
 	 * @param sourceId the identifier of the source node
 	 * @param condition the multi-command action used to determine multiple target nodes
@@ -523,6 +543,17 @@ public class StateGraph {
 
 		for (Edge edge : edges.elements) {
 			edge.validate(nodes);
+		}
+		for (var join : parallelJoins.entrySet()) {
+			var fork = edges.edgeBySourceId(join.getKey()).orElseThrow(() ->
+					new GraphStateException("Parallel join references missing fork '" + join.getKey() + "'"));
+			if (!fork.isParallel() && (fork.target().value() == null || !fork.target().value().isMultiCommand())) {
+				throw new GraphStateException("Node '" + join.getKey() + "' has no parallel edge to join");
+			}
+			if (!END.equals(join.getValue()) && !nodes.anyMatchById(join.getValue())) {
+				throw new GraphStateException("Parallel fork '%s' references missing join '%s'"
+						.formatted(join.getKey(), join.getValue()));
+			}
 		}
 	}
 

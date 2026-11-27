@@ -105,12 +105,12 @@ public class SerializationUtils {
 
 		// Handle UserMessage
 		if (value instanceof UserMessage userMessage) {
-			return userMessage.copy();
+			return userMessage.mutate().metadata(deepCopyMap(userMessage.getMetadata())).build();
 		}
 
 		// Handle SystemMessage
 		if (value instanceof SystemMessage systemMessage) {
-			return systemMessage.copy();
+			return systemMessage.mutate().metadata(deepCopyMap(systemMessage.getMetadata())).build();
 		}
 
 		// Handle Map

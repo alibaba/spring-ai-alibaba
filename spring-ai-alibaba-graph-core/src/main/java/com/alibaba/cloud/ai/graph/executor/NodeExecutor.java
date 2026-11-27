@@ -19,19 +19,26 @@ package com.alibaba.cloud.ai.graph.executor;
 import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.GraphRunnerContext;
 import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.NodeAggregationStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
+import com.alibaba.cloud.ai.graph.action.NodePause;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
+import com.alibaba.cloud.ai.graph.checkpoint.CheckpointWrite;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
+import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
+import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
 import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.ParallelGraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.graph.utils.ChatResponseStreamAggregator;
 import com.alibaba.cloud.ai.graph.utils.FinishReasonMetadata;
+import com.alibaba.cloud.ai.graph.utils.LifeListenerUtil;
+import com.alibaba.cloud.ai.graph.utils.SerializationUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,23 +47,33 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.util.StringUtils;
+import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.concurrent.Queues;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.alibaba.cloud.ai.graph.GraphRunnerContext.INTERRUPT_AFTER;
+import static com.alibaba.cloud.ai.graph.RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY;
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.ERROR;
 import static com.alibaba.cloud.ai.graph.StateGraph.NODE_AFTER;
@@ -125,10 +142,12 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 			context.doListeners(NODE_BEFORE, null);
 
-			CompletableFuture<Map<String, Object>> future = action.apply(context.getOverallState(),
-					context.getConfig());
-
-			return Mono.fromFuture(future)
+			var config = new ParallelStepJournal(context).restoreDispatch()
+					.map(plan -> RunnableConfig.builder(context.getConfig())
+							.addMetadata(ParallelNode.RESTORED_DISPATCH_KEY, plan).build())
+					.orElseGet(context::getConfig);
+			return NodeExecution.run(context, currentNodeId, context.branchTaskId(0, currentNodeId), action,
+							context.getOverallState(), config)
 					.flatMapMany(updateState -> handleActionResult(context, updateState, resultValue))
 					.onErrorResume(error -> {
 						context.doListeners(ERROR, new Exception(error));
@@ -151,6 +170,18 @@ public class NodeExecutor extends BaseGraphExecutor {
 	private Flux<GraphResponse<NodeOutput>> handleActionResult(GraphRunnerContext context,
 			Map<String, Object> updateState, AtomicReference<Object> resultValue) {
 		try {
+			if (updateState.get(NodePause.RESULT_KEY) instanceof NodePause pause) {
+				var writes = new LinkedHashMap<>(updateState);
+				writes.remove(NodePause.RESULT_KEY);
+				context.mergeIntoCurrentState(writes);
+				context.checkpointPausedNode();
+				context.doListeners(NODE_AFTER, null);
+				resultValue.set(pause.interruption());
+				return Flux.just(GraphResponse.done(pause.interruption()));
+			}
+			if (updateState.get(ParallelNode.EXECUTION_KEY) instanceof ParallelNode.Execution execution) {
+				return executeParallel(context, execution, resultValue);
+			}
 
 			// Check for Flux
 			Optional<Flux<GraphResponse<NodeOutput>>> embedFlux = getEmbedFlux(context, updateState);
@@ -170,50 +201,334 @@ public class NodeExecutor extends BaseGraphExecutor {
 				return handleGraphFlux(context, embedGraphFlux.get(), updateState, resultValue);
 			}
 
-			// Check for interruptAfter hook (after apply() but before state merge)
-			String currentNodeId = context.getCurrentNodeId();
-			AsyncNodeActionWithConfig action = context.getNodeAction(currentNodeId);
-			if (action instanceof InterruptableAction) {
-				Optional<InterruptionMetadata> interruptMetadata = ((InterruptableAction) action)
-					.interruptAfter(currentNodeId, context.cloneState(context.getCurrentStateData()),
-						updateState, context.getConfig());
-				if (interruptMetadata.isPresent()) {
-					// Merge state first to ensure correct state on resume
-					context.mergeIntoCurrentState(updateState);
-					// Determine next node before creating checkpoint
-					Command nextCommand = context.nextNodeId(currentNodeId, context.getCurrentStateData());
-					context.setNextNodeId(nextCommand.gotoNode());
-					// Build checkpoint with correct nextNodeId
-					context.buildNodeOutputAndAddCheckpoint(updateState);
-					// Call NODE_AFTER listeners
-					context.doListeners(NODE_AFTER, null);
-					// Return interruption
-					resultValue.set(interruptMetadata.get());
-					return Flux.just(GraphResponse.done(interruptMetadata.get()));
-				}
-			}
-
+			var interruption = interruptAfter(context, updateState);
 			context.mergeIntoCurrentState(updateState);
-
-			if (context.getCompiledGraph().compileConfig.interruptBeforeEdge()
-					&& context.getCompiledGraph().compileConfig.interruptsAfter()
-						.contains(context.getCurrentNodeId())) {
-				context.setNextNodeId(INTERRUPT_AFTER);
-			}
-			else {
-				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
-				context.setNextNodeId(nextCommand.gotoNode());
-			}
-			NodeOutput output = context.buildNodeOutputAndAddCheckpoint(updateState);
-
-			context.doListeners(NODE_AFTER, null);
-			// Continue with the main execution handler (expanded iteratively by GraphRunner)
-			return Flux.just(GraphResponse.of(output),
-					GraphResponse.continueWith(() -> mainGraphExecutor.execute(context, resultValue)));
+			return checkpointAfterTransition(context, updateState, interruption.isEmpty())
+					.flatMapMany(output -> {
+						if (interruption.isPresent()) {
+							resultValue.set(interruption.get());
+							return Flux.just(GraphResponse.done(interruption.get()));
+						}
+						return Flux.just(GraphResponse.of(output),
+								GraphResponse.continueWith(() -> mainGraphExecutor.execute(context, resultValue)));
+					});
 		}
 		catch (Exception e) {
 			return Flux.just(GraphResponse.error(e));
 		}
+	}
+
+	private Mono<NodeOutput> checkpointAfterTransition(GraphRunnerContext context, Map<String, Object> update,
+			boolean allowDeferredEdge) {
+		String nodeId = context.getCurrentNodeId();
+		var config = context.getCompiledGraph().compileConfig;
+		Mono<String> next = allowDeferredEdge && config.interruptBeforeEdge() && config.interruptsAfter().contains(nodeId)
+				? Mono.just(INTERRUPT_AFTER)
+				: context.resolveNextNode(nodeId, context.getCurrentStateData()).map(Command::gotoNode);
+		return next.flatMap(target -> Mono.fromCallable(() -> {
+			context.setNextNodeId(target);
+			NodeOutput output = context.buildNodeOutputAndAddCheckpoint(update);
+			context.doListeners(NODE_AFTER, null);
+			return output;
+		}));
+	}
+
+	private Flux<GraphResponse<NodeOutput>> executeParallel(GraphRunnerContext context, ParallelNode.Execution execution,
+			AtomicReference<Object> resultValue) {
+		var journal = new ParallelStepJournal(context);
+		journal.begin(execution);
+		if (execution.strategy() == NodeAggregationStrategy.ANY_OF) {
+			var restored = journal.restoreWinningWrites();
+			if (restored.isPresent()) {
+				return finishParallel(context, execution.routingUpdate(),
+						List.of(new BranchResult(restored.get(), null, false)), resultValue);
+			}
+		}
+		var interruptionsByTask = journal.restoreInterruptions();
+		var feedback = context.getConfig().metadata(HUMAN_FEEDBACK_METADATA_KEY)
+				.filter(InterruptionMetadata.class::isInstance).map(InterruptionMetadata.class::cast).orElse(null);
+		String selectedTask = selectInterruptedTask(interruptionsByTask, feedback);
+		var feedbackStateUpdate = context.getConfig().metadata(RunnableConfig.STATE_UPDATE_METADATA_KEY);
+		if (selectedTask != null) {
+			context.clearHumanFeedback();
+		}
+		var branchInput = context.getOverallState().snapShot().orElseThrow();
+		branchInput.updateState(execution.routingUpdate());
+		var branches = execution.branches();
+		if (branches.isEmpty()) {
+			return finishParallel(context, execution.routingUpdate(), List.of(), resultValue);
+		}
+
+		var scheduler = Schedulers.fromExecutor(getExecutor(context.getConfig(), context.getCurrentNodeId()));
+		int concurrency = Math.min(execution.maxConcurrency(), branches.size());
+		if (execution.strategy() == NodeAggregationStrategy.ANY_OF) {
+			var failures = new ConcurrentLinkedQueue<Throwable>();
+			var interruptions = new ConcurrentSkipListMap<Integer, BranchCandidate>();
+			return Flux.range(0, branches.size())
+				.flatMap(index -> {
+					var branch = branches.get(index);
+					String taskId = context.branchTaskId(index, branch.nodeId());
+					var previousPause = interruptionsByTask.get(taskId);
+					if (previousPause != null && !taskId.equals(selectedTask)) {
+						interruptions.put(index,
+								new BranchCandidate(new BranchResult(List.of(), previousPause, false), List.of()));
+						return Mono.empty();
+					}
+					var branchFeedback = taskId.equals(selectedTask) ? feedback : null;
+					var result = new AtomicReference<BranchResult>();
+					return executeBranch(context, branchInput, branch, index, branchFeedback, feedbackStateUpdate,
+									journal.restorePausedWrites(taskId), result::set)
+						.subscribeOn(scheduler)
+						.collectList()
+						.flatMap(events -> {
+							var candidate = new BranchCandidate(result.get(), events);
+							if (candidate.result().interruption() != null) {
+								journal.saveInterruption(taskId, candidate.result().interruption(), candidate.result().updates());
+								interruptions.put(index, candidate);
+								return Mono.empty();
+							}
+							return Mono.just(candidate);
+						})
+						.onErrorResume(error -> {
+							failures.add(error);
+							return Mono.empty();
+						});
+				}, concurrency)
+				.next()
+				.flatMapMany(winner -> {
+					journal.saveWinningWrites(winner.result().updates());
+					return Flux.fromIterable(winner.events())
+					.concatWith(Flux.defer(() -> finishParallel(context, execution.routingUpdate(),
+							List.of(winner.result()), resultValue)));
+				})
+				.switchIfEmpty(Flux.defer(() -> {
+					if (interruptions.isEmpty()) {
+						return Flux.error(Exceptions.multiple(failures));
+					}
+					return Flux.fromIterable(interruptions.values()).concatMap(candidate -> Flux.fromIterable(candidate.events()))
+							.concatWith(Flux.defer(() -> finishParallel(context, execution.routingUpdate(),
+									interruptions.values().stream().map(BranchCandidate::result).toList(), resultValue)));
+				}));
+		}
+
+		var results = new BranchResult[branches.size()];
+		return Flux.range(0, branches.size())
+			.flatMapDelayError(index -> {
+				var branch = branches.get(index);
+				String taskId = context.branchTaskId(index, branch.nodeId());
+				var completed = journal.restoreWrites(taskId);
+				if (completed.isPresent()) {
+					results[index] = new BranchResult(completed.get(), null, false);
+					return Flux.empty();
+				}
+				if (interruptionsByTask.containsKey(taskId) && !taskId.equals(selectedTask)) {
+					results[index] = new BranchResult(List.of(), interruptionsByTask.get(taskId), false);
+					return Flux.empty();
+				}
+				var branchFeedback = taskId.equals(selectedTask) ? feedback : null;
+				return executeBranch(context, branchInput, branch, index, branchFeedback, feedbackStateUpdate,
+						journal.restorePausedWrites(taskId), result -> {
+					if (result.interruption() == null) {
+						journal.saveWrites(taskId, result.updates());
+					}
+					else {
+						journal.saveInterruption(taskId, result.interruption(), result.updates());
+					}
+					results[index] = result;
+				}).subscribeOn(scheduler);
+			}, concurrency, Queues.XS_BUFFER_SIZE)
+			.concatWith(Flux.defer(() -> finishParallel(context, execution.routingUpdate(), List.of(results), resultValue)));
+	}
+
+	private static String selectInterruptedTask(Map<String, InterruptionMetadata> paused,
+			InterruptionMetadata feedback) {
+		if (feedback == null || paused.isEmpty()) {
+			return null;
+		}
+		if (feedback.interruptionId().isEmpty()) {
+			if (paused.size() == 1 && paused.values().iterator().next().pendingInterruptions().size() <= 1) {
+				return paused.keySet().iterator().next();
+			}
+			throw new IllegalArgumentException("Feedback for a parallel step with multiple pauses requires an interruption ID");
+		}
+		String id = feedback.interruptionId().orElseThrow();
+		return paused.entrySet().stream().filter(entry -> hasInterruptionId(entry.getValue(), id))
+				.map(Map.Entry::getKey).findFirst()
+				.orElseThrow(() -> new IllegalArgumentException("No pending interruption with ID '" + id + "'"));
+	}
+
+	private static boolean hasInterruptionId(InterruptionMetadata interruption, String id) {
+		return interruption.interruptionId().filter(id::equals).isPresent()
+				|| interruption.pendingInterruptions().stream().anyMatch(child -> hasInterruptionId(child, id));
+	}
+
+	private Flux<GraphResponse<NodeOutput>> executeBranch(GraphRunnerContext context, OverAllState input,
+			ParallelNode.Branch branch, int index, InterruptionMetadata feedback, Optional<Object> feedbackStateUpdate,
+			List<Map<String, Object>> priorWrites, Consumer<BranchResult> completed) {
+		return Flux.defer(() -> {
+			var state = input.snapShot().orElseThrow();
+			if (!branch.input().isEmpty()) {
+				state.updateStateWithKeyStrategies(SerializationUtils.deepCopyMap(branch.input()), Map.of());
+			}
+			priorWrites.forEach(state::updateState);
+			String taskId = context.branchTaskId(index, branch.nodeId());
+			var builder = RunnableConfig.builder(context.getConfig())
+					.addMetadata(RunnableConfig.TASK_ID_METADATA_KEY, taskId)
+					.removeMetadata(HUMAN_FEEDBACK_METADATA_KEY)
+					.removeMetadata(RunnableConfig.STATE_UPDATE_METADATA_KEY);
+			if (feedback != null) {
+				builder.addHumanFeedback(feedback);
+				feedbackStateUpdate.ifPresent(update -> builder.addMetadata(RunnableConfig.STATE_UPDATE_METADATA_KEY, update));
+				if (branch.action() instanceof ResumableSubGraphAction action) {
+					builder.addMetadata(action.getResumeSubGraphId(), true);
+				}
+			}
+			var config = builder.build();
+			Consumer<BranchResult> withInterruptionId = result -> {
+				var pause = result.interruption();
+				if (pause != null && pause.interruptionId().isEmpty()) {
+					pause = InterruptionMetadata.builder(pause).toolFeedbacks(pause.toolFeedbacks())
+							.interruptionId(UUID.randomUUID().toString()).build();
+				}
+				var writes = new ArrayList<>(priorWrites);
+				writes.addAll(result.updates());
+				completed.accept(new BranchResult(writes, pause, result.streamed()));
+			};
+			if (branch.action() instanceof InterruptableAction action) {
+				var pause = action.interrupt(branch.nodeId(), state.snapShot().orElseThrow(), config);
+				if (pause.isPresent()) {
+					withInterruptionId.accept(new BranchResult(List.of(), pause.get(), false));
+					return Flux.empty();
+				}
+			}
+			notifyBranchListener(context, branch.nodeId(), state, config, NODE_BEFORE);
+			return NodeExecution.run(context, branch.nodeId(), taskId, branch.action(), state, config)
+				.flatMapMany(update -> streamBranchResult(context, branch.nodeId(), update, withInterruptionId))
+				.doOnNext(event -> {
+					if (!event.hasMetadata("taskId")) {
+						event.addMetadata("taskId", taskId);
+					}
+				})
+				.doOnTerminate(() -> notifyBranchListener(context, branch.nodeId(), state, config, NODE_AFTER))
+				.doOnCancel(() -> notifyBranchListener(context, branch.nodeId(), state, config, NODE_AFTER));
+		});
+	}
+
+	private static void notifyBranchListener(GraphRunnerContext context, String nodeId, OverAllState state,
+			RunnableConfig config, String event) {
+		LifeListenerUtil.processListenersLIFO(nodeId,
+				new LinkedBlockingDeque<>(context.getCompiledGraph().compileConfig.lifecycleListeners()),
+				state.data(), config, event, null);
+	}
+
+	private Flux<GraphResponse<NodeOutput>> streamBranchResult(GraphRunnerContext context, String nodeId,
+			Map<String, Object> update, Consumer<BranchResult> completed) {
+		if (update.get(NodePause.RESULT_KEY) instanceof NodePause pause) {
+			var writes = new LinkedHashMap<>(update);
+			writes.remove(NodePause.RESULT_KEY);
+			completed.accept(new BranchResult(writes.isEmpty() ? List.of() : List.of(writes), pause.interruption(), false));
+			return Flux.empty();
+		}
+		Map<String, Object> stateUpdate = new LinkedHashMap<>();
+		List<GraphFlux<?>> streams = new ArrayList<>();
+		update.forEach((key, value) -> {
+			if (value instanceof GraphFlux<?> stream) {
+				streams.add(stream.withIdentity(StringUtils.hasText(stream.getNodeId()) ? stream.getNodeId() : nodeId,
+						StringUtils.hasText(stream.getKey()) ? stream.getKey() : key));
+			}
+			else if (value instanceof ParallelGraphFlux parallel) {
+				streams.addAll(parallel.getGraphFluxes());
+			}
+			else if (value instanceof Flux<?> stream) {
+				streams.add(GraphFlux.of(nodeId, key, stream));
+			}
+			else {
+				stateUpdate.put(key, value);
+			}
+		});
+
+		List<Map<String, Object>> updates = new ArrayList<>();
+		updates.add(stateUpdate);
+		var interruption = new AtomicReference<InterruptionMetadata>();
+		return Flux.fromIterable(streams)
+			.concatMap(stream -> {
+				var last = new AtomicReference<Object>();
+				return transformGraphFluxToFlux(context, stream, last)
+					.concatMap(event -> {
+						if (event.isError()) {
+							return Mono.fromFuture(event.getOutput()).then(Mono.<GraphResponse<NodeOutput>>empty());
+						}
+						return event.isDone() ? Mono.empty() : Mono.just(event);
+					})
+					.doOnComplete(() -> {
+						if (last.get() instanceof GraphResponse<?> response
+								&& response.resultValue().orElse(null) instanceof InterruptionMetadata paused) {
+							interruption.compareAndSet(null, paused);
+						}
+						else if (last.get() instanceof GraphResponse<?> response && response.isDone()
+								&& response.hasMetadata(GraphRunnerContext.BRANCH_WRITES)) {
+							updates.addAll(CheckpointWrite.decodeAll(response.getMetadata(GraphRunnerContext.BRANCH_WRITES)));
+						}
+						else {
+							updates.add(graphFluxResultState(stream, last.get()));
+						}
+					});
+			})
+			.doOnComplete(() -> {
+				var paused = interruption.get();
+				completed.accept(new BranchResult(paused == null ? updates : List.of(), paused, !streams.isEmpty()));
+			});
+	}
+
+	private Flux<GraphResponse<NodeOutput>> finishParallel(GraphRunnerContext context, Map<String, Object> routingUpdate,
+			List<BranchResult> results, AtomicReference<Object> resultValue) {
+		var interruptions = results.stream().map(BranchResult::interruption).filter(Objects::nonNull)
+				.flatMap(pause -> pause.pendingInterruptions().isEmpty()
+						? Stream.of(pause) : pause.pendingInterruptions().stream())
+				.toList();
+		if (!interruptions.isEmpty()) {
+			var first = interruptions.get(0);
+			var pause = interruptions.size() == 1 ? first : InterruptionMetadata.builder(first)
+					.toolFeedbacks(first.toolFeedbacks()).pendingInterruptions(interruptions).build();
+			resultValue.set(pause);
+			return Flux.just(GraphResponse.done(pause));
+		}
+
+		var previousState = context.getOverallState();
+		String previousNextNode = context.getNextNodeId();
+		try {
+			var outputUpdate = new LinkedHashMap<>(routingUpdate);
+			context.setOverallState(previousState.snapShot().orElseThrow());
+			context.mergeIntoCurrentState(routingUpdate);
+			for (BranchResult result : results) {
+				for (Map<String, Object> update : result.updates()) {
+					context.mergeIntoCurrentState(update);
+					outputUpdate.putAll(update);
+				}
+			}
+			return checkpointAfterTransition(context, outputUpdate, true)
+					.doOnError(error -> {
+						context.setOverallState(previousState);
+						context.setNextNodeId(previousNextNode);
+					})
+					.flatMapMany(output -> {
+						GraphResponse<NodeOutput> continuation =
+								GraphResponse.continueWith(() -> mainGraphExecutor.execute(context, resultValue));
+						return results.stream().anyMatch(BranchResult::streamed)
+								? Flux.just(continuation) : Flux.just(GraphResponse.of(output), continuation);
+					});
+		}
+		catch (Exception ex) {
+			context.setOverallState(previousState);
+			context.setNextNodeId(previousNextNode);
+			return Flux.error(ex);
+		}
+	}
+
+	private record BranchResult(List<Map<String, Object>> updates, InterruptionMetadata interruption, boolean streamed) {
+	}
+
+	private record BranchCandidate(BranchResult result, List<GraphResponse<NodeOutput>> events) {
 	}
 
 	/**
@@ -362,17 +677,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 			AtomicReference<Object> resultValue) {
 		AtomicReference<GraphResponse<NodeOutput>> lastData = new AtomicReference<>();
 
-		Flux<GraphResponse<NodeOutput>> processedFlux = embedFlux.map(data -> {
-				if (data.getOutput() != null && !data.getOutput().isCompletedExceptionally()) {
-					var output = data.getOutput().join();
-					output.setSubGraph(true);
-					GraphResponse<NodeOutput> newData = GraphResponse.of(output);
-					lastData.set(newData);
-					return newData;
-				}
-				lastData.set(data);
-				return data;
-			})
+		Flux<GraphResponse<NodeOutput>> processedFlux = embedFlux.concatMap(this::markSubGraphOutput)
+			.doOnNext(lastData::set)
 			// filter out InterruptionMetadata emitted directly by upstream to avoid duplicate sending
 			// retain regular procedural events
 			.filter(data -> {
@@ -380,20 +686,20 @@ public class NodeExecutor extends BaseGraphExecutor {
 				return value.isEmpty() || !(value.get() instanceof InterruptionMetadata);
 			});
 
-		Mono<Void> updateContextMono = Mono.fromRunnable(() -> {
+		Mono<Void> updateContextMono = Mono.defer(() -> {
 			var data = lastData.get();
 			if (data == null) {
 				log.error("No data returned from last streaming node execution '{}', will goto END node directly.", context.getCurrentNodeId());
 				context.setNextNodeId(END);
 				context.doListeners(NODE_AFTER, null);
-				return;
+				return Mono.empty();
 			}
 
 			var nodeResultValue = data.resultValue();
 
 			if (nodeResultValue.isPresent() && nodeResultValue.get() instanceof InterruptionMetadata) {
 				context.setReturnFromEmbedWithValue(nodeResultValue.get());
-				return;
+				return Mono.empty();
 			}
 
 			Map<String, Object> partialStateWithoutFlux = partialState.entrySet()
@@ -420,23 +726,12 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 			Map<String, Object> combinedUpdateState = new HashMap<>(partialStateWithoutFlux);
 			combinedUpdateState.putAll(updateState);
-			Optional<InterruptionMetadata> interruptAfterMetadata = interruptAfterForStreaming(context, combinedUpdateState);
+			Optional<InterruptionMetadata> interruptAfterMetadata = interruptAfter(context, combinedUpdateState);
 
 			context.mergeIntoCurrentState(partialStateWithoutFlux);
 			context.mergeIntoCurrentState(updateState);
 
-			try {
-				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
-				context.setNextNodeId(nextCommand.gotoNode());
-
-				context.buildNodeOutputAndAddCheckpoint(updateState);
-
-				context.doListeners(NODE_AFTER, null);
-				interruptAfterMetadata.ifPresent(context::setReturnFromEmbedWithValue);
-			}
-			catch (Exception e) {
-				throw new RuntimeException(e);
-			}
+			return finishStreamingStep(context, updateState, interruptAfterMetadata);
 		});
 
 		return processedFlux
@@ -515,8 +810,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 	 * @return Flux of GraphResponse with GraphFlux handling result
 	 */
 	private Flux<GraphResponse<NodeOutput>> transformGraphFluxToFlux(GraphRunnerContext context,
-			GraphFlux<?> graphFlux, Map<String, Object> partialState,
-			AtomicReference<Object> resultValue) {
+			GraphFlux<?> graphFlux, AtomicReference<Object> resultValue) {
 		// Use nodeId from GraphFlux instead of context to preserve real node identity
 		String effectiveNodeId = graphFlux.getNodeId();
 		String key = graphFlux.getKey() != null ? graphFlux.getKey() : "result";
@@ -527,23 +821,31 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 		// Step 2: Apply handleEmbeddedFlux processing logic (directly implemented)
 
-		return transformedFlux.map(data -> {
-				if (data.getOutput() != null && !data.getOutput().isCompletedExceptionally()) {
-					var output = data.getOutput().join();
-					output.setSubGraph(true);
-					GraphResponse<NodeOutput> newData = GraphResponse.of(output);
-					resultValue.set(newData);
-					return newData;
-				}
-				resultValue.set(data);
-				return data;
-			})
+		return transformedFlux.concatMap(this::markSubGraphOutput)
+			.doOnNext(resultValue::set)
 			// filter out InterruptionMetadata emitted directly by upstream to avoid duplicate sending
 			// retain regular procedural events
 			.filter(data -> {
 				var value = data.resultValue();
 				return value.isEmpty() || !(value.get() instanceof InterruptionMetadata);
 			});
+	}
+
+	private Mono<GraphResponse<NodeOutput>> markSubGraphOutput(GraphResponse<NodeOutput> response) {
+		if (response.getOutput() == null || response.isError()) {
+			return Mono.just(response);
+		}
+		return Mono.fromFuture(response.getOutput()).map(output -> {
+			output.setSubGraph(true);
+			return GraphResponse.of(output, response.getAllMetadata());
+		});
+	}
+
+	private Mono<Void> finishStreamingStep(GraphRunnerContext context, Map<String, Object> update,
+			Optional<InterruptionMetadata> interruption) {
+		return checkpointAfterTransition(context, update, interruption.isEmpty())
+				.doOnNext(output -> interruption.ifPresent(context::setReturnFromEmbedWithValue))
+				.then();
 	}
 
 	/**
@@ -558,21 +860,19 @@ public class NodeExecutor extends BaseGraphExecutor {
 															GraphFlux<?> graphFlux, Map<String, Object> partialState,
 															AtomicReference<Object> resultValue) {
 
-		// Use nodeId from GraphFlux instead of context to preserve real node identity
-		String effectiveNodeId = graphFlux.getNodeId();
 		AtomicReference<Object> lastDataRef = new AtomicReference<>();
 
 		// Process the GraphFlux stream with preserved node ID
-		Flux<GraphResponse<NodeOutput>> processedFlux = transformGraphFluxToFlux(context, graphFlux, partialState, lastDataRef);
+		Flux<GraphResponse<NodeOutput>> processedFlux = transformGraphFluxToFlux(context, graphFlux, lastDataRef);
 
 		// Handle completion and result mapping
-		Mono<Void> updateContextMono = Mono.fromRunnable(() -> {
+		Mono<Void> updateContextMono = Mono.defer(() -> {
 			Object lastData = lastDataRef.get();
 
 			if (lastData == null) {
 				log.error("No data returned from last streaming node execution '{}', will goto END node directly.", context.getCurrentNodeId());
 				context.setNextNodeId(END);
-				return;
+				return Mono.empty();
 			}
 
 			// Resolve the final GraphFlux result into a graph state update.
@@ -586,7 +886,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 			Map<String, Object> combinedUpdateState = new HashMap<>(partialStateWithoutGraphFlux);
 			combinedUpdateState.putAll(resultMap);
-			Optional<InterruptionMetadata> interruptAfterMetadata = interruptAfterForStreaming(context, combinedUpdateState);
+			Optional<InterruptionMetadata> interruptAfterMetadata = interruptAfter(context, combinedUpdateState);
 
 			context.mergeIntoCurrentState(partialStateWithoutGraphFlux);
 
@@ -595,17 +895,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 				context.mergeIntoCurrentState(resultMap);
 			}
 
-			try {
-				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
-				context.setNextNodeId(nextCommand.gotoNode());
-
-				context.buildNodeOutputAndAddCheckpoint(partialStateWithoutGraphFlux);
-
-				context.doListeners(NODE_AFTER, null);
-				interruptAfterMetadata.ifPresent(context::setReturnFromEmbedWithValue);
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
+			return finishStreamingStep(context, partialStateWithoutGraphFlux, interruptAfterMetadata);
 		});
 
 		return processedFlux
@@ -645,7 +935,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 	}
 
 	/**
-	 * Checks interruptAfter hook for streaming nodes using the pre-merge state.
+	 * Checks the after-node interrupt hook using the pre-merge state.
 	 * <p>
 	 * This method must be called <strong>before</strong> the streaming state updates are
 	 * merged into the {@link OverAllState} to keep semantics consistent with the
@@ -654,7 +944,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 	 * @param actionResult the streaming node action result (state delta) passed to interruptAfter
 	 * @return interruption metadata if the hook triggers
 	 */
-	private Optional<InterruptionMetadata> interruptAfterForStreaming(GraphRunnerContext context,
+	private Optional<InterruptionMetadata> interruptAfter(GraphRunnerContext context,
 			Map<String, Object> actionResult) {
 		String currentNodeId = context.getCurrentNodeId();
 		AsyncNodeActionWithConfig action = context.getNodeAction(currentNodeId);
@@ -691,7 +981,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 			return handleNonStreamingResult(context, partialState, resultValue);
 		}
 
-		Map<String, AtomicReference<Object>> nodeDataRefs = new HashMap<>();
+		var results = new ArrayList<AtomicReference<Object>>();
 
 		// Get executor from context, fallback to Schedulers.parallel() if not available
 		// Note: DEFAULT_EXECUTOR from ParallelNode is private, so we use Schedulers.parallel() as fallback
@@ -705,11 +995,10 @@ public class NodeExecutor extends BaseGraphExecutor {
 		List<Flux<GraphResponse<NodeOutput>>> fluxList = parallelGraphFlux.getGraphFluxes()
 				.stream()
 				.map(graphFlux -> {
-					String nodeId = graphFlux.getNodeId();
 					AtomicReference<Object> nodeDataRef = new AtomicReference<>();
-					nodeDataRefs.put(nodeId, nodeDataRef);
+					results.add(nodeDataRef);
 
-					return transformGraphFluxToFlux(context, graphFlux, partialState, nodeDataRef)
+					return transformGraphFluxToFlux(context, graphFlux, nodeDataRef)
 							.subscribeOn(scheduler);
 				}).collect(Collectors.toList());
 		
@@ -718,16 +1007,10 @@ public class NodeExecutor extends BaseGraphExecutor {
 		Flux<GraphResponse<NodeOutput>> mergedFlux = Flux.merge(fluxList);
 
 		// Handle completion and result mapping for all nodes
-		Mono<Void> updateContextMono = Mono.fromRunnable(() -> {
-			Map<String, Object> combinedResultMap = new HashMap<>();
-
-			// Process results from each GraphFlux with node-specific prefixes
-			for (GraphFlux<?> graphFlux : parallelGraphFlux.getGraphFluxes()) {
-				String nodeId = graphFlux.getNodeId();
-				Object nodeData = nodeDataRefs.get(nodeId).get();
-
-				combinedResultMap = OverAllState.updateState(
-						combinedResultMap, graphFluxResultState(graphFlux, nodeData), context.getKeyStrategyMap());
+		Mono<Void> updateContextMono = Mono.defer(() -> {
+			var updates = new ArrayList<Map<String, Object>>();
+			for (int index = 0; index < results.size(); index++) {
+				updates.add(graphFluxResultState(parallelGraphFlux.getGraphFluxes().get(index), results.get(index).get()));
 			}
 
 			// Merge non-ParallelGraphFlux state
@@ -738,27 +1021,12 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 			// Check interruptAfter hook for streaming nodes using the pre-merge state.
 			Map<String, Object> combinedUpdateState = new HashMap<>(partialStateWithoutParallelGraphFlux);
-			combinedUpdateState.putAll(combinedResultMap);
-			Optional<InterruptionMetadata> interruptAfterMetadata = interruptAfterForStreaming(context, combinedUpdateState);
+			updates.forEach(combinedUpdateState::putAll);
+			Optional<InterruptionMetadata> interruptAfterMetadata = interruptAfter(context, combinedUpdateState);
 
 			context.mergeIntoCurrentState(partialStateWithoutParallelGraphFlux);
-
-			// Merge the combined results from ParallelGraphFlux processing
-			if (!combinedResultMap.isEmpty()) {
-				context.mergeIntoCurrentState(combinedResultMap);
-			}
-
-			try {
-				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
-				context.setNextNodeId(nextCommand.gotoNode());
-
-				context.buildNodeOutputAndAddCheckpoint(partialStateWithoutParallelGraphFlux);
-
-				context.doListeners(NODE_AFTER, null);
-				interruptAfterMetadata.ifPresent(context::setReturnFromEmbedWithValue);
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
+			updates.forEach(context::mergeIntoCurrentState);
+			return finishStreamingStep(context, partialStateWithoutParallelGraphFlux, interruptAfterMetadata);
 		});
 
 		return mergedFlux
@@ -775,19 +1043,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 	 */
 	private Flux<GraphResponse<NodeOutput>> handleNonStreamingResult(GraphRunnerContext context,
 																	 Map<String, Object> partialState, AtomicReference<Object> resultValue) throws Exception {
-		if (context.getCompiledGraph().compileConfig.interruptBeforeEdge()
-				&& context.getCompiledGraph().compileConfig.interruptsAfter()
-				.contains(context.getCurrentNodeId())) {
-			context.setNextNodeId(INTERRUPT_AFTER);
-		}
-		else {
-			Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
-			context.setNextNodeId(nextCommand.gotoNode());
-		}
-
-		NodeOutput output = context.buildNodeOutputAndAddCheckpoint(partialState);
-		// Continue with the main execution handler (expanded iteratively by GraphRunner)
-		return Flux.just(GraphResponse.of(output),
-				GraphResponse.continueWith(() -> mainGraphExecutor.execute(context, resultValue)));
+		return checkpointAfterTransition(context, partialState, true)
+				.flatMapMany(output -> Flux.just(GraphResponse.of(output),
+						GraphResponse.continueWith(() -> mainGraphExecutor.execute(context, resultValue))));
 	}
 }

@@ -24,16 +24,26 @@ import java.util.Objects;
  * This is used when a conditional edge action returns multiple target nodes.
  *
  * @param gotoNodes A list of node identifiers to execute in parallel
- * @param update A map containing key-value pairs representing updates to be merged into the current state
+ * @param update state updates visible to every dispatched task and committed to the graph
+ * @param sends additional node invocations, each with its own input overlay
  */
-public record MultiCommand(List<String> gotoNodes, Map<String, Object> update) {
+public record MultiCommand(List<String> gotoNodes, Map<String, Object> update, List<Send> sends) {
 
 	public MultiCommand {
-		Objects.requireNonNull(gotoNodes, "gotoNodes cannot be null");
+		gotoNodes = List.copyOf(gotoNodes);
+		sends = List.copyOf(sends);
 		Objects.requireNonNull(update, "update cannot be null");
-		if (gotoNodes.isEmpty()) {
-			throw new IllegalArgumentException("gotoNodes cannot be empty");
+		if (gotoNodes.isEmpty() && sends.isEmpty()) {
+			throw new IllegalArgumentException("A multi-command requires at least one target");
 		}
+	}
+
+	public MultiCommand(List<String> gotoNodes, Map<String, Object> update) {
+		this(gotoNodes, update, List.of());
+	}
+
+	public static MultiCommand dispatch(List<Send> sends, Map<String, Object> update) {
+		return new MultiCommand(List.of(), update, sends);
 	}
 
 	/**
@@ -50,7 +60,7 @@ public record MultiCommand(List<String> gotoNodes, Map<String, Object> update) {
 	 * @return true if there's only one node, false otherwise
 	 */
 	public boolean isSingleNode() {
-		return gotoNodes.size() == 1;
+		return sends.isEmpty() && gotoNodes.size() == 1;
 	}
 
 	/**

@@ -16,6 +16,13 @@
 
 package com.alibaba.cloud.ai.graph.internal.node;
 
+import com.alibaba.cloud.ai.graph.CompileConfig;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
+
+import static com.alibaba.cloud.ai.graph.RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY;
 import static java.lang.String.format;
 
 /**
@@ -41,6 +48,50 @@ public interface ResumableSubGraphAction {
 
 	static String outputKeyToParent(String nodeId) {
 		return format("%s_%s", subGraphId(nodeId), OUTPUT_KEY_TO_PARENT_SUFFIX);
+	}
+
+	static boolean shouldResume(String nodeId, RunnableConfig config) {
+		return config.metadata(resumeSubGraphId(nodeId)).filter(Boolean.TRUE::equals).isPresent();
+	}
+
+	static String taskThreadId(RunnableConfig parent, String nodeId, String taskId) {
+		String namespace = parent.threadId().orElse("") + ":" + taskId + ":" + nodeId;
+		return "task-" + UUID.nameUUIDFromBytes(namespace.getBytes(StandardCharsets.UTF_8));
+	}
+
+	static RunnableConfig.Builder childInvocation(RunnableConfig parent, boolean resume) {
+		var builder = RunnableConfig.builder(parent).checkPointId(null).nextNode(null);
+		if (!resume) {
+			builder.removeMetadata(HUMAN_FEEDBACK_METADATA_KEY)
+					.removeMetadata(RunnableConfig.STATE_UPDATE_METADATA_KEY);
+		}
+		return builder;
+	}
+
+	static RunnableConfig.Builder childConfig(String nodeId, RunnableConfig parent,
+			CompileConfig parentCompileConfig, CompileConfig childCompileConfig) {
+		boolean resume = shouldResume(nodeId, parent);
+		var builder = childInvocation(parent, resume).removeMetadata(resumeSubGraphId(nodeId));
+		var parentSaver = parentCompileConfig.checkpointSaver();
+		var childSaver = childCompileConfig.checkpointSaver();
+		if (childSaver.isPresent()) {
+			if (parentSaver.isEmpty()) {
+				throw new IllegalStateException("Missing CheckpointSaver in parent graph!");
+			}
+			var taskId = parent.taskId();
+			if (taskId.isPresent()) {
+				builder.threadId(taskThreadId(parent, nodeId, taskId.get()));
+			}
+			else if (parentSaver.get() == childSaver.get()) {
+				builder.threadId(parent.threadId()
+						.map(threadId -> format("%s_%s", threadId, subGraphId(nodeId)))
+						.orElseGet(() -> subGraphId(nodeId)));
+			}
+		}
+		if (resume && parent.metadata(HUMAN_FEEDBACK_METADATA_KEY).isEmpty()) {
+			builder.resume();
+		}
+		return builder;
 	}
 
 }

@@ -33,7 +33,12 @@ import static java.lang.String.format;
  * The type Processed nodes edges and config.
  */
 public record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edges, Set<String> interruptsBefore,
-										   Set<String> interruptsAfter, Map<String, KeyStrategy> keyStrategyMap) {
+		Set<String> interruptsAfter, Map<String, KeyStrategy> keyStrategyMap, Map<String, String> parallelJoins) {
+
+	public ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edges, Set<String> interruptsBefore,
+			Set<String> interruptsAfter, Map<String, KeyStrategy> keyStrategyMap) {
+		this(nodes, edges, interruptsBefore, interruptsAfter, keyStrategyMap, Map.of());
+	}
 
 	/**
 	 * Instantiates a new Processed nodes edges and config.
@@ -42,7 +47,8 @@ public record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Ed
 	 * @param config     the config
 	 */
 	ProcessedNodesEdgesAndConfig(StateGraph stateGraph, CompileConfig config) {
-		this(stateGraph.nodes, stateGraph.edges, config.interruptsBefore(), config.interruptsAfter(), Map.of());
+		this(stateGraph.nodes, stateGraph.edges, config.interruptsBefore(), config.interruptsAfter(), Map.of(),
+				Map.copyOf(stateGraph.parallelJoins));
 	}
 
 	/**
@@ -68,6 +74,7 @@ public record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Ed
 		var edges = new StateGraph.Edges(stateGraph.edges.elements);
 
 		Map<String, KeyStrategy> keyStrategyMap = new LinkedHashMap<>();
+		var parallelJoins = new LinkedHashMap<>(stateGraph.parallelJoins);
 
 		for (var subgraphNode : subgraphNodes) {
 
@@ -98,6 +105,7 @@ public record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Ed
 			}
 
 			var sgEdgeStartRealTargetId = subgraphNode.formatId(sgEdgeStartTarget.id());
+			parallelJoins.replaceAll((fork, join) -> Objects.equals(join, subgraphNode.id()) ? sgEdgeStartRealTargetId : join);
 
 			// Process Interruption (Before) Subgraph(s)
 			interruptsBefore = interruptsBefore.stream()
@@ -130,6 +138,14 @@ public record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Ed
 
 			if (edgeWithSubgraphSourceId.isParallel()) {
 				throw new GraphStateException("subgraph not support routes to parallel branches yet!");
+			}
+			for (var join : processedSubGraph.parallelJoins().entrySet()) {
+				String joinTarget = END.equals(join.getValue()) ? edgeWithSubgraphSourceId.target().id()
+						: subgraphNode.formatId(join.getValue());
+				if (joinTarget == null) {
+					throw new GraphStateException("An inline subgraph that joins at END requires a direct exit edge");
+				}
+				parallelJoins.put(subgraphNode.formatId(join.getKey()), joinTarget);
 			}
 
 			// Process Interruption (After) Subgraph(s)
@@ -167,6 +183,7 @@ public record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Ed
                     .forEach(nodes.elements::add);
 		}
 
-		return new ProcessedNodesEdgesAndConfig(nodes, edges, interruptsBefore, interruptsAfter, keyStrategyMap);
+		return new ProcessedNodesEdgesAndConfig(nodes, edges, interruptsBefore, interruptsAfter, keyStrategyMap,
+				Map.copyOf(parallelJoins));
 	}
 }

@@ -27,10 +27,15 @@ import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.UncheckedIOException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.OverlappingFileLockException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -39,6 +44,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -62,6 +69,7 @@ public class FileSystemSaver implements BaseCheckpointSaver {
 
 	public static final String EXTENSION = ".saver";
 	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(FileSystemSaver.class);
+	private static final Set<Path> EXECUTION_LOCK_PATHS = ConcurrentHashMap.newKeySet();
 	private final Path targetFolder;
 
 	private final Serializer<Checkpoint> serializer;
@@ -115,6 +123,68 @@ public class FileSystemSaver implements BaseCheckpointSaver {
 		return new Builder();
 	}
 
+	@Override
+	public Object executionScope() {
+		return targetFolder.toAbsolutePath().normalize();
+	}
+
+	@Override
+	public ExecutionLease acquireExecutionLease(RunnableConfig config) throws IOException {
+		Path checkpointPath = getPath(config).toAbsolutePath();
+		Path lockPath = checkpointPath.getParent().toRealPath().resolve(checkpointPath.getFileName() + ".lock");
+		String threadId = getThreadId(config);
+		if (!EXECUTION_LOCK_PATHS.add(lockPath)) {
+			throw busyThread(threadId, null);
+		}
+		FileChannel channel = null;
+		try {
+			channel = FileChannel.open(lockPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+			if (channel.tryLock() == null) {
+				throw busyThread(threadId, null);
+			}
+			lock.lock();
+			try {
+				removeCachedLatest(threadId);
+			}
+			finally {
+				lock.unlock();
+			}
+			var acquiredChannel = channel;
+			return () -> {
+				try {
+					acquiredChannel.close();
+				}
+				catch (IOException ex) {
+					throw new UncheckedIOException(ex);
+				}
+				finally {
+					EXECUTION_LOCK_PATHS.remove(lockPath);
+				}
+			};
+		}
+		catch (RuntimeException | IOException | Error failure) {
+			try {
+				if (channel != null) {
+					channel.close();
+				}
+			}
+			catch (IOException closeFailure) {
+				failure.addSuppressed(closeFailure);
+			}
+			finally {
+				EXECUTION_LOCK_PATHS.remove(lockPath);
+			}
+			if (failure instanceof OverlappingFileLockException) {
+				throw busyThread(threadId, failure);
+			}
+			throw failure;
+		}
+	}
+
+	private static IllegalStateException busyThread(String threadId, Throwable cause) {
+		return new IllegalStateException("A durable graph execution is already active for thread '" + threadId + "'", cause);
+	}
+
 	private String getBaseName(RunnableConfig config) {
 		var threadId = config.threadId().orElse(THREAD_ID_DEFAULT);
 		return format("thread-%s", threadId);
@@ -135,12 +205,24 @@ public class FileSystemSaver implements BaseCheckpointSaver {
 	private void serialize(LinkedList<Checkpoint> checkpoints, File outFile) throws IOException {
 		Objects.requireNonNull(checkpoints, "checkpoints cannot be null");
 		Objects.requireNonNull(outFile, "outFile cannot be null");
-		try (ObjectOutputStream oos = new ObjectOutputStream(Files.newOutputStream(outFile.toPath()))) {
-
-			oos.writeInt(checkpoints.size());
-			for (Checkpoint checkpoint : checkpoints) {
-				serializer.write(checkpoint, oos);
+		Path destination = outFile.toPath().toAbsolutePath();
+		Path temporary = Files.createTempFile(destination.getParent(), ".checkpoint-", ".tmp");
+		try {
+			try (ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(temporary))) {
+				out.writeInt(checkpoints.size());
+				for (Checkpoint checkpoint : checkpoints) {
+					serializer.write(checkpoint, out);
+				}
 			}
+			try {
+				Files.move(temporary, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+			}
+			catch (AtomicMoveNotSupportedException ex) {
+				Files.move(temporary, destination, StandardCopyOption.REPLACE_EXISTING);
+			}
+		}
+		finally {
+			Files.deleteIfExists(temporary);
 		}
 	}
 

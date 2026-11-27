@@ -35,6 +35,11 @@ public class MessageSerializer implements Serializer<Message> {
 
 	private static final String PARTS_FORMAT = "message-parts-v1";
 
+	private static final String SYSTEM_FORMAT = "system-message-v1";
+
+	private static final Map<String, Object> DEFAULT_SYSTEM_METADATA = Map.of(AbstractMessage.MESSAGE_TYPE,
+			MessageType.SYSTEM);
+
 	final UserMessageSerializer user = new UserMessageSerializer();
 
 	final AssistantMessageSerializer assistant = new AssistantMessageSerializer();
@@ -43,9 +48,25 @@ public class MessageSerializer implements Serializer<Message> {
 
 	final ToolResponseMessageSerializer tool = new ToolResponseMessageSerializer();
 
+	private final boolean writeSystemMetadata;
+
+	public MessageSerializer() {
+		this(true);
+	}
+
+	MessageSerializer(boolean writeSystemMetadata) {
+		this.writeSystemMetadata = writeSystemMetadata;
+	}
+
 	@Override
 	public void write(Message object, ObjectOutput out) throws IOException {
 		MessageType type = object.getMessageType();
+		if (writeSystemMetadata && type == MessageType.SYSTEM && !DEFAULT_SYSTEM_METADATA.equals(object.getMetadata())) {
+			out.writeObject(SYSTEM_FORMAT);
+			Serializer.writeUTF(object.getText(), out);
+			out.writeObject(object.getMetadata());
+			return;
+		}
 		if (object instanceof AbstractMessage message && type != MessageType.SYSTEM && !canWriteLegacy(message)) {
 			out.writeObject(PARTS_FORMAT);
 			out.writeObject(type);
@@ -94,6 +115,9 @@ public class MessageSerializer implements Serializer<Message> {
 	public Message read(ObjectInput in) throws IOException, ClassNotFoundException {
 
 		Object format = in.readObject();
+		if (SYSTEM_FORMAT.equals(format)) {
+			return readSystemMessage(in);
+		}
 		if (PARTS_FORMAT.equals(format)) {
 			return readParts(in);
 		}
@@ -104,6 +128,13 @@ public class MessageSerializer implements Serializer<Message> {
 			case SYSTEM -> system.read(in);
 			case TOOL -> tool.read(in);
 		};
+	}
+
+	@SuppressWarnings("unchecked")
+	private SystemMessage readSystemMessage(ObjectInput in) throws IOException, ClassNotFoundException {
+		String text = Serializer.readUTF(in);
+		var metadata = (Map<String, Object>) in.readObject();
+		return SystemMessage.builder().text(text).metadata(metadata).build();
 	}
 
 	@SuppressWarnings("unchecked")

@@ -37,7 +37,11 @@ import static java.util.Optional.ofNullable;
  */
 public final class InterruptionMetadata extends NodeOutput implements HasMetadata<InterruptionMetadata.Builder> {
 
+	private static final String INTERRUPTION_ID = "interruptionId";
+
 	private final Map<String, Object> metadata;
+
+	private final List<InterruptionMetadata> pendingInterruptions;
 
 	private List<AssistantMessage.ToolCall> toolsAutomaticallyApproved;
 
@@ -46,6 +50,7 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 	private InterruptionMetadata(Builder builder) {
 		super(builder.nodeId, builder.state);
 		this.metadata = builder.metadata();
+		this.pendingInterruptions = List.copyOf(builder.pendingInterruptions);
 		this.toolFeedbacks = new ArrayList<>(builder.toolFeedbacks);
 		if (builder.toolsAutomaticallyApproved != null) {
 			this.toolsAutomaticallyApproved = builder.toolsAutomaticallyApproved;
@@ -69,6 +74,17 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 	@Override
 	public Optional<Map<String, Object>> metadata() {
 		return Optional.of(metadata);
+	}
+
+	public Optional<String> interruptionId() {
+		return metadata(INTERRUPTION_ID).filter(String.class::isInstance).map(String.class::cast);
+	}
+
+	/**
+	 * Returns the independently resumable interruptions reported by a parallel step.
+	 */
+	public List<InterruptionMetadata> pendingInterruptions() {
+		return pendingInterruptions;
 	}
 
 	public List<ToolFeedback> toolFeedbacks() {
@@ -107,13 +123,11 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 	public static Builder builder(InterruptionMetadata interruptionMetadata) {
 		Builder builder = new Builder(interruptionMetadata.metadata().orElse(Map.of()))
 			.nodeId(interruptionMetadata.node())
-			.state(interruptionMetadata.state());
+			.state(interruptionMetadata.state())
+			.pendingInterruptions(interruptionMetadata.pendingInterruptions());
 		if (interruptionMetadata.getToolsAutomaticallyApproved() != null) {
 			builder.toolsAutomaticallyApproved(interruptionMetadata.getToolsAutomaticallyApproved());
 		}
-		// if (interruptionMetadata.toolFeedbacks() != null && !interruptionMetadata.toolFeedbacks().isEmpty()) {
-		// 	builder.toolFeedbacks(interruptionMetadata.toolFeedbacks());
-		// }
 		return builder;
 	}
 
@@ -125,6 +139,8 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 		List<ToolFeedback> toolFeedbacks;
 
 		List<AssistantMessage.ToolCall> toolsAutomaticallyApproved;
+
+		List<InterruptionMetadata> pendingInterruptions = List.of();
 
 		String nodeId;
 
@@ -156,6 +172,15 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 
 		public Builder state(OverAllState state) {
 			this.state = state;
+			return this;
+		}
+
+		public Builder interruptionId(String id) {
+			return addMetadata(INTERRUPTION_ID, id);
+		}
+
+		public Builder pendingInterruptions(List<InterruptionMetadata> interruptions) {
+			this.pendingInterruptions = List.copyOf(interruptions);
 			return this;
 		}
 

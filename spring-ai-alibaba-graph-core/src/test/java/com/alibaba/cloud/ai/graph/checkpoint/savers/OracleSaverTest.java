@@ -57,6 +57,7 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 import static com.alibaba.cloud.ai.graph.checkpoint.savers.LatestCheckpointCacheTestSupport.enableLatestCheckpointCache;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -140,6 +141,39 @@ public class OracleSaverTest {
 
     private static RunnableConfig config(String threadId) {
         return RunnableConfig.builder().threadId(threadId).build();
+    }
+
+    @Test
+    void independentSaversFenceAnOracleCheckpointThread() throws Exception {
+        var a = OracleSaver.builder().dataSource(DATA_SOURCE).build();
+        var b = OracleSaver.builder().dataSource(DATA_SOURCE).build();
+        String threadId = "oracle-execution-lease";
+        var run = config(threadId);
+        try (var first = a.acquireExecutionLease(run)) {
+            var original = first.configure(run);
+            a.put(original, checkpoint("first"));
+            assertThrows(IllegalStateException.class, () -> b.acquireExecutionLease(run));
+
+            try (var connection = DATA_SOURCE.getConnection();
+                    var expiry = connection.prepareStatement("""
+                            UPDATE graph_execution_lease SET expires_at = SYSTIMESTAMP - NUMTODSINTERVAL(1, 'SECOND')
+                            WHERE thread_name = ?
+                            """)) {
+                expiry.setString(1, threadId);
+                assertEquals(1, expiry.executeUpdate());
+            }
+            assertThrows(IllegalStateException.class, () -> a.put(original, checkpoint("expired")));
+            try (var next = b.acquireExecutionLease(run)) {
+                var active = next.configure(run);
+                b.put(active, checkpoint("next"));
+                assertThrows(IllegalStateException.class, () -> a.put(original, checkpoint("stale")));
+                assertThrows(IllegalStateException.class, () -> a.release(original));
+                first.close();
+                b.put(active, checkpoint("still active"));
+            }
+        }
+        assertEquals(3, b.list(run).size());
+        assertEquals("still active", b.get(run).orElseThrow().getState().get("value"));
     }
 
     private static RunnableConfig config(String threadId, String checkpointId) {

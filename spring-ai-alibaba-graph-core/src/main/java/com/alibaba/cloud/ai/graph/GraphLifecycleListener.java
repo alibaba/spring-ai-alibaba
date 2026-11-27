@@ -84,4 +84,8 @@ public interface GraphLifecycleListener {
 	default void onComplete(String nodeId, Map<String, Object> state, RunnableConfig config) {
 	}
 
+	/** Receives task attempts with identities that distinguish repeated dispatches. */
+	default void onTaskAttempt(TaskAttemptEvent event, RunnableConfig config) {
+	}
+
 }

@@ -21,15 +21,14 @@ import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.utils.TypeRef;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.childConfig;
 import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.outputKeyToParent;
 import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.resumeSubGraphId;
-import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.subGraphId;
-import static java.lang.String.format;
+import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.shouldResume;
 
 /**
  * Represents an action to perform a subgraph on a given state with a specific
@@ -65,51 +64,20 @@ public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentComp
 	 */
 	@Override
 	public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
-		final boolean resumeSubgraph = config.metadata(resumeSubGraphId(nodeId), new TypeRef<Boolean>() {
-		}).orElse(false);
-
-		// Build from the parent config so the subgraph receives run-scoped context,
-		// while RunnableConfig.Builder keeps the child context isolated.
-		RunnableConfig subGraphRunnableConfig = RunnableConfig.builder(config).checkPointId(null).nextNode(null).build();
-
-		var parentSaver = parentCompileConfig.checkpointSaver();
-		var subGraphSaver = subGraph.compileConfig.checkpointSaver();
-
-		if (subGraphSaver.isPresent()) {
-			if (parentSaver.isEmpty()) {
-				return CompletableFuture
-					.failedFuture(new IllegalStateException("Missing CheckpointSaver in parent graph!"));
-			}
-
-			// Check saver are the same instance
-			if (parentSaver.get() == subGraphSaver.get()) {
-				subGraphRunnableConfig = RunnableConfig.builder(config)
-					.threadId(config.threadId()
-						.map(threadId -> format("%s_%s", threadId, subGraphId(nodeId)))
-						.orElseGet(() -> subGraphId(nodeId)))
-					.nextNode(null)
-					.checkPointId(null)
-					.build();
-			}
-		}
-
-		final CompletableFuture<Map<String, Object>> future = new CompletableFuture<>();
-
 		try {
-			if (resumeSubgraph) {
+			var subGraphRunnableConfig = childConfig(nodeId, config, parentCompileConfig, subGraph.compileConfig).build();
+			if (shouldResume(nodeId, config) && config.taskId().isPresent()) {
+				return CompletableFuture.completedFuture(Map.of(outputKeyToParent(nodeId),
+						subGraph.graphResponseStream(Map.of(), subGraphRunnableConfig)));
+			}
+			if (shouldResume(nodeId, config)) {
 				subGraphRunnableConfig = subGraph.updateState(subGraphRunnableConfig, state.data());
 			}
-
-			var fluxStream = subGraph.graphResponseStream(state, subGraphRunnableConfig);
-
-			future.complete(Map.of(outputKeyToParent(nodeId), fluxStream));
-
+			return CompletableFuture.completedFuture(Map.of(outputKeyToParent(nodeId),
+					subGraph.graphResponseStream(state, subGraphRunnableConfig)));
 		}
 		catch (Exception e) {
-
-			future.completeExceptionally(e);
+			return CompletableFuture.failedFuture(e);
 		}
-
-		return future;
 	}
 }

@@ -22,6 +22,8 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.common.LatestCheckpointCache;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.common.LatestCheckpointCacheConfigurable;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -37,9 +39,22 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public abstract class AbstractJdbcCheckpointSaver implements BaseCheckpointSaver, LatestCheckpointCacheConfigurable {
 
+	protected static final int EXECUTION_LEASE_SECONDS = 90;
+
+	protected static final String CREATE_EXECUTION_LEASE = """
+			CREATE TABLE IF NOT EXISTS graph_execution_lease (
+			    thread_name VARCHAR(255) PRIMARY KEY,
+			    owner_token VARCHAR(36) NOT NULL,
+			    expires_at %s NOT NULL
+			)
+			""";
+
+	protected static final String DROP_EXECUTION_LEASE = "DROP TABLE IF EXISTS graph_execution_lease";
+
 	private final LatestCheckpointCache latestCheckpointCache;
 
 	private final ReentrantLock lock = new ReentrantLock();
+	private final ThreadLocal<JdbcExecutionLease> writeLease = new ThreadLocal<>();
 
 	private boolean latestCheckpointCacheEnabled = false;
 
@@ -52,6 +67,39 @@ public abstract class AbstractJdbcCheckpointSaver implements BaseCheckpointSaver
 	 */
 	protected AbstractJdbcCheckpointSaver(int maxCachedThreads) {
 		this.latestCheckpointCache = new LatestCheckpointCache(maxCachedThreads);
+	}
+
+	protected final ExecutionLease acquireJdbcExecutionLease(RunnableConfig config, String now, String expires)
+			throws SQLException {
+		String id = threadId(config);
+		var lease = new JdbcExecutionLease(this, id, now, expires);
+		lock.lock();
+		try {
+			latestCheckpointCache.remove(id);
+		}
+		finally {
+			lock.unlock();
+		}
+		return lease;
+	}
+
+	protected Connection openLeaseConnection() throws SQLException {
+		throw new UnsupportedOperationException("This JDBC saver has no execution lease");
+	}
+
+	/** Begins the checkpoint mutation and verifies any execution lease in the same transaction. */
+	protected final void beginCheckpointWrite(Connection connection) throws SQLException {
+		connection.setAutoCommit(false);
+		var lease = writeLease.get();
+		if (lease != null) {
+			lease.fence(connection);
+		}
+	}
+
+	private void bindWriteLease(RunnableConfig config, String id) {
+		config.metadata(JdbcExecutionLease.CONFIG_KEY).filter(JdbcExecutionLease.class::isInstance)
+				.map(JdbcExecutionLease.class::cast).filter(lease -> lease.belongsTo(this, id))
+				.ifPresent(writeLease::set);
 	}
 
 	/**
@@ -134,6 +182,7 @@ public abstract class AbstractJdbcCheckpointSaver implements BaseCheckpointSaver
 		lock.lock();
 		try {
 			String threadId = threadId(config);
+			bindWriteLease(config, threadId);
 			if (config.checkPointId().isPresent()) {
 				String checkpointId = config.checkPointId().get();
 				updateCheckpoint(threadId, checkpointId, checkpoint);
@@ -156,6 +205,7 @@ public abstract class AbstractJdbcCheckpointSaver implements BaseCheckpointSaver
 					.build();
 		}
 		finally {
+			writeLease.remove();
 			lock.unlock();
 		}
 	}
@@ -173,12 +223,14 @@ public abstract class AbstractJdbcCheckpointSaver implements BaseCheckpointSaver
 		lock.lock();
 		try {
 			String threadId = threadId(config);
+			bindWriteLease(config, threadId);
 			LinkedList<Checkpoint> checkpoints = selectCheckpoints(threadId);
 			releaseThread(threadId);
 			latestCheckpointCache.remove(threadId);
 			return new Tag(threadId, checkpoints);
 		}
 		finally {
+			writeLease.remove();
 			lock.unlock();
 		}
 	}

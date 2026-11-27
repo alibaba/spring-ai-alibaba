@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.action;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
 import io.opentelemetry.context.Context;
 
 import java.util.Map;
@@ -34,7 +35,7 @@ public interface AsyncNodeActionWithConfig
 	CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config);
 
 	static AsyncNodeActionWithConfig node_async(NodeActionWithConfig syncAction) {
-		return (state, config) -> {
+		AsyncNodeActionWithConfig action = (state, config) -> {
 			Context context = Context.current();
 			CompletableFuture<Map<String, Object>> result = new CompletableFuture<>();
 			try {
@@ -45,6 +46,25 @@ public interface AsyncNodeActionWithConfig
 			}
 			return result;
 		};
+		if (syncAction instanceof ResumableSubGraphAction resumable) {
+			return new ResumableActionAdapter(action, resumable);
+		}
+		return action;
+	}
+
+	record ResumableActionAdapter(AsyncNodeActionWithConfig action, ResumableSubGraphAction resumable)
+			implements AsyncNodeActionWithConfig, ResumableSubGraphAction {
+
+		@Override
+		public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+			return action.apply(state, config);
+		}
+
+		@Override
+		public String getResumeSubGraphId() {
+			return resumable.getResumeSubGraphId();
+		}
+
 	}
 
 	/**
