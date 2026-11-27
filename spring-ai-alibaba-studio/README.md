@@ -2,43 +2,24 @@
 
 Agent Chat UI provides a visualized way for developers to chat with any Spring AI Alibaba developed Agents.
 
-## Quick Experience
+## Try the Chatbot
 
-> Go to the [examples](../examples) directory to experience real world usage.
+The Chatbot example starts a ReactAgent backend and serves the embedded Chat UI. [Run the Chatbot](../examples/chatbot/README.md)
 
-1. Start backend agent
-
-Go to the `src/test/java` directory, start the backend agent by running `StudioApplication`.
-The unified application supports both **Graph** (e.g. `simple_workflow`) and **Agent** (e.g. `single_agent`, `research_agent`) APIs.
-
-2. Then, start the chat ui
-
-```shell
-npm install
-npm run dev
-```
-
-3. Chat with agent
-
-Visit `http://localhost:3000`.
-
-<img src="../docs/imgs/agent-chat-ui.jpg" alt="architecture" style="max-width: 740px; height: 508px" />
+<img src="../docs/imgs/agent-chat-ui.jpg" alt="Agent Chat UI" style="max-width: 740px; height: 508px" />
 
 ### Embedded mode
 
-The ui can work in a embedded mode with any of your Spring Boot applications.
-
-Just add the following dependency to your agent project:
+Add Studio to your Spring Boot 4.2 application. The Spring AI Alibaba BOM manages this dependency at version 2.1.0.0. [Maven setup](../README.md#add-spring-ai-alibaba-to-your-project)
 
 ```xml
 <dependency>
 	<groupId>com.alibaba.cloud.ai</groupId>
 	<artifactId>spring-ai-alibaba-studio</artifactId>
-	<version>1.1.2.1</version>
 </dependency>
 ```
 
-Run your agent, visit `http:localhost:{your-port}/chatui/index.html`, and now you can chat with you agent.
+Start your application and open `http://localhost:<port>/chatui/index.html`. Spring Boot uses port 8080 by default.
 
 ### Standalone mode
 

@@ -6,8 +6,8 @@ This example showcases basic ReactAgent usage in Spring AI Alibaba.
 
 ### Prerequisites
 
-* Requires JDK 17+.
-* Choose your LLM provider and get the API-KEY.
+* JDK 17 or later.
+* A DashScope API key. [Get a Bailian API key](https://bailian.console.aliyun.com/?apiKey=1&tab=api#/api)
 
 ```shell
 export AI_DASHSCOPE_API_KEY=your-api-key
@@ -26,7 +26,7 @@ cd spring-ai-alibaba
 
 ```shell
 # Run from repository root.
-./mvnw -pl examples/chatbot spring-boot:run
+./mvnw -f examples/chatbot/pom.xml spring-boot:run
 ```
 
 3. Chat with ChatBot.

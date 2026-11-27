@@ -2,8 +2,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 [![CI Status](https://github.com/alibaba/spring-ai-alibaba/actions/workflows/build-and-test.yml/badge.svg?branch=main)](https://github.com/alibaba/spring-ai-alibaba/actions/workflows/build-and-test.yml)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/alibaba/spring-ai-alibaba)
-[![Maven Central](https://img.shields.io/badge/Maven%20Central-v1.1.2.2-blue)](https://central.sonatype.com/artifact/com.alibaba.cloud.ai/spring-ai-alibaba/1.1.2.2)
+[![Maven Central](https://img.shields.io/maven-central/v/com.alibaba.cloud.ai/spring-ai-alibaba-bom?label=Maven%20Central)](https://central.sonatype.com/artifact/com.alibaba.cloud.ai/spring-ai-alibaba-bom)
 [![gitleaks badge](https://img.shields.io/badge/protected%20by-gitleaks-blue)](https://github.com/gitleaks/gitleaks)
 
 <html>
@@ -11,12 +10,22 @@
       A production-ready framework for building Agentic, Workflow, and Multi-agent applications.
     </h3>
     <h3 align="center">
-      <a href="https://java2ai.com/docs/quick-start/" target="_blank">Agent Framework Docs</a>,
+      <a href="#getting-started">Getting Started</a>,
       <a href="https://java2ai.com/docs/frameworks/graph-core/quick-start/" target="_blank">Graph Docs</a>,
-      <a href="https://java2ai.com/ecosystem/spring-ai/reference/concepts/" target="_blank">Spring AI</a>,
+      <a href="https://docs.spring.io/spring-ai/reference/index.html" target="_blank">Spring AI</a>,
       <a href="https://github.com/alibaba/spring-ai-alibaba/tree/main/examples" target="_blank">Examples</a>.
     </h3>
 </html>
+
+## Spring AI Alibaba 2.1.0.0
+
+This release uses Spring AI 2.1.0, Spring Boot 4.2.0, Spring AI Alibaba Extensions 2.1.0.0, MCP Java SDK 2.2.0, and Nacos 3.3.0. [Release notes](https://github.com/alibaba/spring-ai-alibaba/releases/tag/v2.1.0.0)
+
+- ReactAgent checks tool calls against the final request and supports human approval, edited arguments, and checkpoint resume. The default per-turn limits are 40 calls per tool and 150 calls across all tools.
+- Graph and Studio preserve ordered Message Parts, including reasoning, media, and tool results. The workflow LLM node can use Spring AI Session Memory, and the question classifier can use `DecisionModel` for typed routing decisions.
+- The workflow MCP node and Nacos gateway support Modern MCP (2026-07-28), Streamable HTTP, and SSE.
+- Extensions update Bailian chat, image, video, audio, and workspace RAG integrations. AnalyticDB, OceanBase, Alibaba OpenSearch, Tablestore, and Tair support writes and searches with precomputed vectors. [Extensions release notes](https://github.com/spring-ai-alibaba/spring-ai-extensions/releases/tag/v2.1.0.0)
+- Spring AI 2.1 also adds OpenAI Responses API support, turn-aware session compaction and recall, and normalized model finish reasons. [Spring AI 2.1.0 announcement](https://spring.io/blog/2026/11/20/spring-ai-2-1-0-GA-available-now/)
 
 ## Architecture
 
@@ -56,84 +65,85 @@
 
 ## Getting Started
 
-### Prerequisites
+### Run the Chatbot
 
-* Requires JDK 17+.
-* Choose your LLM provider and get the API-KEY.
+Use JDK 17 or later and a DashScope API key. The repository includes the Maven Wrapper. [Get a Bailian API key](https://bailian.console.aliyun.com/?apiKey=1&tab=api#/api)
 
-### Quickly Run a ChatBot
+```shell
+git clone --depth=1 https://github.com/alibaba/spring-ai-alibaba.git
+cd spring-ai-alibaba
+export AI_DASHSCOPE_API_KEY=your-api-key
+./mvnw -f examples/chatbot/pom.xml spring-boot:run
+```
 
-There's a ChatBot example provided by the community at [examples/chatbot](https://github.com/alibaba/spring-ai-alibaba/tree/main/examples/chatbot).
+Open the embedded Chat UI once the application starts. [Chatbot UI](http://localhost:8080/chatui/index.html)
 
-1. Download the code.
-
-	```shell
-	git clone --depth=1 https://github.com/alibaba/spring-ai-alibaba.git
-	cd spring-ai-alibaba
-	```
-
-2. Start the ChatBot.
-
-	Before starting, set API-KEY first (visit <a href="https://bailian.console.aliyun.com/?apiKey=1&tab=api#/api" target="_blank">Aliyun Bailian</a> to get API-KEY):
-	```shell
-	# this example uses 'spring-ai-alibaba-starter-dashscope', visit https://java2ai.com to learn how to use OpenAI/DeepSeek.
-	export AI_DASHSCOPE_API_KEY=your-api-key
-	```
-	
-	```shell
-	# Maven installation is optional when using mvnw.
-	./mvnw -pl examples/chatbot spring-boot:run
-	```
-
-3. Chat with ChatBot.
-
-	Open the browser and visit [http://localhost:8080/chatui/index.html](http://localhost:8080/chatui/index.html) to chat with the ChatBot.
-	
 <p align="center">
-	<img src="./docs/imgs/chatbot-chat-ui.gif" alt="chatbot-ui" style="max-width: 740px; height: auto" />
+    <img src="./docs/imgs/chatbot-chat-ui.gif" alt="Chatbot UI" style="max-width: 740px; height: auto" />
 </p>
 
-## Chatbot Code Explained
+### Add Spring AI Alibaba to Your Project
 
-1. Add dependencies
+Use Spring Boot 4.2.0 and import these BOMs. Add the Agent Framework and DashScope starter dependencies to build a ReactAgent with a DashScope chat model. [Chatbot example POM](./examples/chatbot/pom.xml)
 
-	```xml
-	<dependencies>
-	  <dependency>
-	    <groupId>com.alibaba.cloud.ai</groupId>
-	    <artifactId>spring-ai-alibaba-agent-framework</artifactId>
-	    <version>2.1.0.0</version>
-	  </dependency>
-	  <!-- Assume you are going to use DashScope Model. Refer to docs for how to choose model.-->
-	  <dependency>
-	    <groupId>com.alibaba.cloud.ai</groupId>
-	    <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
-	    <version>2.1.0.0</version>
-	  </dependency>
-	</dependencies>
-	```
+```xml
+<dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.ai</groupId>
+      <artifactId>spring-ai-bom</artifactId>
+      <version>2.1.0</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.alibaba.cloud.ai</groupId>
+      <artifactId>spring-ai-alibaba-extensions-bom</artifactId>
+      <version>2.1.0.0</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.alibaba.cloud.ai</groupId>
+      <artifactId>spring-ai-alibaba-bom</artifactId>
+      <version>2.1.0.0</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+  </dependencies>
+</dependencyManagement>
 
-2. Define Chatbot
-   
-	For more details of how to write a Chatbot, please check the [Quick Start](https://java2ai.com/docs/quick-start) on our official website.
+<dependencies>
+  <dependency>
+    <groupId>com.alibaba.cloud.ai</groupId>
+    <artifactId>spring-ai-alibaba-agent-framework</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>com.alibaba.cloud.ai</groupId>
+    <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+  </dependency>
+</dependencies>
+```
+
+The runnable example also includes Studio to serve the embedded Chat UI. [Chatbot agent source](./examples/chatbot/src/main/java/com/alibaba/cloud/ai/examples/chatbot/ChatbotAgent.java) · [Studio setup](./spring-ai-alibaba-studio/README.md)
 
 ## 📚 Documentation
 * [Overview](https://java2ai.com/docs/overview) - High level overview of the framework
-* [Quick Start](https://java2ai.com/docs/quick-start) - Get started with a simple agent
+* [2.1.0.0 Getting Started](#getting-started) - Run the Chatbot or add the Maven dependencies
 * [Agent Framework Tutorials](https://java2ai.com/docs/frameworks/agent-framework/tutorials/agents) - Step by step tutorials
-* [Use Graph API to Build Complex Workflows](https://java2ai.com/docs/frameworks/agent-framework/advanced/context-engineering) - In-depth user guide for building multi-agent and workflows
+* [Graph Core Quick Start](https://java2ai.com/docs/frameworks/graph-core/quick-start/) - Build a stateful workflow with the Graph API
 * [Graph Engineering with Spring AI Alibaba](./docs/graph-engineering.md) - Positioning guide for nodes, edges, shared state, verifier nodes, A2A, and external-agent orchestration
 * [Lightweight RepoOps Graph Engineering](./docs/graph-engineering-repoops-lightweight.md) - Single-application RepoOps lifecycle design using Spring AI Alibaba Graph, local agents, tools, and optional A2A
 * [Graph Engineering Examples](./examples/graphengineering) - Runnable RepoOps issue workflow using Spring AI Alibaba Graph with AgentScope Java nodes
-* [Spring AI Basics](https://java2ai.com/ecosystem/spring-ai/reference/concepts) - Ai Application basic concepts, including ChatModel, MCP, Tool, Messages, etc.
-* [Chat Memory](https://docs.spring.io/spring-ai/reference/api/chatclient.html#chat-memory) - Spring AI reference for chat memory repositories and usage
+* [Spring AI Concepts](https://docs.spring.io/spring-ai/reference/concepts.html) - Models, prompts, embeddings, RAG, and tool calling
+* [Session Memory migration](https://docs.spring.io/spring-ai/reference/2.1-SNAPSHOT/upgrading/session-memory.html) - Move from `ChatMemory` to Spring AI Session Memory
 
 ## Project Structure
 
 This project consists of several core components:
 
 * spring-ai-alibaba-agent-framework: A multi-agent framework designed for building intelligent agents with built-in context engineering best practices.
-* spring-ai-alibaba-graph: The underlying runtime for Agent Framework. We recommend developers to use Agent Framework but it's totally fine to use the Graph API directly.
+* spring-ai-alibaba-graph-core — The graph runtime for checkpointing, streaming, and stateful workflows. Use it directly for custom control flow.
 * spring-ai-alibaba-admin: A one-stop Agent platform that supports visualized Agent development, observability, evaluation, and MCP management, etc.
 * spring-ai-alibaba-studio: The embedded ui for quickly debugging agent in a visualized way.
 * spring-boot-starters: Starters integrating Agent Framework with Nacos to provide A2A and dynamic config features.
@@ -148,7 +158,7 @@ This project consists of several core components:
 | [Spring AI Alibaba Examples](https://github.com/spring-ai-alibaba/examples) | Spring AI Alibaba Examples. |  ![GitHub Repo stars](https://img.shields.io/github/stars/spring-ai-alibaba/examples?style=for-the-badge&label=)
 | [JManus](https://github.com/spring-ai-alibaba/jmanus) | A Java implementation of Manus built with Spring AI Alibaba, currently used in many applications within Alibaba Group. | ![GitHub Repo stars](https://img.shields.io/github/stars/spring-ai-alibaba/jmanus?style=for-the-badge&label=)
 | [DataAgent](https://github.com/spring-ai-alibaba/dataagent) | A natural language to SQL project based on Spring AI Alibaba, enabling you to query databases directly with natural language without writing complex SQL. | ![GitHub Repo stars](https://img.shields.io/github/stars/spring-ai-alibaba/dataagent?style=for-the-badge&label=)
-| [DeepResearch](https://github.com/spring-ai-alibaba/deepresearch) |  Deep Research implemented based on spring-ai-alibaba-graph. | ![GitHub Repo stars](https://img.shields.io/github/stars/spring-ai-alibaba/deepresearch?style=for-the-badge&label=)
+| [DeepResearch](https://github.com/spring-ai-alibaba/deepresearch) | Deep research workflows built with Spring AI Alibaba Graph. | ![GitHub Repo stars](https://img.shields.io/github/stars/spring-ai-alibaba/deepresearch?style=for-the-badge&label=)
 
 ## Contact Us
 
@@ -166,9 +176,10 @@ This project consists of several core components:
 
 ## Star History
 
-[![Star History Chart](https://starchart.cc/alibaba/spring-ai-alibaba.svg?variant=adaptive)](https://starchart.cc/alibaba/spring-ai-alibaba)
+[View star history](https://www.star-history.com/#alibaba/spring-ai-alibaba&Date)
 
 ---
 
 <p align="center">
     Made with ❤️ by the Spring AI Alibaba Team
+</p>
