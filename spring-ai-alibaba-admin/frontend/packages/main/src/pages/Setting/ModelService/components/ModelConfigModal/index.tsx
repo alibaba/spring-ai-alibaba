@@ -1,6 +1,12 @@
 import $i18n from '@/i18n';
-import { ICreateModelParams, IModel, MODEL_TAGS } from '@/types/modelService';
-import { Button, Checkbox, Form, Input, Modal } from '@spark-ai/design';
+import {
+  ICreateModelParams,
+  IModel,
+  MODEL_TAGS,
+  MODEL_TYPES,
+} from '@/types/modelService';
+import { Button, Checkbox, Form, Input, Modal, Radio } from '@spark-ai/design';
+import { Space } from 'antd';
 import React, { useEffect } from 'react';
 import styles from './index.module.less';
 
@@ -21,27 +27,40 @@ const ModelConfigModal: React.FC<ModelConfigModalProps> = ({
 }) => {
   const [form] = Form.useForm();
   const isEdit = !!model?.model_id;
+  const modelType = Form.useWatch('type', form);
+  const requireTags = modelType === 'llm';
 
   useEffect(() => {
     if (open) {
       if (model) {
         form.setFieldsValue({
           name: model.name || '',
+          type: model.type || 'llm',
           tags: model.tags || [],
         });
       } else {
         form.resetFields();
+        form.setFieldsValue({
+          type: 'llm',
+          tags: [],
+        });
       }
     }
   }, [open, model, form]);
 
   const handleSubmit = () => {
     form.validateFields().then((values) => {
+      const type = values.type || 'llm';
+      let tags: string[] = values.tags || [];
+      if (type === 'text_embedding' && tags.length === 0) {
+        tags = ['embedding'];
+      }
       const _model: ICreateModelParams = {
         ...(model || {}),
         name: values.name,
         model_id: values.name,
-        tags: values.tags,
+        type,
+        tags,
       };
       onOk(_model);
     });
@@ -108,6 +127,32 @@ const ModelConfigModal: React.FC<ModelConfigModalProps> = ({
             />
           </Form.Item>
           <Form.Item
+            name="type"
+            label={$i18n.get({
+              id: 'main.pages.Setting.ModelService.components.ModelConfigModal.index.modelType',
+              dm: '模型类型',
+            })}
+            rules={[
+              {
+                required: true,
+                message: $i18n.get({
+                  id: 'main.pages.Setting.ModelService.components.ModelConfigModal.index.selectModelType',
+                  dm: '请选择模型类型',
+                }),
+              },
+            ]}
+          >
+            <Radio.Group>
+              <Space wrap>
+                {Object.entries(MODEL_TYPES).map(([key, label]) => (
+                  <Radio key={key} value={key}>
+                    {label}
+                  </Radio>
+                ))}
+              </Space>
+            </Radio.Group>
+          </Form.Item>
+          <Form.Item
             name="tags"
             label={$i18n.get({
               id: 'main.pages.Setting.ModelService.components.ModelConfigModal.index.modelAbility',
@@ -115,7 +160,7 @@ const ModelConfigModal: React.FC<ModelConfigModalProps> = ({
             })}
             rules={[
               {
-                required: true,
+                required: requireTags,
                 message: $i18n.get({
                   id: 'main.pages.Setting.ModelService.components.ModelConfigModal.index.selectAtLeastOneAbility',
                   dm: '请选择至少一个模型能力',

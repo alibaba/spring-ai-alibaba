@@ -394,6 +394,7 @@ public class ProviderController {
 		modelConfigInfo.setTags(tags);
 		modelConfigInfo.setIcon(request.getIcon());
 		modelConfigInfo.setEnable(request.getEnable());
+		modelConfigInfo.setType(request.getType());
 		return Result.success(modelManager.updateModel(modelConfigInfo));
 	}
 
