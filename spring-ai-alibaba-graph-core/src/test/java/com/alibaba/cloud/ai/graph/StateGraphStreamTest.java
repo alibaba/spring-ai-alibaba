@@ -445,7 +445,7 @@ public class StateGraphStreamTest {
 			.addEdge(START, "result")
 			.addEdge("llmNode", "toolNode")
 			.addEdge("llmNode2", "toolNode")
-//			.addEdge("result", END)
+			.addEdge("result", "toolNode")
 			.addEdge("toolNode", END);
 
 		CompiledGraph compile = stateGraph.compile();

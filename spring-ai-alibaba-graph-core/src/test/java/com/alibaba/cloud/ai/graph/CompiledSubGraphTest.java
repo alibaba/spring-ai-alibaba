@@ -15,31 +15,175 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.file.FileSystemSaver;
 import com.alibaba.cloud.ai.graph.exception.SubGraphInterruptionException;
+import com.alibaba.cloud.ai.graph.state.RemoveByValue;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.mergeMap;
 import static java.lang.String.format;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CompiledSubGraphTest {
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void projectsCompiledSubgraphStateInSerialAndParallelRuns(boolean parallel) throws Exception {
+		var child = new StateGraph(KeyStrategy.builder().addStrategy("items", new AppendStrategy())
+				.addStrategy("privateList", new AppendStrategy()).build())
+			.addNode("first", node_async(state -> {
+				assertEquals("visible", state.value("request").orElseThrow());
+				assertFalse(state.data().containsKey("private"));
+				return Map.of("items", List.of(RemoveByValue.of("Aa"), "child"), "private", "child",
+						"privateList", List.of("internal"), "delete", OverAllState.MARK_FOR_REMOVAL);
+			}))
+			.addNode("second", node_async(state -> Map.of("items", "child")))
+			.addEdge(START, "first").addEdge("first", "second").addEdge("second", END).compile();
+
+		var parent = new StateGraph().addNode("child", child, Set.of("request", "items"), Set.of("items", "delete"))
+			.addNode("join", node_async(state -> Map.of()))
+			.addEdge(START, "child").addEdge("child", "join").addEdge("join", END);
+		if (parallel) {
+			parent.addNode("sibling", node_async(state -> Map.of("sibling", "finished")))
+				.addEdge(START, "sibling").addEdge("sibling", "join");
+		}
+		var graph = parent.compile();
+		assertFalse(graph.getKeyStrategyMap().containsKey("privateList"));
+
+		var result = graph.invoke(Map.of("request", "visible", "items", List.of("BB", "Aa"),
+				"private", "parent", "delete", "parent")).orElseThrow().data();
+		assertEquals(List.of("BB", "child", "child"), result.get("items"));
+		assertEquals("parent", result.get("private"));
+		assertFalse(result.containsKey("privateList"));
+		assertFalse(result.containsKey("delete"));
+		if (parallel) {
+			assertEquals("finished", result.get("sibling"));
+		}
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void resumesCompiledSubgraphFromItsCheckpointWithoutReplayingParentState(boolean projected, @TempDir Path folder)
+			throws Exception {
+		BaseCheckpointSaver saver = projected ? FileSystemSaver.builder().targetFolder(folder).maxCachedThreads(0).build()
+				: MemorySaver.builder().build();
+		var saverConfig = SaverConfig.builder().register(saver).build();
+		var strategies = KeyStrategy.builder().addStrategy("items", new AppendStrategy()).build();
+		var child = new StateGraph(strategies)
+			.addNode("before", node_async(state -> Map.of("items", List.of(RemoveByValue.of("Aa"), "before"))))
+			.addNode("after", node_async(state -> {
+				assertEquals(List.of("BB", "before"), state.value("items").orElseThrow());
+				return Map.of("items", "after");
+			}))
+			.addEdge(START, "before").addEdge("before", "after").addEdge("after", END)
+			.compile(CompileConfig.builder().saverConfig(saverConfig).interruptAfter("before").build());
+		var parent = new StateGraph(strategies);
+		if (projected) {
+			parent.addNode("child", child, Set.of("items"), Set.of("items"));
+		}
+		else {
+			parent.addNode("child", child);
+		}
+		var graph = parent.addEdge(START, "child").addEdge("child", END)
+			.compile(CompileConfig.builder().saverConfig(saverConfig).build());
+		var config = RunnableConfig.builder().threadId("child-resume").build();
+
+		assertInstanceOf(InterruptionMetadata.class,
+				graph.invokeAndGetResponse(Map.of("items", List.of("BB", "Aa")), config).resultValue().orElseThrow());
+		var result = graph.invoke(Map.of(), config.withResume()).orElseThrow();
+		assertEquals(List.of("BB", "before", "after"), result.value("items").orElseThrow());
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void startsCompiledSubgraphWhenParentWasInterruptedBeforeIt(boolean childUsesSaver) throws Exception {
+		var saver = MemorySaver.builder().build();
+		var saverConfig = SaverConfig.builder().register(saver).build();
+		var executions = new AtomicInteger();
+		var childConfig = CompileConfig.builder();
+		if (childUsesSaver) {
+			childConfig.saverConfig(saverConfig);
+		}
+		var child = new StateGraph()
+			.addNode("execute", node_async(state -> Map.of("executions", executions.incrementAndGet(),
+					"request", state.value("request").orElseThrow())))
+			.addEdge(START, "execute").addEdge("execute", END).compile(childConfig.build());
+		var graph = new StateGraph().addNode("child", child).addEdge(START, "child").addEdge("child", END)
+			.compile(CompileConfig.builder().saverConfig(saverConfig).interruptBefore("child").build());
+		var config = RunnableConfig.builder().threadId("start-child-after-parent-pause").build();
+
+		for (int attempt = 1; attempt <= 2; attempt++) {
+			assertInstanceOf(InterruptionMetadata.class,
+					graph.invokeAndGetResponse(Map.of(), config).resultValue().orElseThrow());
+			var updated = graph.updateState(config, Map.of("request", attempt));
+			var result = graph.invoke(Map.of(), updated.withResume()).orElseThrow();
+			assertEquals(attempt, result.value("executions").orElseThrow());
+			assertEquals(attempt, result.value("request").orElseThrow());
+		}
+	}
+
+	@Test
+	void startsACompiledChildInsideAnInlineGraphWhenResumingBeforeIt() throws Exception {
+		var child = new StateGraph().addNode("write", node_async(state -> Map.of("written", true)))
+			.addEdge(START, "write").addEdge("write", END).compile();
+		var inline = new StateGraph().addNode("child", child).addEdge(START, "child").addEdge("child", END);
+		var saverConfig = SaverConfig.builder().register(MemorySaver.builder().build()).build();
+		var graph = new StateGraph().addNode("inline", inline).addEdge(START, "inline").addEdge("inline", END)
+			.compile(CompileConfig.builder().saverConfig(saverConfig).interruptBefore("inline").build());
+		var config = RunnableConfig.builder().threadId("inline-child").build();
+
+		assertInstanceOf(InterruptionMetadata.class,
+				graph.invokeAndGetResponse(Map.of(), config).resultValue().orElseThrow());
+		assertEquals(true, graph.invoke(Map.of(), config.withResume()).orElseThrow().value("written").orElseThrow());
+	}
+
+	@Test
+	void startsTheNextVisitToAResumedSubgraphFromItsEntry() throws Exception {
+		var saverConfig = SaverConfig.builder().register(MemorySaver.builder().build()).build();
+		var starts = new AtomicInteger();
+		var child = new StateGraph()
+			.addNode("first", node_async(state -> Map.of("starts", starts.incrementAndGet())))
+			.addNode("last", node_async(state -> Map.of()))
+			.addEdge(START, "first").addEdge("first", "last").addEdge("last", END)
+			.compile(CompileConfig.builder().saverConfig(saverConfig).interruptAfter("first").build());
+		var parent = new StateGraph().addNode("child", child).addEdge(START, "child")
+			.addConditionalEdges("child", AsyncEdgeAction.edge_async(state -> "again"),
+					Map.of("again", "child", "done", END))
+			.compile(CompileConfig.builder().saverConfig(saverConfig).build());
+		var config = RunnableConfig.builder().threadId("child-loop").build();
+
+		assertInstanceOf(InterruptionMetadata.class,
+				parent.invokeAndGetResponse(Map.of(), config).resultValue().orElseThrow());
+		assertInstanceOf(InterruptionMetadata.class,
+				parent.invokeAndGetResponse(Map.of(), config.withResume()).resultValue().orElseThrow());
+		assertEquals(2, starts.get());
+	}
 
 	private static KeyStrategyFactory getStrategyFactory() {
 		return KeyStrategy.builder()

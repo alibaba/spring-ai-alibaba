@@ -33,6 +33,8 @@ public interface ResumableSubGraphAction {
 	static final String OUTPUT_KEY_TO_PARENT_SUFFIX = "_compiled_graph";
 	String CAPTURE_WRITES = "_graph_capture_subgraph_writes_";
 
+	String USE_CHILD_CHECKPOINT = "child_checkpoint";
+
 	/**
 	 * Gets the resume sub-graph identifier.
 	 * @return the resume sub-graph ID
@@ -52,7 +54,9 @@ public interface ResumableSubGraphAction {
 	}
 
 	static boolean shouldResume(String nodeId, RunnableConfig config) {
-		return config.metadata(resumeSubGraphId(nodeId)).filter(Boolean.TRUE::equals).isPresent();
+		return config.metadata(resumeSubGraphId(nodeId))
+			.filter(value -> Boolean.TRUE.equals(value) || USE_CHILD_CHECKPOINT.equals(value))
+			.isPresent();
 	}
 
 	static String taskThreadId(RunnableConfig parent, String nodeId, String taskId) {

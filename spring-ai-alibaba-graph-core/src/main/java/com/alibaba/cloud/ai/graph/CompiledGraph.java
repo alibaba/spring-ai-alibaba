@@ -29,6 +29,7 @@ import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.internal.node.ConditionalParallelNode;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
 import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
+import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNode;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
@@ -79,6 +80,8 @@ public class CompiledGraph {
 	 * thread safety.
 	 */
 	final Map<String, Node.ActionFactory> nodeFactories = new LinkedHashMap<>();
+
+	private final Set<String> compiledSubgraphs = new LinkedHashSet<>();
 
 	/**
 	 * The Edges.
@@ -142,6 +145,9 @@ public class CompiledGraph {
 			var factory = n.actionFactory();
 			Objects.requireNonNull(factory, format("action factory for node id '%s' is null!", n.id()));
 			nodeFactories.put(n.id(), factory);
+			if (n instanceof SubCompiledGraphNode) {
+				compiledSubgraphs.add(n.id());
+			}
 		}
 
 		var parallelEdges = new ParallelEdgeProcessor(processedData.edges());
@@ -330,16 +336,27 @@ public class CompiledGraph {
 
 	private Checkpoint updatedCheckpoint(BaseCheckpointSaver saver, RunnableConfig config, Map<String, Object> values,
 			String asNode) throws Exception {
-		Checkpoint checkpoint = saver.get(config)
-				.map(Checkpoint::copyOf)
-				.map(cp -> cp.updateState(values, keyStrategyMap))
+		Checkpoint source = saver.get(config)
 				.orElseThrow(() -> new IllegalStateException("Missing Checkpoint!"));
+		Checkpoint checkpoint = Checkpoint.copyOf(source).updateState(values, keyStrategyMap);
 		if (asNode == null) {
+			Object subgraphPaused = source.runtimeData().get(GraphRunnerContext.SUBGRAPH_PAUSED);
+			// A running child receives explicit parent edits through the shared-state resume path.
+			if (Boolean.FALSE.equals(subgraphPaused) || (subgraphPaused != null
+					&& (values == null || values.isEmpty()))) {
+				return checkpoint.withRuntimeData(Map.of(GraphRunnerContext.SUBGRAPH_PAUSED, subgraphPaused));
+			}
 			return checkpoint;
 		}
 		var route = nextNodeId(asNode, checkpoint.getState(), config);
-		return Checkpoint.builder().id(checkpoint.getId()).state(route.update())
+		var routed = Checkpoint.builder().id(checkpoint.getId()).state(route.update())
 				.nodeId(asNode).nextNodeId(route.gotoNode()).build();
+		return isCompiledSubgraph(route.gotoNode())
+				? routed.withRuntimeData(Map.of(GraphRunnerContext.SUBGRAPH_PAUSED, false)) : routed;
+	}
+
+	boolean isCompiledSubgraph(String nodeId) {
+		return compiledSubgraphs.contains(nodeId);
 	}
 
 	/***

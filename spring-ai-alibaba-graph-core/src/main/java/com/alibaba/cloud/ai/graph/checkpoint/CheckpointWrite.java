@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.checkpoint;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
+import com.alibaba.cloud.ai.graph.state.RemoveByValue;
 import com.alibaba.cloud.ai.graph.state.RemoveMessage;
 import com.alibaba.cloud.ai.graph.state.ReplaceAllWith;
 import com.alibaba.cloud.ai.graph.utils.SerializationUtils;
@@ -79,6 +80,9 @@ public final class CheckpointWrite {
 		if (value instanceof RemoveByHash<?> remove) {
 			return operation("removeByHash", remove.value());
 		}
+		if (value instanceof RemoveByValue<?> remove) {
+			return operation("removeByValue", remove.value());
+		}
 		if (value instanceof RemoveMessage remove) {
 			return operation("removeMessage", remove.id());
 		}
@@ -87,7 +91,8 @@ public final class CheckpointWrite {
 		}
 		Collection<?> items = value instanceof Object[] array ? Arrays.asList(array)
 				: value instanceof Collection<?> collection ? collection : List.of();
-		if (items.stream().anyMatch(item -> item instanceof RemoveByHash<?> || item instanceof RemoveMessage)) {
+		if (items.stream().anyMatch(item -> item instanceof RemoveByHash<?> || item instanceof RemoveByValue<?>
+				|| item instanceof RemoveMessage)) {
 			var encoded = items.stream().map(item -> {
 				var command = encodeOperation(item);
 				return command == null ? operation("value", item) : command;
@@ -109,6 +114,7 @@ public final class CheckpointWrite {
 		Object value = operation.get("value");
 		return switch ((String) operation.get("type")) {
 			case "removeByHash" -> RemoveByHash.of(SerializationUtils.deepCopyValue(value));
+			case "removeByValue" -> RemoveByValue.of(SerializationUtils.deepCopyValue(value));
 			case "removeMessage" -> new RemoveMessage((String) value);
 			case "replaceAll" -> ReplaceAllWith.of((List<?>) SerializationUtils.deepCopyValue(value));
 			case "value" -> SerializationUtils.deepCopyValue(value);

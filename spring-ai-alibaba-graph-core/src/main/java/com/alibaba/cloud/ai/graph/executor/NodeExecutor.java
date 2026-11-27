@@ -146,6 +146,11 @@ public class NodeExecutor extends BaseGraphExecutor {
 					.map(plan -> RunnableConfig.builder(context.getConfig())
 							.addMetadata(ParallelNode.RESTORED_DISPATCH_KEY, plan).build())
 					.orElseGet(context::getConfig);
+			if (action instanceof ResumableSubGraphAction subgraph
+					&& config.metadata(subgraph.getResumeSubGraphId()).isPresent()) {
+				context.setConfig(RunnableConfig.builder(context.getConfig())
+					.removeMetadata(subgraph.getResumeSubGraphId()).build());
+			}
 			return NodeExecution.run(context, currentNodeId, context.branchTaskId(0, currentNodeId), action,
 							context.getOverallState(), config)
 					.flatMapMany(updateState -> handleActionResult(context, updateState, resultValue))
@@ -697,9 +702,12 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 			var nodeResultValue = data.resultValue();
 
-			if (nodeResultValue.isPresent() && nodeResultValue.get() instanceof InterruptionMetadata) {
-				context.setReturnFromEmbedWithValue(nodeResultValue.get());
-				return Mono.empty();
+			if (nodeResultValue.orElse(null) instanceof InterruptionMetadata interruption) {
+				return Mono.fromCallable(() -> {
+					context.checkpointPausedSubgraph();
+					context.setReturnFromEmbedWithValue(interruption);
+					return null;
+				});
 			}
 
 			Map<String, Object> partialStateWithoutFlux = partialState.entrySet()

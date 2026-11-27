@@ -328,18 +328,25 @@ public class StateGraph {
 	 * exists
 	 */
 	public StateGraph addNode(String id, CompiledGraph subGraph) throws GraphStateException {
-		if (Objects.equals(id, END)) {
-			throw Errors.invalidNodeIdentifier.exception(END);
-		}
+		return addNode(id, new SubCompiledGraphNode(id, subGraph));
+	}
 
-		var node = new SubCompiledGraphNode(id, subGraph);
-
-		if (nodes.elements.contains(node)) {
-			throw Errors.duplicateNodeError.exception(id);
-		}
-
-		nodes.elements.add(node);
-		return this;
+	/**
+	 * Adds a compiled subgraph with explicit state keys at its boundary. The child
+	 * receives the selected inputs when it starts and restores its own state when
+	 * resumed. On completion, the parent applies the child's writes to the selected
+	 * output keys using the parent graph's key strategies. An empty set selects no
+	 * state keys in that direction.
+	 * @param id the identifier of the subgraph node
+	 * @param subGraph the compiled subgraph
+	 * @param inputKeys keys to copy from the parent state when the subgraph starts
+	 * @param outputKeys keys whose updates to apply to the parent state
+	 * @return this state graph instance
+	 * @throws GraphStateException if the node identifier is invalid or already exists
+	 */
+	public StateGraph addNode(String id, CompiledGraph subGraph, Set<String> inputKeys, Set<String> outputKeys)
+			throws GraphStateException {
+		return addNode(id, new SubCompiledGraphNode(id, subGraph, inputKeys, outputKeys));
 	}
 
 	/**

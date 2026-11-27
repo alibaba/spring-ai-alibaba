@@ -67,6 +67,9 @@ public class GraphRunnerContext {
 
 	public static final String BRANCH_WRITES = "_graph_branch_writes_";
 
+	// A false value records a checkpoint taken before the child ran. Older checkpoints have no flag.
+	static final String SUBGRAPH_PAUSED = "_graph_subgraph_paused_";
+
 	private static final Logger log = LoggerFactory.getLogger(GraphRunner.class);
 
 	final CompiledGraph compiledGraph;
@@ -150,13 +153,15 @@ public class GraphRunnerContext {
 						.map(latest -> !latest.getId().equals(checkpoint.getId()))
 						.orElse(false);
 
-		var startCheckpointNextNodeAction = compiledGraph.getNodeAction(checkpoint.getNextNodeId());
-		if (startCheckpointNextNodeAction instanceof ResumableSubGraphAction resumableAction) {
-			// RESUME FORM SUBGRAPH DETECTED
+		Object subgraphPaused = checkpoint.runtimeData().get(SUBGRAPH_PAUSED);
+		if (!Boolean.FALSE.equals(subgraphPaused)
+				&& compiledGraph.getNodeAction(checkpoint.getNextNodeId()) instanceof ResumableSubGraphAction resumableAction) {
+			boolean useChildCheckpoint = Boolean.TRUE.equals(subgraphPaused)
+					&& initialState.data().keySet().stream().noneMatch(initialState.keyStrategies()::containsKey);
 			this.config = RunnableConfig.builder(config)
-					.checkPointId(null) // Reset checkpoint id
-					.addMetadata(resumableAction.getResumeSubGraphId(), true) // add metadata for
-					// sub graph
+					.checkPointId(null)
+					.addMetadata(resumableAction.getResumeSubGraphId(), useChildCheckpoint
+							? ResumableSubGraphAction.USE_CHILD_CHECKPOINT : Boolean.TRUE)
 					.build();
 			this.config.clearContext();
 		} else {
@@ -308,14 +313,23 @@ public class GraphRunnerContext {
 	// ================================================================================================================
 
 	public Optional<Checkpoint> addCheckpoint(String nodeId, String nextNodeId) throws Exception {
+		return addCheckpoint(nodeId, nextNodeId, false);
+	}
+
+	private Optional<Checkpoint> addCheckpoint(String nodeId, String nextNodeId, boolean subgraphPaused)
+			throws Exception {
 		if (branchPath != null && !compiledGraph.compileConfig.taskCheckpoints()) {
 			return Optional.empty();
 		}
 		if (compiledGraph.compileConfig.checkpointSaver().isPresent()) {
 			var cp = Checkpoint.builder().nodeId(nodeId).state(cloneState(overallState.data())).nextNodeId(nextNodeId)
 					.build();
-			if (captureWrites) {
-				cp = cp.withRuntimeData(branchCompletionMetadata());
+			var runtime = new HashMap<>(branchCompletionMetadata());
+			if (compiledGraph.isCompiledSubgraph(nextNodeId)) {
+				runtime.put(SUBGRAPH_PAUSED, subgraphPaused);
+			}
+			if (!runtime.isEmpty()) {
+				cp = cp.withRuntimeData(runtime);
 			}
 			// Force checkPointId to null to ensure we append a new checkpoint instead of
 			// replacing the current one
@@ -333,17 +347,30 @@ public class GraphRunnerContext {
 	}
 
 	public void checkpointPausedNode() throws Exception {
+		checkpointPausedNode(false);
+	}
+
+	public void checkpointPausedSubgraph() throws Exception {
+		if (compiledGraph.isCompiledSubgraph(currentNodeId)) {
+			checkpointPausedNode(true);
+		}
+	}
+
+	private void checkpointPausedNode(boolean subgraphPaused) throws Exception {
 		var saver = compiledGraph.compileConfig.checkpointSaver();
 		if (saver.isEmpty()) {
 			return;
 		}
 		if (currentCheckpoint == null || replayingHistoricalCheckpoint
 				|| !currentNodeId.equals(currentCheckpoint.getNextNodeId())) {
-			addCheckpoint(currentNodeId, currentNodeId);
+			addCheckpoint(currentNodeId, currentNodeId, subgraphPaused);
 			return;
 		}
 		var runtime = new HashMap<>(currentCheckpoint.runtimeData());
 		runtime.putAll(branchCompletionMetadata());
+		if (subgraphPaused) {
+			runtime.put(SUBGRAPH_PAUSED, true);
+		}
 		var checkpoint = Checkpoint.builder().id(currentCheckpoint.getId()).nodeId(currentCheckpoint.getNodeId())
 				.nextNodeId(currentNodeId).state(cloneState(overallState.data())).build().withRuntimeData(runtime);
 		saver.get().put(config.withCheckPointId(checkpoint.getId()), checkpoint);
