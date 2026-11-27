@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.graph.serializer.Serializer;
 
 import java.io.IOException;
 import java.io.ObjectOutput;
+import java.io.Serializable;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -46,7 +47,7 @@ class ObjectOutputWithMapper implements ObjectOutput {
 			serializer.get().write(obj, this);
 		}
 		else {
-			out.writeObject(obj);
+			out.writeObject(obj instanceof Class<?> type ? new ClassValue(type) : obj);
 		}
 		// check if written by serializer
 		out.flush();
@@ -130,6 +131,17 @@ class ObjectOutputWithMapper implements ObjectOutput {
 	@Override
 	public void writeUTF(String s) throws IOException {
 		Serializer.writeUTF(s, out);
+	}
+
+	/** Distinguishes ordinary Class values from custom-serializer type markers. */
+	record ClassValue(Class<?> value) implements Serializable {
+
+		private static final long serialVersionUID = 1L;
+
+		ClassValue {
+			Objects.requireNonNull(value, "class value cannot be null");
+		}
+
 	}
 
 }
