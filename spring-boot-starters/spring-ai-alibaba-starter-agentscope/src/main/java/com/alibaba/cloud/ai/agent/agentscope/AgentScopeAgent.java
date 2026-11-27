@@ -31,7 +31,10 @@ import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.streaming.ModelEvents;
 import com.alibaba.cloud.ai.graph.streaming.OutputType;
+import com.alibaba.cloud.ai.graph.streaming.RunEvent;
+import com.alibaba.cloud.ai.graph.streaming.RunEventContext;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import io.agentscope.core.ReActAgent;
 import io.agentscope.core.agent.Event;
@@ -53,6 +56,7 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
 
 import java.util.ArrayList;
@@ -60,6 +64,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -201,7 +206,7 @@ public class AgentScopeAgent extends BaseAgent {
 	public Node asNode(boolean includeContents, boolean returnReasoningContents) {
 		return new Node(this.name, (config) -> node_async(new ReActAgentNodeAction(
 				reactAgentBuilder, session, defaultSessionId,
-				outputKey, returnReasoningContents, includeContents, instruction, this.name, this.name)));
+				outputKey, returnReasoningContents, includeContents, instruction, this.name, this.name, true)));
 	}
 
 	/**
@@ -215,7 +220,7 @@ public class AgentScopeAgent extends BaseAgent {
 		StateGraph graph = new StateGraph(name, buildKeyStrategyFactory(), stateSerializer);
 		graph.addNode(AGENT_NODE_ID, node_async(new ReActAgentNodeAction(
 				reactAgentBuilder, session, defaultSessionId,
-				outputKey, returnReasoningContents, includeContents, instruction, AGENT_NODE_ID, this.name)));
+				outputKey, returnReasoningContents, includeContents, instruction, AGENT_NODE_ID, this.name, false)));
 		graph.addEdge(START, AGENT_NODE_ID);
 		graph.addEdge(AGENT_NODE_ID, END);
 		return graph;
@@ -250,10 +255,11 @@ public class AgentScopeAgent extends BaseAgent {
 		private final String instruction;
 		private final String nodeId;
 		private final String agentName;
+		private final boolean embedded;
 
 		ReActAgentNodeAction(ReActAgent.Builder reactAgentBuilder, Session session, String defaultSessionId,
 				String outputKey, boolean returnReasoningContents, boolean includeContents, String instruction,
-				String nodeId, String agentName) {
+				String nodeId, String agentName, boolean embedded) {
 			this.reactAgentBuilder = Objects.requireNonNull(reactAgentBuilder, "reactAgentBuilder must not be null");
 			this.session = session;
 			this.defaultSessionId = defaultSessionId != null ? defaultSessionId : DEFAULT_SESSION_ID;
@@ -263,6 +269,7 @@ public class AgentScopeAgent extends BaseAgent {
 			this.instruction = instruction;
 			this.nodeId = nodeId;
 			this.agentName = agentName != null ? agentName : "";
+			this.embedded = embedded;
 		}
 
 		/**
@@ -319,11 +326,15 @@ public class AgentScopeAgent extends BaseAgent {
 
 		@Override
 		public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
+			var events = config.eventContext().map(scope -> embedded
+					? scope.child(RunEvent.ScopeKind.AGENT, agentName) : scope).orElse(null);
+			var toolConfig = events != null && embedded ? config.withEventContext(events) : config;
+			var modelEvents = new AtomicReference<ModelEvents>();
 			// Build ToolContext with OverAllState, RunnableConfig, and stateForUpdate map (per ToolContextHelper pattern)
 			Map<String, Object> stateForUpdate = new HashMap<>();
 			Map<String, Object> contextMap = new HashMap<>();
 			contextMap.put(AGENT_STATE_CONTEXT_KEY, state);
-			contextMap.put(AGENT_CONFIG_CONTEXT_KEY, config);
+			contextMap.put(AGENT_CONFIG_CONTEXT_KEY, toolConfig);
 			contextMap.put(AGENT_STATE_FOR_UPDATE_CONTEXT_KEY, stateForUpdate);
 			ToolContext toolContext = new ToolContext(contextMap);
 
@@ -352,6 +363,7 @@ public class AgentScopeAgent extends BaseAgent {
 			List<Event> isLastEvents = new ArrayList<>();
 
 			Flux<GraphResponse<NodeOutput>> responseFlux = eventFlux
+					.concatMap(event -> observeModel(event, events, modelEvents).thenReturn(event), 1)
 					.doFinally(signalType -> {
 						// Save on error/cancel only; normal completion saves in Flux.defer before emitting done.
 						// Root cause: (1) Reactor FluxDoFinally forwards onComplete BEFORE running callback, so
@@ -459,9 +471,38 @@ public class AgentScopeAgent extends BaseAgent {
 						return Flux.just(GraphResponse.done(doneState));
 					}));
 
+			if (events != null && embedded) {
+				var lifecycle = new RunEvent.Lifecycle(config.threadId().orElse(null), config.checkPointId().orElse(null), null);
+				responseFlux = responseFlux.doFirst(() -> events.emit(RunEvent.Type.RUN_STARTED, lifecycle))
+						.doOnNext(response -> completeScope(response, events))
+						.doOnError(error -> events.emit(RunEvent.Type.RUN_FAILED, RunEventContext.failure(error)))
+						.doOnCancel(() -> events.emit(RunEvent.Type.RUN_CANCELLED, lifecycle))
+						.doFinally(signal -> events.close());
+			}
 			Map<String, Object> result = new HashMap<>();
 			result.put(outputKey, responseFlux);
 			return result;
+		}
+
+		private static Mono<Void> observeModel(Event event, RunEventContext events, AtomicReference<ModelEvents> current) {
+			if (events == null || !events.enabled(RunEvent.Channel.MESSAGES) || event.getType() != EventType.REASONING
+					|| event.getMessage() == null) {
+				return Mono.empty();
+			}
+			var message = AgentScopeMessageUtils.toAssistantMessage(event.getMessage());
+			var model = current.updateAndGet(active -> active == null ? new ModelEvents(events) : active);
+			if (event.isLast()) {
+				current.set(null);
+				return model.completedAsync(message, null);
+			}
+			return model.chunk(message);
+		}
+
+		@SuppressWarnings("unchecked")
+		private static void completeScope(GraphResponse<NodeOutput> response, RunEventContext events) {
+			if (response.isDone() && response.resultValue().orElse(null) instanceof Map<?, ?> state) {
+				events.completed((Map<String, Object>) state);
+			}
 		}
 	}
 

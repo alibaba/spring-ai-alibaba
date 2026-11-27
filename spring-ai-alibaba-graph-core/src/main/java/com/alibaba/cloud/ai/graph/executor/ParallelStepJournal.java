@@ -60,20 +60,24 @@ final class ParallelStepJournal {
 		if (context.stepCheckpointData().containsKey(DISPATCH)) {
 			return;
 		}
-		context.updateStepCheckpoint(before -> {
+		context.updateStepCheckpoint(before -> withDispatch(execution, before));
+	}
+
+	private Map<String, Object> withDispatch(ParallelNode.Execution execution, Map<String, Object> before) {
+		var after = new HashMap<>(before);
+		if (!after.containsKey(DISPATCH)) {
 			List<Map<String, Object>> dispatch = execution.branches().stream()
 					.map(branch -> Map.<String, Object>of("node", branch.nodeId(), "input", encode(branch.input())))
 					.toList();
-			var after = new HashMap<>(before);
 			after.put(DISPATCH, dispatch);
 			after.put(ROUTING_UPDATE, encode(execution.routingUpdate()));
-			return after;
-		});
+		}
+		return after;
 	}
 
 	@SuppressWarnings("unchecked")
 	Optional<MultiCommand> restoreDispatch() {
-		var data = context.stepCheckpointData();
+		var data = context.stepPauseData();
 		var dispatch = (List<Map<String, Object>>) data.get(DISPATCH);
 		if (dispatch == null || dispatch.isEmpty()) {
 			return Optional.empty();
@@ -85,26 +89,33 @@ final class ParallelStepJournal {
 	}
 
 	void saveWrites(String taskId, List<Map<String, Object>> writes) {
-		context.updateStepCheckpoint(before -> {
-			var completed = new HashMap<>(completedTasks(before));
-			completed.put(taskId, writes.stream().map(CheckpointWrite::encode).toList());
-			var after = new HashMap<>(before);
-			after.put(COMPLETED_TASKS, completed);
-			var paused = new HashMap<>(interruptedTasks(before));
-			paused.remove(taskId);
-			after.put(INTERRUPTED_TASKS, paused);
-			var pendingWrites = new HashMap<>(pausedWrites(before));
-			pendingWrites.remove(taskId);
-			after.put(PAUSED_WRITES, pendingWrites);
-			return after;
-		});
+		context.updateStepCheckpoint(before -> withCompleted(before, taskId, writes));
 	}
 
-	void saveInterruption(String taskId, InterruptionMetadata interruption, List<Map<String, Object>> writes) {
-		context.updateStepCheckpoint(before -> {
+	void savePausedStepWrites(String taskId, List<Map<String, Object>> writes) {
+		context.updateStepPauseCheckpoint(before -> withCompleted(before, taskId, writes));
+	}
+
+	private Map<String, Object> withCompleted(Map<String, Object> before, String taskId, List<Map<String, Object>> writes) {
+		var completed = new HashMap<>(completedTasks(before));
+		completed.put(taskId, writes.stream().map(CheckpointWrite::encode).toList());
+		var after = new HashMap<>(before);
+		after.put(COMPLETED_TASKS, completed);
+		var paused = new HashMap<>(interruptedTasks(before));
+		paused.remove(taskId);
+		after.put(INTERRUPTED_TASKS, paused);
+		var pendingWrites = new HashMap<>(pausedWrites(before));
+		pendingWrites.remove(taskId);
+		after.put(PAUSED_WRITES, pendingWrites);
+		return after;
+	}
+
+	void saveInterruption(ParallelNode.Execution execution, String taskId, InterruptionMetadata interruption,
+			List<Map<String, Object>> writes) {
+		context.updateStepPauseCheckpoint(before -> {
 			var paused = new HashMap<>(interruptedTasks(before));
 			paused.put(taskId, InterruptionCheckpointCodec.encodePause(interruption));
-			var after = new HashMap<>(before);
+			var after = withDispatch(execution, before);
 			after.put(INTERRUPTED_TASKS, paused);
 			if (!writes.isEmpty()) {
 				var pendingWrites = new HashMap<>(pausedWrites(before));
@@ -117,18 +128,18 @@ final class ParallelStepJournal {
 
 	Map<String, InterruptionMetadata> restoreInterruptions() {
 		Map<String, InterruptionMetadata> restored = new HashMap<>();
-		interruptedTasks(context.stepCheckpointData()).forEach(
+		interruptedTasks(context.stepPauseData()).forEach(
 				(taskId, data) -> restored.put(taskId, InterruptionCheckpointCodec.decodePause(data)));
 		return restored;
 	}
 
 	Optional<List<Map<String, Object>>> restoreWrites(String taskId) {
-		return Optional.ofNullable(completedTasks(context.stepCheckpointData()).get(taskId))
+		return Optional.ofNullable(completedTasks(context.stepPauseData()).get(taskId))
 				.map(CheckpointWrite::decodeAll);
 	}
 
 	List<Map<String, Object>> restorePausedWrites(String taskId) {
-		return CheckpointWrite.decodeAll(pausedWrites(context.stepCheckpointData()).get(taskId));
+		return CheckpointWrite.decodeAll(pausedWrites(context.stepPauseData()).get(taskId));
 	}
 
 	@SuppressWarnings("unchecked")

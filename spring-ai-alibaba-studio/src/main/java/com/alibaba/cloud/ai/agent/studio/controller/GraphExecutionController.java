@@ -37,6 +37,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -49,6 +50,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.ai.chat.messages.UserMessage;
 
@@ -78,6 +80,18 @@ public class GraphExecutionController {
 	 */
 	@PostMapping(value = "/graph_run_sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<String>> graphRunSse(@RequestBody GraphRunRequest request) {
+		return graphRunSse(request, null);
+	}
+
+	@PostMapping(value = "/graph_run_sse/v2", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	public Flux<ServerSentEvent<String>> graphRunEventSse(@RequestBody GraphRunRequest request,
+			@RequestParam(name = "reasoning", defaultValue = "false") boolean reasoning,
+			@RequestParam(name = "toolPayload", defaultValue = "false") boolean toolPayload,
+			@RequestParam(name = "stateKey", required = false) Set<String> stateKeys) {
+		return graphRunSse(request, new RunEventSse.Options(reasoning, toolPayload, stateKeys));
+	}
+
+	private Flux<ServerSentEvent<String>> graphRunSse(GraphRunRequest request, RunEventSse.Options options) {
 		if (request.graphName == null || request.graphName.trim().isEmpty()) {
 			return Flux.error(new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,
 					"graphName cannot be null or empty"));
@@ -105,6 +119,9 @@ public class GraphExecutionController {
 					.addMetadata("user_id", request.userId != null ? request.userId : "user-001")
 					.build();
 
+			if (options != null) {
+				return RunEventSse.encode(graph.streamEvents(inputs, runnableConfig, options.streamOptions()), mapper, options);
+			}
 			Flux<NodeOutput> graphStream = graph.stream(inputs, runnableConfig);
 
 			return executeGraph(graphStream);

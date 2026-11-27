@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.agent.node;
 
+import com.alibaba.cloud.ai.graph.streaming.ModelEvents;
+
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.GraphLifecycleListener;
@@ -313,8 +315,9 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			Object output = modelResponse.getMessage();
 			if (!streamingOutputFilters.isEmpty()) {
 				if (output instanceof Flux<?> chunks) {
-					output = ChatResponseStreamAggregator.aggregate(chunks.cast(ChatResponse.class),
-							config.mergeReasoningContent()).map(this::filterStreamedResponse).flux();
+					var filtered = ChatResponseStreamAggregator.aggregate(chunks.cast(ChatResponse.class),
+							config.mergeReasoningContent()).map(this::filterStreamedResponse);
+					output = (config.eventContext().isPresent() ? filtered.map(ModelEvents::finalResponse) : filtered).flux();
 				}
 				else if (output instanceof AssistantMessage assistant) {
 					output = filterStreamedMessage(assistant);
@@ -326,6 +329,10 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			}
 			else if (output instanceof AssistantMessage assistant && assistant.hasToolCalls()) {
 				output = scope.mark(assistant, config);
+			}
+			if (output instanceof AssistantMessage assistant) {
+				config.eventContext().ifPresent(events -> ModelEvents.completed(events, assistant,
+						modelResponse.getChatResponse() == null ? null : modelResponse.getChatResponse().getMetadata().getUsage()));
 			}
 			updatedState.put(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", output);
 			return updatedState;
@@ -377,6 +384,9 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			updatedState.put("_TOKEN_USAGE_", tokenUsage);
 			var output = modelResponse.getMessage() instanceof AssistantMessage assistant && assistant.hasToolCalls()
 					? scope.mark(assistant, config) : modelResponse.getMessage();
+			if (output instanceof AssistantMessage assistant) {
+				config.eventContext().ifPresent(events -> ModelEvents.completed(events, assistant, tokenUsage));
+			}
 			updatedState.put("messages", output);
 			if (StringUtils.hasLength(this.outputKey)) {
 				updatedState.put(this.outputKey, output);

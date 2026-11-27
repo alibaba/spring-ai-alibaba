@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
+import com.alibaba.cloud.ai.graph.streaming.RunEvent;
+
 import com.alibaba.cloud.ai.graph.GraphLifecycleListener;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
@@ -296,7 +298,10 @@ public class AgentTool {
 				jsonHelper.fromJsonToMap(metadataJson).forEach(run::addMetadata);
 			}
 			var inputs = continuation.isPresent() ? Map.<String, Object>of() : childInputs(actualInput, stateJson);
-			var childRun = agent.buildNonStreamConfig(run.build());
+			var childConfig = run.build();
+			boolean streamMessages = childConfig.eventContext().filter(events -> events.options().includeNested())
+					.filter(events -> events.options().channels().contains(RunEvent.Channel.MESSAGES)).isPresent();
+			var childRun = streamMessages ? agent.buildStreamConfig(childConfig) : agent.buildNonStreamConfig(childConfig);
 			return Mono.defer(() -> agent.getAndCompileGraph().stream(inputs, childRun).last())
 					.onErrorMap(error -> buildExecutionException(actualInput, parent,
 							"sub-agent invocation failed", error))

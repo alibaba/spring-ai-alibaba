@@ -4,6 +4,25 @@ This directory contains the full code examples for documentations published on h
 
 The examples under `framework/tutorials` use the Spring AI 2.1.0 APIs for request-scoped tools and approval, Message Parts, typed decisions, and Session Memory.
 
+## Streaming events
+
+`GraphEventStreamingExample` shows progress from a node, live model deltas from
+a dynamically invoked child graph, a mapped child that pauses and resumes, and
+parallel branch events. `AgentEventStreamingExample` shows an agent used as a
+node and as a delegated tool, a reactive tool's output and final result, and
+several projections from one execution.
+
+Both examples use scripted model responses. From the repository root, install
+the streaming APIs from the current checkout, then run the example entry points.
+
+```bash
+mvn -B -pl :spring-ai-alibaba-bom,:spring-ai-alibaba-studio -am -Dspringdoc.skip=true -DskipTests install
+mvn -B -f examples/documentation/pom.xml compile org.codehaus.mojo:exec-maven-plugin:3.6.3:java \
+  -Dexec.mainClass=com.alibaba.cloud.ai.examples.documentation.graph.core.GraphEventStreamingExample
+mvn -B -f examples/documentation/pom.xml compile org.codehaus.mojo:exec-maven-plugin:3.6.3:java \
+  -Dexec.mainClass=com.alibaba.cloud.ai.examples.documentation.framework.tutorials.AgentEventStreamingExample
+```
+
 ## Context management recipes
 
 `ContextManagementRecipes` runs three independent recipes using local model

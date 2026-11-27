@@ -33,7 +33,11 @@ import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
 import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
+import com.alibaba.cloud.ai.graph.streaming.ModelEvents;
 import com.alibaba.cloud.ai.graph.streaming.ParallelGraphFlux;
+import com.alibaba.cloud.ai.graph.streaming.RunEvent;
+import com.alibaba.cloud.ai.graph.streaming.RunEvent.CandidateStatus.Phase;
+import com.alibaba.cloud.ai.graph.streaming.RunEventContext;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.graph.utils.ChatResponseStreamAggregator;
 import com.alibaba.cloud.ai.graph.utils.FinishReasonMetadata;
@@ -55,6 +59,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -69,6 +74,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -157,17 +163,80 @@ public class NodeExecutor extends BaseGraphExecutor {
 				context.setConfig(RunnableConfig.builder(context.getConfig())
 					.removeMetadata(subgraph.getResumeSubGraphId()).build());
 			}
-			return NodeExecution.run(context, currentNodeId, context.branchTaskId(0, currentNodeId), action,
-							context.getOverallState(), config)
-					.flatMapMany(updateState -> handleActionResult(context, updateState, resultValue))
+			String taskId = context.branchTaskId(0, currentNodeId);
+			var nodeEvents = nodeEvents(context, config, currentNodeId, taskId);
+			var actionConfig = scopedConfig(config, nodeEvents);
+			var execution = NodeExecution.run(context, currentNodeId, taskId, action,
+							context.getOverallState(), actionConfig)
+					.flatMapMany(updateState -> handleActionResult(context, updateState, resultValue, nodeEvents))
 					.onErrorResume(error -> {
 						context.doListeners(ERROR, new Exception(error));
 						return Flux.just(GraphResponse.error(error));
 					});
+			return observeNode(execution, nodeEvents, () -> context.pendingEmbeddedInterruption().orElse(null));
 
 		}
 		catch (Exception e) {
 			return Flux.just(GraphResponse.error(e));
+		}
+	}
+
+	private RunEventContext nodeEvents(GraphRunnerContext context, RunnableConfig config, String nodeId, String taskId) {
+		return config.eventContext().map(events -> {
+			for (String name : context.getCompiledGraph().inlineGraphPath(nodeId)) {
+				events = events.child(RunEvent.ScopeKind.INLINE_GRAPH, name);
+			}
+			return events.node(nodeId, taskId);
+		}).orElse(null);
+	}
+
+	private static RunnableConfig scopedConfig(RunnableConfig config, RunEventContext events) {
+		return events == null ? config : config.withEventContext(events);
+	}
+
+	private Flux<GraphResponse<NodeOutput>> observeNode(Flux<GraphResponse<NodeOutput>> source, RunEventContext events,
+			Supplier<InterruptionMetadata> pausedNode) {
+		if (events == null) {
+			return source;
+		}
+		return Flux.defer(() -> {
+			var ended = new AtomicBoolean();
+			var empty = new RunEvent.Lifecycle(null, null, null);
+			events.emit(RunEvent.Type.NODE_STARTED, empty);
+			return source.doOnNext(response -> {
+				if (response.isError() && ended.compareAndSet(false, true)) {
+					Throwable error = response.getOutput().handle((value, cause) -> cause).join();
+					events.emit(RunEvent.Type.NODE_FAILED, RunEventContext.failure(error));
+				}
+				else if (response.resultValue().orElse(null) instanceof InterruptionMetadata pause
+						&& ended.compareAndSet(false, true)) {
+					events.emit(RunEvent.Type.NODE_PAUSED, new RunEvent.Paused(pause, null));
+				}
+				else if (response.hasContinuation() && ended.compareAndSet(false, true)) {
+					finishNodeEvent(events, pausedNode.get(), empty);
+				}
+			}).doOnComplete(() -> {
+				if (ended.compareAndSet(false, true)) {
+					finishNodeEvent(events, pausedNode.get(), empty);
+				}
+			}).doOnError(error -> {
+				if (ended.compareAndSet(false, true)) {
+					events.emit(RunEvent.Type.NODE_FAILED, RunEventContext.failure(error));
+				}
+			}).doOnCancel(() -> {
+				if (ended.compareAndSet(false, true)) {
+					events.emit(RunEvent.Type.NODE_CANCELLED, empty);
+				}
+			}).doFinally(signal -> events.close()).contextWrite(reactorContext -> reactorContext.put(RunEventContext.class, events));
+		});
+	}
+
+	private static void finishNodeEvent(RunEventContext events, InterruptionMetadata pause, RunEvent.Lifecycle completion) {
+		if (pause == null) {
+			events.emit(RunEvent.Type.NODE_COMPLETED, completion);
+		}
+		else {
+			events.emit(RunEvent.Type.NODE_PAUSED, new RunEvent.Paused(pause, null));
 		}
 	}
 
@@ -179,7 +248,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 	 * @return Flux of GraphResponse with action result handling
 	 */
 	private Flux<GraphResponse<NodeOutput>> handleActionResult(GraphRunnerContext context,
-			Map<String, Object> updateState, AtomicReference<Object> resultValue) {
+			Map<String, Object> updateState, AtomicReference<Object> resultValue, RunEventContext events) {
 		try {
 			if (updateState.get(NodePause.RESULT_KEY) instanceof NodePause pause) {
 				var writes = new LinkedHashMap<>(updateState);
@@ -191,7 +260,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 				return Flux.just(GraphResponse.done(pause.interruption()));
 			}
 			if (updateState.get(ParallelNode.EXECUTION_KEY) instanceof ParallelNode.Execution execution) {
-				return executeParallel(context, execution, resultValue);
+				return executeParallel(context, execution, resultValue, events);
 			}
 
 			// Check for Flux
@@ -231,21 +300,28 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 	private Mono<NodeOutput> checkpointAfterTransition(GraphRunnerContext context, Map<String, Object> update,
 			boolean allowDeferredEdge) {
+		return checkpointAfterTransition(context, update, allowDeferredEdge, List.of(update));
+	}
+
+	private Mono<NodeOutput> checkpointAfterTransition(GraphRunnerContext context, Map<String, Object> update,
+			boolean allowDeferredEdge, List<Map<String, Object>> writes) {
 		String nodeId = context.getCurrentNodeId();
 		var config = context.getCompiledGraph().compileConfig;
 		Mono<String> next = allowDeferredEdge && config.interruptBeforeEdge() && config.interruptsAfter().contains(nodeId)
 				? Mono.just(INTERRUPT_AFTER)
 				: context.resolveNextNode(nodeId, context.getCurrentStateData()).map(Command::gotoNode);
-		return next.flatMap(target -> Mono.fromCallable(() -> {
+		return next.flatMap(target -> Mono.deferContextual(reactorContext -> Mono.fromCallable(() -> {
 			context.setNextNodeId(target);
 			NodeOutput output = context.buildNodeOutputAndAddCheckpoint(update);
+			reactorContext.<RunEventContext>getOrEmpty(RunEventContext.class)
+					.ifPresent(events -> events.stateCommitted(writes, output.state().data()));
 			context.doListeners(NODE_AFTER, null);
 			return output;
-		}));
+		})));
 	}
 
 	private Flux<GraphResponse<NodeOutput>> executeParallel(GraphRunnerContext context, ParallelNode.Execution execution,
-			AtomicReference<Object> resultValue) {
+			AtomicReference<Object> resultValue, RunEventContext events) {
 		var journal = new ParallelStepJournal(context);
 		journal.begin(execution);
 		if (execution.strategy() == NodeAggregationStrategy.ANY_OF) {
@@ -287,14 +363,24 @@ public class NodeExecutor extends BaseGraphExecutor {
 					}
 					var branchFeedback = taskId.equals(selectedTask) ? feedback : null;
 					var result = new AtomicReference<BranchResult>();
-					return executeBranch(context, branchInput, branch, index, previousPause, branchFeedback, feedbackStateUpdate,
-									journal.restorePausedWrites(taskId), result::set)
-						.subscribeOn(scheduler)
-						.collectList()
-						.flatMap(events -> {
-							var candidate = new BranchCandidate(result.get(), events);
+					var candidateEvents = events == null ? null : events.child(RunEvent.ScopeKind.BRANCH, branch.nodeId()).candidate();
+					var branchStream = executeBranch(context, branchInput, branch, index, previousPause, branchFeedback,
+							feedbackStateUpdate, journal.restorePausedWrites(taskId), result::set, candidateEvents)
+							.subscribeOn(scheduler);
+					if (candidateEvents != null) {
+						branchStream = branchStream.doFirst(() -> candidateEvents.candidateStatus(Phase.STARTED))
+								.doOnCancel(() -> candidateEvents.candidateStatus(Phase.CANCELLED))
+								.doOnError(error -> candidateEvents.candidateStatus(Phase.FAILED));
+					}
+					return (candidateEvents == null ? branchStream.collectList()
+							: branchStream.then(Mono.just(List.<GraphResponse<NodeOutput>>of())))
+						.flatMap(branchOutputs -> {
+							var candidate = new BranchCandidate(result.get(), branchOutputs, candidateEvents);
 							if (candidate.result().interruption() != null) {
-								journal.saveInterruption(taskId, candidate.result().interruption(), candidate.result().updates());
+								if (candidateEvents != null) {
+									candidateEvents.candidateStatus(Phase.PAUSED);
+								}
+								journal.saveInterruption(execution, taskId, candidate.result().interruption(), candidate.result().updates());
 								interruptions.put(index, candidate);
 								return Mono.empty();
 							}
@@ -308,7 +394,10 @@ public class NodeExecutor extends BaseGraphExecutor {
 				.next()
 				.flatMapMany(winner -> {
 					journal.saveWinningWrites(winner.result().updates());
-					return Flux.fromIterable(winner.events())
+					if (winner.scope() != null) {
+						winner.scope().candidateStatus(Phase.SELECTED);
+					}
+					return winner.publish().thenMany(Flux.fromIterable(winner.events()))
 					.concatWith(Flux.defer(() -> finishParallel(context, execution.routingUpdate(),
 							List.of(winner.result()), resultValue)));
 				})
@@ -316,7 +405,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 					if (interruptions.isEmpty()) {
 						return Flux.error(Exceptions.multiple(failures));
 					}
-					return Flux.fromIterable(interruptions.values()).concatMap(candidate -> Flux.fromIterable(candidate.events()))
+					return Flux.fromIterable(interruptions.values()).concatMap(candidate -> {
+						return candidate.publish().thenMany(Flux.fromIterable(candidate.events()));
+					})
 							.concatWith(Flux.defer(() -> finishParallel(context, execution.routingUpdate(),
 									interruptions.values().stream().map(BranchCandidate::result).toList(), resultValue)));
 				}));
@@ -344,12 +435,23 @@ public class NodeExecutor extends BaseGraphExecutor {
 						journal.saveWrites(taskId, result.updates());
 					}
 					else {
-						journal.saveInterruption(taskId, result.interruption(), result.updates());
+						journal.saveInterruption(execution, taskId, result.interruption(), result.updates());
 					}
 					results[index] = result;
-				}).subscribeOn(scheduler);
+				}, events == null ? null : events.child(RunEvent.ScopeKind.BRANCH, branch.nodeId())).subscribeOn(scheduler);
 			}, concurrency, Queues.XS_BUFFER_SIZE)
-			.concatWith(Flux.defer(() -> finishParallel(context, execution.routingUpdate(), List.of(results), resultValue)));
+			.concatWith(Flux.defer(() -> {
+				if (!context.getCompiledGraph().compileConfig.taskCheckpoints()
+						&& Arrays.stream(results).anyMatch(result -> result.interruption() != null)) {
+					for (int index = 0; index < results.length; index++) {
+						if (results[index].interruption() == null) {
+							journal.savePausedStepWrites(context.branchTaskId(index, branches.get(index).nodeId()),
+									results[index].updates());
+						}
+					}
+				}
+				return finishParallel(context, execution.routingUpdate(), List.of(results), resultValue);
+			}));
 	}
 
 	private static String selectInterruptedTask(Map<String, InterruptionMetadata> paused,
@@ -377,7 +479,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 	private Flux<GraphResponse<NodeOutput>> executeBranch(GraphRunnerContext context, OverAllState input,
 			ParallelNode.Branch branch, int index, InterruptionMetadata pending, InterruptionMetadata feedback,
 			Optional<Object> feedbackStateUpdate,
-			List<Map<String, Object>> priorWrites, Consumer<BranchResult> completed) {
+			List<Map<String, Object>> priorWrites, Consumer<BranchResult> completed, RunEventContext branchEvents) {
 		return Flux.defer(() -> {
 			var state = input.snapShot().orElseThrow();
 			if (!branch.input().isEmpty()) {
@@ -389,6 +491,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 					.addMetadata(RunnableConfig.TASK_ID_METADATA_KEY, taskId)
 					.removeMetadata(HUMAN_FEEDBACK_METADATA_KEY)
 					.removeMetadata(RunnableConfig.STATE_UPDATE_METADATA_KEY);
+			if (branchEvents != null) {
+				builder.eventContext(branchEvents);
+			}
 			if (feedback != null) {
 				builder.addHumanFeedback(feedback);
 				feedbackStateUpdate.ifPresent(update -> builder.addMetadata(RunnableConfig.STATE_UPDATE_METADATA_KEY, update));
@@ -396,13 +501,17 @@ public class NodeExecutor extends BaseGraphExecutor {
 					builder.addMetadata(action.getResumeSubGraphId(), true);
 				}
 			}
-			var config = builder.build();
+			var scoped = builder.build();
+			var nodeEvents = nodeEvents(context, scoped, branch.nodeId(), taskId);
+			var config = scopedConfig(scoped, nodeEvents);
+			var branchPause = new AtomicReference<InterruptionMetadata>();
 			Consumer<BranchResult> withInterruptionId = result -> {
 				var pause = result.interruption();
 				if (pause != null && pause.interruptionId().isEmpty()) {
 					pause = InterruptionMetadata.builder(pause).toolFeedbacks(pause.toolFeedbacks())
 							.interruptionId(UUID.randomUUID().toString()).build();
 				}
+				branchPause.set(pause);
 				var writes = new ArrayList<>(priorWrites);
 				writes.addAll(result.updates());
 				completed.accept(new BranchResult(writes, pause, result.streamed()));
@@ -411,11 +520,11 @@ public class NodeExecutor extends BaseGraphExecutor {
 				var pause = action.interrupt(branch.nodeId(), state.snapShot().orElseThrow(), config, Optional.ofNullable(pending));
 				if (pause.isPresent()) {
 					withInterruptionId.accept(new BranchResult(List.of(), pause.get(), false));
-					return Flux.empty();
+					return observeNode(Flux.empty(), nodeEvents, branchPause::get);
 				}
 			}
 			notifyBranchListener(context, branch.nodeId(), state, config, NODE_BEFORE);
-			return NodeExecution.run(context, branch.nodeId(), taskId, branch.action(), state, config)
+			var invocation = NodeExecution.run(context, branch.nodeId(), taskId, branch.action(), state, config)
 				.flatMapMany(update -> streamBranchResult(context, branch.nodeId(), update, withInterruptionId))
 				.doOnNext(event -> {
 					if (!event.hasMetadata("taskId")) {
@@ -424,6 +533,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 				})
 				.doOnTerminate(() -> notifyBranchListener(context, branch.nodeId(), state, config, NODE_AFTER))
 				.doOnCancel(() -> notifyBranchListener(context, branch.nodeId(), state, config, NODE_AFTER));
+			return observeNode(invocation, nodeEvents, branchPause::get);
 		});
 	}
 
@@ -511,15 +621,18 @@ public class NodeExecutor extends BaseGraphExecutor {
 		String previousNextNode = context.getNextNodeId();
 		try {
 			var outputUpdate = new LinkedHashMap<>(routingUpdate);
+			var writes = new ArrayList<Map<String, Object>>();
+			writes.add(routingUpdate);
 			context.setOverallState(previousState.snapShot().orElseThrow());
 			context.mergeIntoCurrentState(routingUpdate);
 			for (BranchResult result : results) {
 				for (Map<String, Object> update : result.updates()) {
 					context.mergeIntoCurrentState(update);
 					outputUpdate.putAll(update);
+					writes.add(update);
 				}
 			}
-			return checkpointAfterTransition(context, outputUpdate, true)
+			return checkpointAfterTransition(context, outputUpdate, true, writes)
 					.doOnError(error -> {
 						context.setOverallState(previousState);
 						context.setNextNodeId(previousNextNode);
@@ -541,7 +654,15 @@ public class NodeExecutor extends BaseGraphExecutor {
 	private record BranchResult(List<Map<String, Object>> updates, InterruptionMetadata interruption, boolean streamed) {
 	}
 
-	private record BranchCandidate(BranchResult result, List<GraphResponse<NodeOutput>> events) {
+	private record BranchCandidate(BranchResult result, List<GraphResponse<NodeOutput>> events, RunEventContext scope) {
+
+		private BranchCandidate(BranchResult result, List<GraphResponse<NodeOutput>> events) {
+			this(result, events, null);
+		}
+
+		private Mono<Void> publish() {
+			return scope == null ? Mono.empty() : scope.publishCandidate();
+		}
 	}
 
 	/**
@@ -555,13 +676,22 @@ public class NodeExecutor extends BaseGraphExecutor {
 	 */
 	private Flux<GraphResponse<NodeOutput>> transformFluxToGraphResponse(
 			GraphRunnerContext context, Flux<?> rawFlux, String key, String nodeId) {
+		return Flux.deferContextual(reactorContext -> {
+			var events = reactorContext.<RunEventContext>getOrDefault(RunEventContext.class, null);
+			return transformFluxToGraphResponse(context, rawFlux, key, nodeId, events);
+		});
+	}
+
+	private Flux<GraphResponse<NodeOutput>> transformFluxToGraphResponse(
+			GraphRunnerContext context, Flux<?> rawFlux, String key, String nodeId, RunEventContext scope) {
 		var lastChatResponseRef = new AtomicReference<ChatResponse>(null);
 		var lastGraphResponseRef = new AtomicReference<GraphResponse<NodeOutput>>(null);
 		var upstreamAlreadyEmittedCompletion = new AtomicBoolean(false);
 
+		var model = scope != null && scope.enabled(RunEvent.Channel.MESSAGES) ? new ModelEvents(scope) : null;
 		return rawFlux.publish(shared -> {
 			Flux<GraphResponse<NodeOutput>> events = streamEvents(context, shared, key, nodeId,
-					lastGraphResponseRef, upstreamAlreadyEmittedCompletion);
+					lastGraphResponseRef, upstreamAlreadyEmittedCompletion, scope, model);
 			var sourceError = new AtomicReference<Throwable>();
 			Flux<ChatResponse> responses = shared.ofType(ChatResponse.class).doOnError(sourceError::set);
 			Mono<GraphResponse<NodeOutput>> aggregation = ChatResponseStreamAggregator
@@ -612,6 +742,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 					// FINISHED StreamingOutput omits message for agent/graph LLM nodes (tool/hook unchanged); full text still in done(state).
 					Generation generation = lastChatResponse.getResult();
 					AssistantMessage answer = FinishReasonMetadata.apply(generation.getOutput(), generation.getMetadata());
+					Mono<Void> completion = model == null ? Mono.empty()
+							: model.completedAsync(answer, lastChatResponse.getMetadata().getUsage());
 					Message messageForCompletion = answer;
 					if (shouldOmitMessageOnStreamCompletion(nodeId)) {
 						messageForCompletion = null;
@@ -625,15 +757,17 @@ public class NodeExecutor extends BaseGraphExecutor {
 						completionResult.put("messages", answer);
 					}
 					GraphResponse<NodeOutput> doneResponse = GraphResponse.done(completionResult);
-					return Flux.just(aggregatedResponse, doneResponse);
+					return completion.thenMany(Flux.just(aggregatedResponse, doneResponse));
 				}
 			}));
 	}
 
 	private Flux<GraphResponse<NodeOutput>> streamEvents(GraphRunnerContext context, Flux<?> source, String key,
 			String nodeId, AtomicReference<GraphResponse<NodeOutput>> lastGraphResponse,
-			AtomicBoolean upstreamAlreadyEmittedCompletion) {
-		return source.switchIfEmpty(Flux.error(new IllegalStateException(
+			AtomicBoolean upstreamAlreadyEmittedCompletion, RunEventContext scope, ModelEvents model) {
+		var observed = model == null ? source : source.concatMap(element -> element instanceof ChatResponse response
+				? model.chunk(response).thenReturn(element) : Mono.just(element), 1);
+		return observed.switchIfEmpty(Flux.error(new IllegalStateException(
 				"Empty flux detected for key '" + key + "'. This may indicate an LLM API error with null result.")))
 				.map(element -> {
 					GraphResponse<NodeOutput> event;
@@ -657,6 +791,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 						event = GraphResponse.of(nodeOutput);
 					}
 					else {
+						if (scope != null) {
+							scope.writer().tryEmit(key, element);
+						}
 						event = GraphResponse.of(context.buildStreamingOutput(element, nodeId, true));
 					}
 					lastGraphResponse.set(event);
@@ -750,7 +887,10 @@ public class NodeExecutor extends BaseGraphExecutor {
 			context.mergeIntoCurrentState(partialStateWithoutFlux);
 			writes.forEach(context::mergeIntoCurrentState);
 
-			return finishStreamingStep(context, combinedUpdateState, interruptAfterMetadata);
+			var committedWrites = new ArrayList<Map<String, Object>>();
+			committedWrites.add(partialStateWithoutFlux);
+			committedWrites.addAll(writes);
+			return finishStreamingStep(context, combinedUpdateState, interruptAfterMetadata, committedWrites);
 		});
 
 		return processedFlux
@@ -862,7 +1002,12 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 	private Mono<Void> finishStreamingStep(GraphRunnerContext context, Map<String, Object> update,
 			Optional<InterruptionMetadata> interruption) {
-		return checkpointAfterTransition(context, update, interruption.isEmpty())
+		return finishStreamingStep(context, update, interruption, List.of(update));
+	}
+
+	private Mono<Void> finishStreamingStep(GraphRunnerContext context, Map<String, Object> update,
+			Optional<InterruptionMetadata> interruption, List<Map<String, Object>> writes) {
+		return checkpointAfterTransition(context, update, interruption.isEmpty(), writes)
 				.doOnNext(output -> interruption.ifPresent(context::setReturnFromEmbedWithValue))
 				.then();
 	}

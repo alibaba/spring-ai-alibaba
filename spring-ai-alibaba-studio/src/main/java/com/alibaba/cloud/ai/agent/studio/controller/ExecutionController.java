@@ -43,6 +43,7 @@ import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -50,6 +51,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
+
+import java.util.Set;
 
 /** Controller handling agent execution endpoints. */
 @RestController
@@ -155,6 +158,18 @@ public class ExecutionController {
 	 */
 	@PostMapping(value = "/run_sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<String>> agentRunSse(@RequestBody AgentRunRequest request) {
+		return agentRunSse(request, null);
+	}
+
+	@PostMapping(value = "/run_sse/v2", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	public Flux<ServerSentEvent<String>> agentRunEventSse(@RequestBody AgentRunRequest request,
+			@RequestParam(name = "reasoning", defaultValue = "false") boolean reasoning,
+			@RequestParam(name = "toolPayload", defaultValue = "false") boolean toolPayload,
+			@RequestParam(name = "stateKey", required = false) Set<String> stateKeys) {
+		return agentRunSse(request, new RunEventSse.Options(reasoning, toolPayload, stateKeys));
+	}
+
+	private Flux<ServerSentEvent<String>> agentRunSse(AgentRunRequest request, RunEventSse.Options options) {
 		if (request.appName == null || request.appName.trim().isEmpty()) {
 			log.warn(
 					"appName cannot be null or empty in SSE request for appName: {}, session: {}",
@@ -179,7 +194,7 @@ public class ExecutionController {
 					.addMetadata("user_id", request.userId)
 					.build();
 
-			return executeAgent(request.newMessage.toUserMessage(), agent, runnableConfig);
+			return executeAgent(request.newMessage.toUserMessage(), agent, runnableConfig, options);
 		}
 		catch (Exception e) {
 			log.error("Error during agent run for session {}", request.threadId, e);
@@ -189,6 +204,18 @@ public class ExecutionController {
 
 	@PostMapping(value = "/resume_sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<String>> agentResumeSse(@RequestBody AgentResumeRequest request) {
+		return agentResumeSse(request, null);
+	}
+
+	@PostMapping(value = "/resume_sse/v2", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	public Flux<ServerSentEvent<String>> agentResumeEventSse(@RequestBody AgentResumeRequest request,
+			@RequestParam(name = "reasoning", defaultValue = "false") boolean reasoning,
+			@RequestParam(name = "toolPayload", defaultValue = "false") boolean toolPayload,
+			@RequestParam(name = "stateKey", required = false) Set<String> stateKeys) {
+		return agentResumeSse(request, new RunEventSse.Options(reasoning, toolPayload, stateKeys));
+	}
+
+	private Flux<ServerSentEvent<String>> agentResumeSse(AgentResumeRequest request, RunEventSse.Options options) {
 		if (request.appName == null || request.appName.trim().isEmpty()) {
 			log.warn(
 					"appName cannot be null or empty in SSE request for appName: {}, session: {}",
@@ -225,7 +252,7 @@ public class ExecutionController {
 					.addHumanFeedback(metadataBuilder.build())
 					.build();
 
-			return executeAgent(null, agent, runnableConfig);
+			return executeAgent(null, agent, runnableConfig, options);
 		}
 		catch (Exception e) {
 			log.error("Error during agent run for session {}", request.threadId, e);
@@ -234,7 +261,14 @@ public class ExecutionController {
 	}
 
 	@NonNull
-	private Flux<ServerSentEvent<String>> executeAgent(UserMessage userMessage, Agent agent, RunnableConfig runnableConfig) throws GraphRunnerException {
+	private Flux<ServerSentEvent<String>> executeAgent(UserMessage userMessage, Agent agent, RunnableConfig runnableConfig,
+			RunEventSse.Options options) throws GraphRunnerException {
+
+		if (options != null) {
+			var stream = userMessage == null ? agent.streamEvents("", runnableConfig, options.streamOptions())
+					: agent.streamEvents(userMessage, runnableConfig, options.streamOptions());
+			return RunEventSse.encode(stream, mapper, options);
+		}
 
 		Flux<NodeOutput> agentStream;
 

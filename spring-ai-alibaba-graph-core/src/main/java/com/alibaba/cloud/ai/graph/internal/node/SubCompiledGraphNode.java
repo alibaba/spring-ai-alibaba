@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.internal.node;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.SubGraphNode;
@@ -36,6 +37,16 @@ public class SubCompiledGraphNode extends Node implements SubGraphNode {
 	private final CompiledGraph subGraph;
 	private final String outputKey;
 	private final Set<String> outputKeys;
+
+	public SubCompiledGraphNode(String id, CompiledGraph subGraph, Function<OverAllState, Map<String, Object>> inputs,
+			UnaryOperator<Map<String, Object>> outputs) {
+		super(Objects.requireNonNull(id, "id cannot be null"),
+				config -> new SubCompiledGraphNodeAction(id, config, subGraph, UnaryOperator.identity(), null, null,
+						Objects.requireNonNull(inputs), Objects.requireNonNull(outputs)));
+		this.subGraph = subGraph;
+		this.outputKey = outputKeyToParent(id);
+		this.outputKeys = Set.of();
+	}
 
 	public SubCompiledGraphNode(String id, CompiledGraph subGraph) {
 		this(id, subGraph, UnaryOperator.identity());

@@ -34,6 +34,9 @@ import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 
 import com.alibaba.cloud.ai.graph.streaming.OutputType;
+import com.alibaba.cloud.ai.graph.streaming.RunEvent;
+import com.alibaba.cloud.ai.graph.streaming.RunStream;
+import com.alibaba.cloud.ai.graph.streaming.StreamOptions;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -509,12 +512,45 @@ public abstract class Agent {
 		return compiledGraph.stream(input, buildStreamConfig(runnableConfig));
 	}
 
+	/** Streams the events of one agent invocation per subscription. */
+	public Flux<RunEvent> streamEvents(Map<String, Object> input, RunnableConfig config, StreamOptions options) {
+		return getAndCompileGraph().streamEvents(input, buildStreamConfig(config), options);
+	}
+
+	public Flux<RunEvent> streamEvents(String input, RunnableConfig config, StreamOptions options) {
+		return streamEvents(buildMessageInput(input), config, options);
+	}
+
+	public Flux<RunEvent> streamEvents(UserMessage input, RunnableConfig config, StreamOptions options) {
+		return streamEvents(buildMessageInput(input), config, options);
+	}
+
+	public Flux<RunEvent> streamEvents(String input) {
+		return streamEvents(input, null, StreamOptions.defaults());
+	}
+
+	public Flux<RunEvent> streamEvents(String input, RunnableConfig config) {
+		return streamEvents(input, config, StreamOptions.defaults());
+	}
+
+	public Flux<RunEvent> streamEvents(Map<String, Object> input, RunnableConfig config) {
+		return streamEvents(input, config, StreamOptions.defaults());
+	}
+
+	public RunStream eventRun(Map<String, Object> input, RunnableConfig config, StreamOptions options) {
+		return getAndCompileGraph().eventRun(input, buildStreamConfig(config), options);
+	}
+
+	public RunStream eventRun(String input, RunnableConfig config, StreamOptions options) {
+		return eventRun(buildMessageInput(input), config, options);
+	}
+
 	protected RunnableConfig buildNonStreamConfig(RunnableConfig config) {
 		RunnableConfig.Builder builder = config == null 
 			? RunnableConfig.builder() 
 			: RunnableConfig.builder(config);
 		
-		builder.addMetadata("_stream_", false).addMetadata("_AGENT_", name);
+		builder.addMetadata("_stream_", false).addMetadata("_AGENT_", name).eventAgentName(name);
 		applyExecutorConfig(builder);
 		
 		return builder.build();
@@ -525,7 +561,7 @@ public abstract class Agent {
 			? RunnableConfig.builder() 
 			: RunnableConfig.builder(config);
 		
-		builder.addMetadata("_AGENT_", name);
+		builder.addMetadata("_AGENT_", name).eventAgentName(name);
 		applyExecutorConfig(builder);
 		
 		return builder.build();
