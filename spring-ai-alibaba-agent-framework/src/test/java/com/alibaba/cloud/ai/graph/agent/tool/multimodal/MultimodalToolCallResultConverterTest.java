@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.agent.tool.multimodal;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.content.Media;
 import org.springframework.util.MimeTypeUtils;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -48,6 +49,15 @@ class MultimodalToolCallResultConverterTest {
 		assertThat(media.getData()).isEqualTo("data:image/png;base64,AQID");
 		assertThat(mediaOutput(OutputFormat.base64, result).path("data").asString())
 			.isEqualTo("data:image/png;base64,AQID");
+	}
+
+	@Test
+	void preservesRawBase64SuppliedByAnExternalTool() {
+		var media = Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data("AQID").build();
+		var result = ToolMultimodalResult.of("Image generated", media);
+
+		assertThat(mediaOutput(OutputFormat.base64, result).path("data").asString())
+				.isEqualTo("data:image/png;base64,AQID");
 	}
 
 	private JsonNode mediaOutput(OutputFormat format, ToolMultimodalResult result) {

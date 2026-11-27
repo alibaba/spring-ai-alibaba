@@ -35,27 +35,40 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
+import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
+import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
+import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.part.OpaquePayload;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.messages.part.ToolResultPart;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.core.Ordered;
 import reactor.core.publisher.Flux;
 
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -71,9 +84,10 @@ class AgentToolCallingAdvisorBoundaryTest {
 		BoundaryTools tools = new BoundaryTools();
 		ToolCallback toolCallback = ToolCallbacks.from(tools)[0];
 
+		var client = ChatClient.builder(chatModel).defaultAdvisors(ToolCallingAdvisor.builder().build()).build();
 		ReactAgent agent = ReactAgent.builder()
 				.name("tool-boundary-agent")
-				.model(chatModel)
+				.chatClient(client)
 				.tools(toolCallback)
 				.saver(new MemorySaver())
 				.build();
@@ -112,7 +126,8 @@ class AgentToolCallingAdvisorBoundaryTest {
 		var chatModel = new BatchToolChatModel();
 		var approval = HumanInTheLoopHook.builder().approvalOn("boundary_tool", "Review this tool").build();
 		var agent = ReactAgent.builder().name("approval-batch").model(chatModel)
-				.tools(ToolCallbacks.from(tools)).hooks(List.of(approval)).saver(new MemorySaver()).build();
+				.tools(ToolCallbacks.from(tools)).hooks(List.of(approval)).toolCallLimits(1, 1)
+				.saver(new MemorySaver()).build();
 		var config = RunnableConfig.builder().threadId("approval-batch").addMetadata("_stream_", false).build();
 
 		var interrupted = assertInstanceOf(InterruptionMetadata.class,
@@ -127,7 +142,8 @@ class AgentToolCallingAdvisorBoundaryTest {
 						ToolFeedback.builder(interrupted.toolFeedbacks().get(1))
 								.result(FeedbackResult.EDITED).arguments("{\"edited\":true}").build()))
 				.build();
-		var resumed = RunnableConfig.builder(config).addHumanFeedback(decisions).build();
+		var resumed = RunnableConfig.builder().threadId("approval-batch").addMetadata("_stream_", false)
+				.addHumanFeedback(decisions).build();
 		agent.invokeAndGetOutput("", resumed).orElseThrow();
 		assertEquals(1, tools.agentToolNodeExecutions.get());
 
@@ -135,7 +151,8 @@ class AgentToolCallingAdvisorBoundaryTest {
 				.filter(AssistantMessage.class::isInstance).map(AssistantMessage.class::cast).findFirst().orElseThrow();
 		assertEquals(List.of("{}", "{\"edited\":true}"),
 				assistant.getToolCalls().stream().map(AssistantMessage.ToolCall::arguments).toList());
-		assertEquals(BatchToolChatModel.SIGNATURE, ((ToolCallPart) assistant.getParts().get(1)).payload());
+		assertEquals(List.of(ReasoningPart.of("reasoning")), assistant.getReasoning());
+		assertEquals(BatchToolChatModel.SIGNATURE, ((ToolCallPart) assistant.getParts().get(2)).payload());
 		var toolMessage = chatModel.followup.get().getInstructions().stream()
 				.filter(ToolResponseMessage.class::isInstance).map(ToolResponseMessage.class::cast).findFirst().orElseThrow();
 		assertEquals(List.of("first", "second"), toolMessage.getResults().stream().map(ToolResultPart::id).toList());
@@ -269,6 +286,219 @@ class AgentToolCallingAdvisorBoundaryTest {
 		assertEquals(0, tools.executions.get());
 	}
 
+	@ParameterizedTest
+	@ValueSource(booleans = { true, false })
+	void blocksToolsOutsideTheOutgoingSelection(boolean stream) throws Exception {
+		for (List<String> selection : List.of(List.of("allowed"), List.<String>of())) {
+			var tools = new ScopedTools();
+			var callbacks = List.of(ToolCallbacks.from(tools));
+			var excluded = callbacks.stream().filter(tool -> tool.getToolDefinition().name().equals("excluded"))
+					.findFirst().orElseThrow();
+			var model = new ScriptedToolModel(List.of(List.of(toolCall("1", "excluded"))));
+			var agent = ReactAgent.builder().name("request-tool-scope").model(model).tools(callbacks)
+					.resolver(name -> excluded)
+					.interceptors(new ModelInterceptor() {
+						@Override
+						public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
+							return handler.call(ModelRequest.builder(request).tools(selection).build());
+						}
+
+						@Override
+						public String getName() {
+							return "select-tools";
+						}
+					}).build();
+
+			runAgent(agent, stream);
+			assertEquals(selection, promptToolNames(model, 0));
+			assertEquals(0, tools.excludedCalls.get());
+			assertTrue(toolResults(model, 1).get(0).isError());
+		}
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { true, false })
+	void checksToolsAfterTheLastChatClientAdvisor(boolean stream) throws Exception {
+		var tools = new ScopedTools();
+		var callbacks = List.of(ToolCallbacks.from(tools));
+		var local = callbacks.stream().filter(tool -> tool.getToolDefinition().name().equals("excluded"))
+				.findFirst().orElseThrow();
+		var clientTool = callbacks.stream().filter(tool -> tool.getToolDefinition().name().equals("allowed"))
+				.findFirst().orElseThrow();
+		var model = new ScriptedToolModel(List.of(List.of(toolCall("1", "excluded"), toolCall("2", "allowed"))));
+		var client = ChatClient.builder(model).defaultTools(clientTool).defaultAdvisors(new BaseAdvisor() {
+			@Override
+			public ChatClientRequest before(ChatClientRequest request, AdvisorChain chain) {
+				var options = (ToolCallingChatOptions) request.prompt().getOptions();
+				assertEquals(List.of("allowed", "excluded"), options.getToolCallbacks().stream()
+						.map(tool -> tool.getToolDefinition().name()).sorted().toList());
+				return new ChatClientRequest(new Prompt(request.prompt().getInstructions(),
+						options.mutate().toolCallbacks(List.of(clientTool)).build()), request.context());
+			}
+
+			@Override
+			public ChatClientResponse after(ChatClientResponse response, AdvisorChain chain) {
+				return response;
+			}
+
+			@Override
+			public int getOrder() {
+				return Ordered.LOWEST_PRECEDENCE - 1;
+			}
+
+			@Override
+			public String getName() {
+				return "remove-tool-before-model";
+			}
+		}).build();
+		var agent = ReactAgent.builder().name("advisor-tool-scope").chatClient(client).tools(local).build();
+
+		runAgent(agent, stream);
+		assertEquals(List.of("allowed"), promptToolNames(model, 0));
+		assertEquals(0, tools.excludedCalls.get());
+		assertEquals(1, tools.allowedCalls.get());
+		assertEquals(List.of(true, false), toolResults(model, 1).stream().map(ToolResultPart::isError).toList());
+	}
+
+	@Test
+	void appliesTheSameScopeToToolCallsCarriedInStreamMetadata() throws Exception {
+		var tools = new ScopedTools();
+		var model = new ScriptedToolModel(List.of(List.of(toolCall("1", "excluded")))) {
+			@Override
+			public Flux<ChatResponse> stream(Prompt prompt) {
+				var response = call(prompt);
+				var calls = response.getResult().getOutput().getToolCalls();
+				if (calls.isEmpty()) {
+					return Flux.just(response);
+				}
+				return Flux.just(new ChatResponse(List.of(new Generation(new AssistantMessage("")))),
+						new ChatResponse(List.of(), ChatResponseMetadata.builder().keyValue("toolCalls", calls).build()));
+			}
+		};
+		var allowed = List.of(ToolCallbacks.from(tools)).stream()
+				.filter(tool -> tool.getToolDefinition().name().equals("allowed")).findFirst().orElseThrow();
+		var agent = ReactAgent.builder().name("metadata-tool-scope").model(model).tools(allowed)
+				.resolver(name -> List.of(ToolCallbacks.from(tools)).stream()
+						.filter(tool -> tool.getToolDefinition().name().equals(name)).findFirst().orElse(null))
+				.build();
+
+		runAgent(agent, true);
+		assertEquals(0, tools.excludedCalls.get());
+		assertTrue(toolResults(model, 1).get(0).isError());
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { true, false })
+	void appliesDefaultPerToolLimitInSequentialAndParallelBatches(boolean parallel) throws Exception {
+		var tools = new ScopedTools();
+		var calls = IntStream.rangeClosed(1, 41).mapToObj(i -> toolCall("call-" + i, "allowed")).toList();
+		var model = new ScriptedToolModel(List.of(calls));
+		var agent = ReactAgent.builder().name("default-tool-budget").model(model).tools(ToolCallbacks.from(tools))
+				.parallelToolExecution(parallel).build();
+
+		runAgent(agent, false);
+		assertEquals(40, tools.allowedCalls.get());
+		assertEquals(1, toolResults(model, 1).stream().filter(ToolResultPart::isError).count());
+	}
+
+	@Test
+	void carriesTheTurnBudgetThroughApprovalOnAFreshConfig() throws Exception {
+		var tools = new ScopedTools();
+		var approval = new ConfirmationTools();
+		var model = new ScriptedToolModel(List.of(List.of(toolCall("first", "allowed")),
+				List.of(toolCall("second", "boundary_tool"))));
+		var agent = ReactAgent.builder().name("approval-budget").model(model)
+				.tools(ToolCallbacks.from(tools)).tools(ToolCallbacks.from(approval)).toolCallLimits(1, 1)
+				.saver(new MemorySaver()).build();
+		var config = RunnableConfig.builder().threadId("approval-budget").addMetadata("_stream_", false).build();
+		var interruption = assertInstanceOf(InterruptionMetadata.class,
+				agent.invokeAndGetOutput("call two tools", config).orElseThrow());
+		var decisions = InterruptionMetadata.builder(interruption)
+				.toolFeedbacks(List.of(ToolFeedback.builder(interruption.toolFeedbacks().get(0))
+						.result(FeedbackResult.APPROVED).build()))
+				.build();
+		var resumed = RunnableConfig.builder().threadId("approval-budget").addMetadata("_stream_", false)
+				.addHumanFeedback(decisions).build();
+
+		agent.invokeAndGetOutput("", resumed).orElseThrow();
+		assertEquals(1, tools.allowedCalls.get());
+		assertEquals(0, approval.executions.get());
+		assertTrue(toolResults(model, 2).get(0).isError());
+		assertTrue(toolResults(model, 2).get(0).toToolResponse().responseData().contains("Total tool call limit (1)"));
+	}
+
+	private static void runAgent(ReactAgent agent, boolean stream) throws Exception {
+		if (stream) {
+			agent.stream("exercise the tool boundary", RunnableConfig.builder().build())
+					.blockLast(Duration.ofSeconds(10));
+		}
+		else {
+			assertEquals("final response", agent.call("exercise the tool boundary").getText());
+		}
+	}
+
+	private static AssistantMessage.ToolCall toolCall(String id, String name) {
+		return new AssistantMessage.ToolCall(id, "function", name, "{}");
+	}
+
+	private static List<String> promptToolNames(ScriptedToolModel model, int index) {
+		return ((ToolCallingChatOptions) model.prompts.get(index).getOptions()).getToolCallbacks().stream()
+				.map(tool -> tool.getToolDefinition().name()).toList();
+	}
+
+	private static List<ToolResultPart> toolResults(ScriptedToolModel model, int promptIndex) {
+		return model.prompts.get(promptIndex).getInstructions().stream()
+				.filter(ToolResponseMessage.class::isInstance).map(ToolResponseMessage.class::cast)
+				.reduce((first, last) -> last).orElseThrow().getResults();
+	}
+
+	private static class ScriptedToolModel implements ChatModel {
+
+		private final List<Prompt> prompts = new ArrayList<>();
+		private final List<List<AssistantMessage.ToolCall>> batches;
+
+		private ScriptedToolModel(List<List<AssistantMessage.ToolCall>> batches) {
+			this.batches = batches;
+		}
+
+		@Override
+		public ToolCallingChatOptions getOptions() {
+			return ToolCallingChatOptions.builder().build();
+		}
+
+		@Override
+		public ChatResponse call(Prompt prompt) {
+			int index = prompts.size();
+			prompts.add(prompt);
+			var output = index < batches.size() ? AssistantMessage.builder().toolCalls(batches.get(index)).build()
+					: new AssistantMessage("final response");
+			return new ChatResponse(List.of(new Generation(output)));
+		}
+
+		@Override
+		public Flux<ChatResponse> stream(Prompt prompt) {
+			return Flux.just(call(prompt));
+		}
+	}
+
+	private static final class ScopedTools {
+
+		private final AtomicInteger allowedCalls = new AtomicInteger();
+		private final AtomicInteger excludedCalls = new AtomicInteger();
+
+		@Tool(description = "An allowed test tool")
+		String allowed() {
+			allowedCalls.incrementAndGet();
+			return "allowed";
+		}
+
+		@Tool(description = "A tool that may be excluded")
+		String excluded() {
+			excludedCalls.incrementAndGet();
+			return "excluded";
+		}
+	}
+
 	private static ChatModel alwaysTwoToolCalls() {
 		return prompt -> new BatchToolChatModel().call(prompt);
 	}
@@ -309,7 +539,7 @@ class AgentToolCallingAdvisorBoundaryTest {
 				var first = new AssistantMessage.ToolCall(firstId, "function", "boundary_tool", "{}");
 				var second = new AssistantMessage.ToolCall(secondId, "function", "boundary_tool", "{}");
 				return new ChatResponse(List.of(new Generation(AssistantMessage.builder()
-						.parts(List.of(ToolCallPart.of(first), new ToolCallPart(second, SIGNATURE, Map.of())))
+						.parts(List.of(ReasoningPart.of("reasoning"), ToolCallPart.of(first), new ToolCallPart(second, SIGNATURE, Map.of())))
 						.build())));
 			}
 			followup.set(prompt);

@@ -98,7 +98,7 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 			if (part instanceof ToolCallPart callPart) {
 				String key = keys.next();
 				AssistantMessage.ToolCall call = callPart.toolCall();
-				if (!requiresConfirmation(call, config)) {
+				if (!requiresConfirmation(assistantMessage, call, config)) {
 					parts.add(part);
 					continue;
 				}
@@ -152,7 +152,7 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 		List<AssistantMessage.ToolCall> automaticallyApproved = new ArrayList<>();
 		for (var call : lastMessage.getToolCalls()) {
 			String key = keys.next();
-			if (requiresConfirmation(call, config)) {
+			if (requiresConfirmation(lastMessage, call, config)) {
 				pending.put(key, call);
 			}
 			else {
@@ -174,9 +174,11 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 		return Optional.of(buildInterruptionMetadata(state, pending, automaticallyApproved));
 	}
 
-	private boolean requiresConfirmation(AssistantMessage.ToolCall call, RunnableConfig config) {
-		return approvalOn.containsKey(call.name())
-				|| (getAgent() != null && getAgent().requiresToolConfirmation(call, config));
+	private boolean requiresConfirmation(AssistantMessage message, AssistantMessage.ToolCall call,
+			RunnableConfig config) {
+		boolean explicitlyConfigured = approvalOn.containsKey(call.name());
+		return getAgent() != null ? getAgent().requiresToolConfirmation(message, call, config, explicitlyConfigured)
+				: explicitlyConfigured;
 	}
 
 	private static boolean hasDecision(String key, AssistantMessage.ToolCall call, InterruptionMetadata metadata) {

@@ -30,6 +30,7 @@ import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.action.EdgeAction;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.agent.exception.AgentException;
+import com.alibaba.cloud.ai.graph.agent.extension.interceptor.AssistantMessageSanitizerInterceptor;
 import com.alibaba.cloud.ai.graph.agent.factory.AgentBuilderFactory;
 import com.alibaba.cloud.ai.graph.agent.factory.DefaultAgentBuilderFactory;
 import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
@@ -165,8 +166,9 @@ public class ReactAgent extends BaseAgent {
 					.flatMap(hook -> hook.getStreamingOutputFilters().stream()).toList());
 		}
 
-        // Set tools flag if tool interceptors are present.
-        hasTools = toolNode.getToolCallbacks() != null && !toolNode.getToolCallbacks().isEmpty();
+		hasTools = !toolNode.getToolCallbacks().isEmpty() || builder.dynamicTools || builder.resolver != null
+				|| (mergedModelInterceptors != null && mergedModelInterceptors.stream().anyMatch(interceptor ->
+						!(interceptor instanceof AssistantMessageSanitizerInterceptor)));
 	}
 
 	public static Builder builder() {
@@ -418,6 +420,11 @@ public class ReactAgent extends BaseAgent {
 
 	public boolean requiresToolConfirmation(AssistantMessage.ToolCall call, RunnableConfig config) {
 		return toolNode.requiresConfirmation(call, config);
+	}
+
+	public boolean requiresToolConfirmation(AssistantMessage message, AssistantMessage.ToolCall call,
+			RunnableConfig config, boolean explicitlyConfigured) {
+		return toolNode.requiresConfirmation(message, call, config, explicitlyConfigured);
 	}
 
 	/**

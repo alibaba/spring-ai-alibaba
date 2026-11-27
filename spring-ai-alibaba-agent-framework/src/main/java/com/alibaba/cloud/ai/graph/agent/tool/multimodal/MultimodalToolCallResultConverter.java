@@ -139,6 +139,9 @@ public class MultimodalToolCallResultConverter implements ToolCallResultConverte
 		else if (data instanceof String s && isUriLike(s)) {
 			putUriOrEncodeToDataUrl(URI.create(s), mimeTypeStr, itemMap);
 		}
+		else if (data instanceof String base64 && !base64.isBlank()) {
+			handleBytes(() -> Base64.getDecoder().decode(base64), mimeTypeStr, itemMap);
+		}
 		else if (data instanceof Resource resource) {
 			handleBytes(() -> {
 				try {

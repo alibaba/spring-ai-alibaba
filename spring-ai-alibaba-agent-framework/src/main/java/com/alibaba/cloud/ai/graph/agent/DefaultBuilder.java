@@ -30,12 +30,14 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.DefaultChatClient.DefaultChatClientRequestSpec;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.FormatProvider;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
@@ -82,6 +84,7 @@ public class DefaultBuilder extends Builder {
 			}
 			chatClient = clientBuilder.build();
 		} else {
+			dynamicTools = true;
 			ChatClient.Builder chatClientBuilder = chatClient.mutate();
 			boolean optionsAppliedToModel = replaceChatClientBuilderModelOptions(chatClientBuilder, effectiveOptions);
 			if (effectiveOptions != null && !optionsAppliedToModel) {
@@ -127,7 +130,12 @@ public class DefaultBuilder extends Builder {
 
 		registerDefaultModelInterceptors();
 
-		List<ToolCallback> allTools = gatherLocalTools();
+		var defaultRequest = chatClient.prompt();
+		List<ToolCallback> clientTools = defaultRequest instanceof DefaultChatClientRequestSpec spec
+				? spec.getToolCallbacks() : List.of();
+		List<ToolCallback> allTools = ToolCallbackUtils.deduplicateByName(gatherLocalTools(),
+				effectiveOptions instanceof ToolCallingChatOptions options ? options.getToolCallbacks() : null,
+				clientTools);
 		
 		// Set combined tools to LLM node
 		if (CollectionUtils.isNotEmpty(allTools)) {
@@ -146,6 +154,7 @@ public class DefaultBuilder extends Builder {
 				.agentName(this.name)
 				.parallelToolExecution(this.parallelToolExecution)
 				.maxParallelTools(this.maxParallelTools)
+				.toolCallLimits(this.maxCallsPerTool, this.maxTotalToolCalls)
 				.toolExecutionTimeout(this.toolExecutionTimeout)
 				.wrapSyncToolsAsAsync(this.wrapSyncToolsAsAsync);
 

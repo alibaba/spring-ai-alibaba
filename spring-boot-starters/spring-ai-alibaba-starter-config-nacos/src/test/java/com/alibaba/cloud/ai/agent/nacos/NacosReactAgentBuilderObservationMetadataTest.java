@@ -27,11 +27,13 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.observation.model.ObservationMetadataAwareOptions;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.nacos.api.config.listener.Listener;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.client.config.NacosConfigService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -42,10 +44,12 @@ import org.springframework.ai.openai.OpenAiChatOptions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -83,6 +87,8 @@ class NacosReactAgentBuilderObservationMetadataTest {
 				ObservationMetadataAwareOptions.class, requestOptions);
 		assertEquals("gpt-4", requestOptions.getModel());
 		assertEquals(0.4, requestOptions.getTemperature());
+		assertEquals(Boolean.FALSE, requestOptions.getStrict());
+		assertEquals(Boolean.TRUE, requestOptions.getReplayReasoningContent());
 		assertEquals(Map.of("promptKey", "test-prompt", "promptVersion", "v1"),
 				requestObservationOptions.getObservationMetadata());
 	}
@@ -105,6 +111,25 @@ class NacosReactAgentBuilderObservationMetadataTest {
 				requestObservationOptions.getObservationMetadata());
 	}
 
+	@Test
+	void updatesToolSchemaAndReasoningOptionsOnModelRefresh() throws Exception {
+		var builder = new NacosReactAgentBuilder();
+		var agent = builder.nacosOptions(this.nacosOptions).name("test-agent").build();
+		var listener = ArgumentCaptor.forClass(Listener.class);
+		verify(this.nacosConfigService).addListener(eq("model.json"), anyString(), listener.capture());
+
+		var model = new ModelVO();
+		model.setBaseUrl("https://api.openai.com/v1");
+		model.setApiKey("test-api-key");
+		model.setModel("gpt-4");
+		model.setStrict(true);
+		listener.getValue().receiveConfigInfo(JSON.toJSONString(model));
+
+		var options = assertInstanceOf(OpenAiChatOptions.class, buildRequestOptions(getChatClient(agent)));
+		assertEquals(Boolean.TRUE, options.getStrict());
+		assertNull(options.getReplayReasoningContent());
+	}
+
 	private void setupNacosConfigs() throws NacosException {
 		AgentVO agentVO = new AgentVO();
 		agentVO.setPromptKey("test-prompt");
@@ -124,6 +149,8 @@ class NacosReactAgentBuilderObservationMetadataTest {
 		modelVO.setApiKey("test-api-key");
 		modelVO.setModel("gpt-4");
 		modelVO.setTemperature("0.7");
+		modelVO.setStrict(false);
+		modelVO.setReplayReasoningContent(true);
 		when(this.nacosConfigService.getConfig(eq("model.json"), anyString(), anyLong()))
 				.thenReturn(JSON.toJSONString(modelVO));
 

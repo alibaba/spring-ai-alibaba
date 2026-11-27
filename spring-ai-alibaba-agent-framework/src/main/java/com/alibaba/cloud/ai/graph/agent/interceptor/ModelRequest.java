@@ -34,8 +34,8 @@ public class ModelRequest {
 	private final Map<String, Object> context;
 	private final List<Message> messages;
 	private final ToolCallingChatOptions options;
-	// tools working for current request, leave it to empty if all default in options should be used.
 	private final List<String> tools;
+	private final boolean toolSelectionSpecified;
 	// dynamic tool callbacks for current request.
 	private final List<ToolCallback> dynamicToolCallbacks;
 
@@ -45,10 +45,17 @@ public class ModelRequest {
 	public ModelRequest(SystemMessage systemMessage, List<Message> messages, ToolCallingChatOptions options,
 			List<String> tools, List<ToolCallback> dynamicToolCallbacks, Map<String, String> toolDescriptions,
 			Map<String, Object> context) {
+		this(systemMessage, messages, options, tools, dynamicToolCallbacks, toolDescriptions, context, tools != null);
+	}
+
+	private ModelRequest(SystemMessage systemMessage, List<Message> messages, ToolCallingChatOptions options,
+			List<String> tools, List<ToolCallback> dynamicToolCallbacks, Map<String, String> toolDescriptions,
+			Map<String, Object> context, boolean toolSelectionSpecified) {
 		this.systemMessage = systemMessage;
 		this.messages = messages;
 		this.options = options;
-		this.tools = tools;
+		this.tools = tools != null ? tools : List.of();
+		this.toolSelectionSpecified = toolSelectionSpecified;
 		this.dynamicToolCallbacks = dynamicToolCallbacks;
 		this.toolDescriptions = toolDescriptions;
 		this.context = context;
@@ -59,14 +66,16 @@ public class ModelRequest {
 	}
 
 	public static Builder builder(ModelRequest request) {
-		return new Builder()
+		Builder builder = new Builder()
 				.systemMessage(request.systemMessage)
 				.messages(request.messages)
 				.options(request.options)
-				.tools(request.tools)
+				.availableTools(request.tools)
 				.dynamicToolCallbacks(request.dynamicToolCallbacks)
 				.toolDescriptions(request.toolDescriptions)
 				.context(request.context);
+		builder.toolSelectionSpecified = request.toolSelectionSpecified;
+		return builder;
 	}
 
 	public List<Message> getMessages() {
@@ -83,6 +92,10 @@ public class ModelRequest {
 
 	public List<String> getTools() {
 		return tools;
+	}
+
+	public boolean hasToolSelection() {
+		return toolSelectionSpecified;
 	}
 
 	public List<ToolCallback> getDynamicToolCallbacks() {
@@ -102,6 +115,7 @@ public class ModelRequest {
 		private List<Message> messages;
 		private ToolCallingChatOptions options;
 		private List<String> tools = List.of();
+		private boolean toolSelectionSpecified;
 		private List<ToolCallback> dynamicToolCallbacks = List.of();
 
 		private Map<String, String> toolDescriptions = new HashMap<>();
@@ -123,10 +137,23 @@ public class ModelRequest {
 			return this;
 		}
 
+		/**
+		 * Select the tools for the request. An empty selection disables tools.
+		 */
 		public Builder tools(List<String> tools) {
 			if (tools != null) {
-				this.tools = new ArrayList<>(tools);
+				availableTools(tools);
+				this.toolSelectionSpecified = true;
 			}
+			return this;
+		}
+
+		/**
+		 * Provide the default tool names for model interceptors before any selection.
+		 */
+		public Builder availableTools(List<String> tools) {
+			this.tools = new ArrayList<>(tools);
+			this.toolSelectionSpecified = false;
 			return this;
 		}
 
@@ -153,7 +180,7 @@ public class ModelRequest {
 
 		public ModelRequest build() {
 			return new ModelRequest(systemMessage, messages, options, tools, dynamicToolCallbacks, toolDescriptions,
-					context);
+					context, toolSelectionSpecified);
 		}
 	}
 }

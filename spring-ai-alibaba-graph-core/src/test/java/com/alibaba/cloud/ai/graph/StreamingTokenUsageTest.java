@@ -17,6 +17,8 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.stream.LLmNodeAction;
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -166,5 +168,9 @@ public class StreamingTokenUsageTest {
 		assertNotNull(outputs, "Streaming outputs should not be null");
 		assertTrue(outputs.stream().anyMatch(output -> output.tokenUsage().getTotalTokens() == 3),
 			"Usage-only chunk should propagate token usage into StreamingOutput");
+		assertTrue(outputs.stream().filter(StreamingOutput.class::isInstance).map(StreamingOutput.class::cast)
+				.anyMatch(output -> output.getOutputType() == OutputType.GRAPH_NODE_FINISHED
+						&& output.tokenUsage().getTotalTokens() == 3),
+				"Finished output should retain usage across an empty-usage content chunk");
 	}
 }
