@@ -1124,6 +1124,7 @@ public class ReactAgent extends BaseAgent {
 		private RunnableConfig getSubGraphRunnableConfig(RunnableConfig config) {
 			return childConfig(nodeId, config, parentCompileConfig, childGraph.compileConfig)
 					.addMetadata(RunnableConfig.AGENT_NAME_KEY, subGraphId(nodeId))
+					.eventAgentName(name)
 					.clearContext()
 					.build();
 		}

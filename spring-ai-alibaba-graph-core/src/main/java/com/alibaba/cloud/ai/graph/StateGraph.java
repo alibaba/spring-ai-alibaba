@@ -49,6 +49,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
@@ -347,6 +349,16 @@ public class StateGraph {
 	public StateGraph addNode(String id, CompiledGraph subGraph, Set<String> inputKeys, Set<String> outputKeys)
 			throws GraphStateException {
 		return addNode(id, new SubCompiledGraphNode(id, subGraph, inputKeys, outputKeys));
+	}
+
+	/**
+	 * Adds a resumable compiled subgraph with custom input and output mapping. The output
+	 * mapper is also applied to each committed write, so it must accept partial child
+	 * updates. Key strategies for the mapped keys are supplied by the parent graph.
+	 */
+	public StateGraph addNode(String id, CompiledGraph subGraph, Function<OverAllState, Map<String, Object>> inputs,
+			UnaryOperator<Map<String, Object>> outputs) throws GraphStateException {
+		return addNode(id, new SubCompiledGraphNode(id, subGraph, inputs, outputs));
 	}
 
 	/**

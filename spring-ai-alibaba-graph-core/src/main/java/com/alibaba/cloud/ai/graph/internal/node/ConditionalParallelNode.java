@@ -43,7 +43,8 @@ public class ConditionalParallelNode extends Node {
 				.thenApply(command -> {
 					List<ParallelNode.Branch> branches = Stream.concat(
 								command.gotoNodes().stream().map(Send::new), command.sends().stream())
-							.map(send -> createBranch(resolveTarget(sourceNodeId, send.node(), condition.mappings()),
+							.map(send -> createBranch(restored.isPresent() ? send.node()
+											: resolveTarget(sourceNodeId, send.node(), condition.mappings()),
 									send.input(), nodeFactories, compileConfig))
 							.toList();
 					return ParallelNode.schedule(formatNodeId(sourceNodeId), targetNodeId, branches, command.update(),

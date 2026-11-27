@@ -136,6 +136,7 @@ public class MainGraphExecutor extends BaseGraphExecutor {
 			context.setNextNodeId(command.gotoNode());
 			Optional<Checkpoint> checkpoint = context.addCheckpoint(START, command.gotoNode());
 			NodeOutput output = context.buildOutput(START, checkpoint);
+			context.getConfig().eventContext().ifPresent(events -> events.stateCommitted(Map.of(), output.state().data()));
 			context.setCurrentNodeId(command.gotoNode());
 			return output;
 		})).flatMapMany(output -> Flux.just(GraphResponse.of(output),

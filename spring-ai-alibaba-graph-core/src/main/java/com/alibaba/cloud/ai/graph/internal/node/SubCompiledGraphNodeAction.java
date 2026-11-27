@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.childConfig;
@@ -56,8 +57,14 @@ import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.s
  * @see AsyncNodeActionWithConfig
  */
 public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentCompileConfig,
-		CompiledGraph subGraph, UnaryOperator<RunnableConfig> configure, Set<String> inputKeys, Set<String> outputKeys)
+		CompiledGraph subGraph, UnaryOperator<RunnableConfig> configure, Set<String> inputKeys, Set<String> outputKeys,
+		Function<OverAllState, Map<String, Object>> inputMapper, UnaryOperator<Map<String, Object>> outputMapper)
 		implements AsyncNodeActionWithConfig, ResumableSubGraphAction {
+
+	public SubCompiledGraphNodeAction(String nodeId, CompileConfig parentCompileConfig, CompiledGraph subGraph,
+			UnaryOperator<RunnableConfig> configure, Set<String> inputKeys, Set<String> outputKeys) {
+		this(nodeId, parentCompileConfig, subGraph, configure, inputKeys, outputKeys, null, null);
+	}
 
 	public SubCompiledGraphNodeAction(String nodeId, CompileConfig parentCompileConfig, CompiledGraph subGraph,
 			UnaryOperator<RunnableConfig> configure) {
@@ -89,7 +96,7 @@ public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentComp
 			boolean resume = shouldResume(nodeId, config);
 			boolean useChildCheckpoint = config.metadata(getResumeSubGraphId())
 				.filter(USE_CHILD_CHECKPOINT::equals).isPresent();
-			if (resume && inputKeys == null && !useChildCheckpoint) {
+			if (resume && inputKeys == null && inputMapper == null && !useChildCheckpoint) {
 				if (config.taskId().isEmpty()) {
 					subGraphRunnableConfig = subGraph.updateState(subGraphRunnableConfig, state.data());
 				}
@@ -97,8 +104,8 @@ public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentComp
 						subGraph.graphResponseStream(Map.of(), subGraphRunnableConfig)));
 			}
 			var inputs = resume ? Map.<String, Object>of() : state.data();
-			if (!resume && inputKeys != null) {
-				inputs = selectKeys(inputs, inputKeys);
+			if (!resume && (inputKeys != null || inputMapper != null)) {
+				inputs = inputMapper == null ? selectKeys(inputs, inputKeys) : new HashMap<>(inputMapper.apply(state));
 				String executionIdKey = GraphLifecycleListener.EXECUTION_ID_KEY;
 				if (state.data().containsKey(executionIdKey)) {
 					inputs.put(executionIdKey, state.data().get(executionIdKey));
@@ -107,7 +114,7 @@ public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentComp
 			var childState = OverAllStateBuilder.builder().withData(inputs).withStore(state.getStore())
 					.withKeyStrategies(subGraph.getKeyStrategyMap()).build();
 			var responses = subGraph.graphResponseStream(childState, subGraphRunnableConfig);
-			if (outputKeys != null) {
+			if (outputKeys != null || outputMapper != null) {
 				responses = responses.map(this::selectOutputs);
 			}
 			return CompletableFuture.completedFuture(Map.of(outputKeyToParent(nodeId), responses));
@@ -125,13 +132,17 @@ public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentComp
 		var metadata = response.getAllMetadata();
 		if (response.hasMetadata(GraphRunnerContext.BRANCH_WRITES)) {
 			var writes = CheckpointWrite.decodeAll(response.getMetadata(GraphRunnerContext.BRANCH_WRITES)).stream()
-				.map(write -> selectKeys(write, outputKeys))
+				.map(this::projectOutput)
 				.filter(write -> !write.isEmpty())
 				.map(CheckpointWrite::encode)
 				.toList();
 			metadata.put(GraphRunnerContext.BRANCH_WRITES, writes);
 		}
-		return GraphResponse.done(selectKeys((Map<String, Object>) state, outputKeys), metadata);
+		return GraphResponse.done(projectOutput((Map<String, Object>) state), metadata);
+	}
+
+	private Map<String, Object> projectOutput(Map<String, Object> state) {
+		return outputMapper == null ? selectKeys(state, outputKeys) : outputMapper.apply(new HashMap<>(state));
 	}
 
 	private static Map<String, Object> selectKeys(Map<String, Object> state, Set<String> keys) {

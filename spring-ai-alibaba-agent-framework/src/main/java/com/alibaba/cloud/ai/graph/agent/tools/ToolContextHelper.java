@@ -15,6 +15,11 @@
  */
 package com.alibaba.cloud.ai.graph.agent.tools;
 
+import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.streaming.StreamWriter;
+import reactor.core.publisher.Mono;
+
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import org.springframework.ai.chat.model.ToolContext;
@@ -77,6 +82,17 @@ public final class ToolContextHelper {
 			return Optional.empty();
 		}
 		return getMetadata(toolContext, ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY, RunnableConfig.class);
+	}
+
+	/** Obtains a writer scoped to the current tool invocation. */
+	public static StreamWriter streamWriter(@Nullable ToolContext toolContext) {
+		return getConfig(toolContext).map(RunnableConfig::streamWriter).orElse(StreamWriter.DISABLED);
+	}
+
+	/** Runs a graph underneath the current tool invocation. */
+	public static Mono<NodeOutput> runChild(@Nullable ToolContext toolContext, CompiledGraph child,
+			Map<String, Object> input) {
+		return getConfig(toolContext).orElseGet(() -> RunnableConfig.builder().build()).runChild(child, input);
 	}
 
 	/**

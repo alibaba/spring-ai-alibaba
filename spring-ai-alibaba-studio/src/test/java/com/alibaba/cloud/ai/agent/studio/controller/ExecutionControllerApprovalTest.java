@@ -56,6 +56,45 @@ class ExecutionControllerApprovalTest {
 	private final ObjectMapper mapper = new ObjectMapper();
 
 	@Test
+	void versionedEventStreamRedactsToolPayloadAndResumesAcrossRuns() throws Exception {
+		var tools = new CountingTools();
+		var agent = ReactAgent.builder().name("parent")
+			.model(model(prompt -> prompt.getInstructions().stream().anyMatch(ToolResponseMessage.class::isInstance)
+					? reply(new AssistantMessage("resumed answer"))
+					: reply(toolCalls(new AssistantMessage.ToolCall("review-call", "function", "review",
+							"{\"private\":\"payload-hidden-by-default\"}")))))
+			.tools(ToolCallbacks.from(tools)[0])
+			.hooks(HumanInTheLoopHook.builder().approvalOn("review", "Review the request").build())
+			.saver(new MemorySaver()).build();
+		var mvc = mvc(agent);
+		var started = sse(mvc, "/run_sse/v2", """
+				{"appName":"parent","userId":"user","threadId":"thread",
+				 "newMessage":{"messageType":"user","content":"ask"}}
+				""");
+		assertThat(started).contains("event:run_started", "event:run_paused").doesNotContain("payload-hidden-by-default");
+		var pause = eventPayload(started, "run_paused");
+		String id = pause.path("data").path("interruptionId").asText();
+		assertThat(id).isNotBlank();
+		var resumed = sse(mvc, "/resume_sse/v2", approve(id));
+		var resumeStart = eventPayload(resumed, "run_started");
+		assertThat(resumeStart.path("data").path("resumedInterruptionId").asText()).isEqualTo(id);
+		assertThat(resumeStart.path("runId").asText()).isNotEqualTo(pause.path("runId").asText());
+		assertThat(resumed).contains("resumed answer", "event:run_completed");
+		assertThat(tools.executions.get()).isOne();
+	}
+
+	private JsonNode eventPayload(String sse, String name) {
+		return sse.lines().filter(line -> line.startsWith("data:")).map(line -> {
+			try {
+				return mapper.readTree(line.substring(5).trim());
+			}
+			catch (Exception error) {
+				throw new IllegalArgumentException("Invalid SSE data", error);
+			}
+		}).filter(event -> name.equals(event.path("type").asText())).findFirst().orElseThrow();
+	}
+
+	@Test
 	void resumesTwoChildApprovalsIndependentlyOverSse() throws Exception {
 		var tools = new CountingTools();
 		var saver = new MemorySaver();

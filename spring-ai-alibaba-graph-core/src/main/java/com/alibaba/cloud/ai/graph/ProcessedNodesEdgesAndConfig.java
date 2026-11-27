@@ -18,7 +18,9 @@ package com.alibaba.cloud.ai.graph;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -33,7 +35,13 @@ import static java.lang.String.format;
  * The type Processed nodes edges and config.
  */
 public record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edges, Set<String> interruptsBefore,
-		Set<String> interruptsAfter, Map<String, KeyStrategy> keyStrategyMap, Map<String, String> parallelJoins) {
+		Set<String> interruptsAfter, Map<String, KeyStrategy> keyStrategyMap, Map<String, String> parallelJoins,
+		Map<String, List<String>> inlineGraphPaths) {
+
+	public ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edges, Set<String> interruptsBefore,
+			Set<String> interruptsAfter, Map<String, KeyStrategy> keyStrategyMap, Map<String, String> parallelJoins) {
+		this(nodes, edges, interruptsBefore, interruptsAfter, keyStrategyMap, parallelJoins, Map.of());
+	}
 
 	public ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edges, Set<String> interruptsBefore,
 			Set<String> interruptsAfter, Map<String, KeyStrategy> keyStrategyMap) {
@@ -70,6 +78,7 @@ public record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Ed
 		var edges = new StateGraph.Edges(stateGraph.edges.elements);
 
 		var parallelJoins = new LinkedHashMap<>(stateGraph.parallelJoins);
+		var inlinePaths = new LinkedHashMap<String, List<String>>();
 
 		for (var subgraphNode : subgraphNodes) {
 
@@ -171,11 +180,16 @@ public record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Ed
 			//
 			// Process nodes
 			//
-			processedSubGraphNodes.elements.stream().map(n -> n.withIdUpdated(subgraphNode::formatId))
-                    .forEach(nodes.elements::add);
+			for (var node : processedSubGraphNodes.elements) {
+				var path = new ArrayList<String>();
+				path.add(subgraphNode.id());
+				path.addAll(processedSubGraph.inlineGraphPaths().getOrDefault(node.id(), List.of()));
+				inlinePaths.put(subgraphNode.formatId(node.id()), List.copyOf(path));
+				nodes.elements.add(node.withIdUpdated(subgraphNode::formatId));
+			}
 		}
 
 		return new ProcessedNodesEdgesAndConfig(nodes, edges, interruptsBefore, interruptsAfter, keyStrategyMap,
-				Map.copyOf(parallelJoins));
+				Map.copyOf(parallelJoins), Map.copyOf(inlinePaths));
 	}
 }

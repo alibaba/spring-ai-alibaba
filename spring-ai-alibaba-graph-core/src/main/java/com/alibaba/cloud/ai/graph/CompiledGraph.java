@@ -33,6 +33,10 @@ import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNode;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+import com.alibaba.cloud.ai.graph.streaming.RunEvent;
+import com.alibaba.cloud.ai.graph.streaming.RunEventContext;
+import com.alibaba.cloud.ai.graph.streaming.RunStream;
+import com.alibaba.cloud.ai.graph.streaming.StreamOptions;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,6 +44,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -91,6 +96,10 @@ public class CompiledGraph {
 	private final Map<String, KeyStrategy> keyStrategyMap;
 
 	private final ProcessedNodesEdgesAndConfig processedData;
+
+	public List<String> inlineGraphPath(String nodeId) {
+		return processedData.inlineGraphPaths().getOrDefault(nodeId, List.of());
+	}
 
 	private int maxIterations = 25;
 
@@ -576,6 +585,29 @@ public class CompiledGraph {
 	 */
 	public Flux<NodeOutput> stream(Map<String, Object> inputs, RunnableConfig config) {
 		return streamFromInitialNode(stateCreate(inputs), config);
+	}
+
+	/** Streams one independent graph invocation per subscription. */
+	public Flux<RunEvent> streamEvents(Map<String, Object> inputs, RunnableConfig config, StreamOptions options) {
+		Objects.requireNonNull(config, "config cannot be null");
+		Objects.requireNonNull(options, "options cannot be null");
+		return RunEventContext.capture(options, events -> {
+			var eventConfig = RunnableConfig.builder(config).eventContext(events).build();
+			return new GraphRunner(this, eventConfig, null, false).run(stateCreate(inputs));
+		});
+	}
+
+	public Flux<RunEvent> streamEvents(Map<String, Object> inputs, RunnableConfig config) {
+		return streamEvents(inputs, config, StreamOptions.defaults());
+	}
+
+	public Flux<RunEvent> streamEvents(Map<String, Object> inputs) {
+		return streamEvents(inputs, RunnableConfig.builder().build());
+	}
+
+	/** Creates an explicitly started invocation with shared, bounded projections. */
+	public RunStream eventRun(Map<String, Object> inputs, RunnableConfig config, StreamOptions options) {
+		return new RunStream(streamEvents(inputs, config, options), options.bufferCapacity());
 	}
 
 	/**

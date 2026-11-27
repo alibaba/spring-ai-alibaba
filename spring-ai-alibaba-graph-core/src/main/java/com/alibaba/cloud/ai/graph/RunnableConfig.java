@@ -18,11 +18,15 @@ package com.alibaba.cloud.ai.graph;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.store.Store;
+import com.alibaba.cloud.ai.graph.streaming.RunEventContext;
+import com.alibaba.cloud.ai.graph.streaming.StreamWriter;
+import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
@@ -92,6 +96,10 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 
 	private final Map<String, Object> interruptedNodes;
 
+	private final RunEventContext eventContext;
+
+	private final String eventAgentName;
+
 	/**
 	 * Creates a new instance of {@code RunnableConfig} as a copy of the provided
 	 * {@code config}.
@@ -106,6 +114,39 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		this.interruptedNodes = new ConcurrentHashMap<>();
 		this.store = builder.store;
 		this.context = builder.context;
+		this.eventContext = builder.eventContext;
+		this.eventAgentName = builder.eventAgentName;
+	}
+
+	public Optional<RunEventContext> eventContext() {
+		return Optional.ofNullable(eventContext);
+	}
+
+	public StreamWriter streamWriter() {
+		return eventContext == null ? StreamWriter.DISABLED : eventContext.writer();
+	}
+
+	/** Attaches an event scope to this action's existing execution context. */
+	public RunnableConfig withEventContext(RunEventContext events) {
+		var builder = builder(this);
+		builder.context = context;
+		return builder.eventContext(events).build();
+	}
+
+	/**
+	 * Runs a child invocation inside a node or tool, with a fresh child checkpoint
+	 * identity. Use a mapped compiled-graph node for checkpoint-backed pause/resume.
+	 */
+	public Mono<NodeOutput> runChild(CompiledGraph child, Map<String, Object> inputs) {
+		return Mono.defer(() -> {
+			var childConfig = isolatedChild(this).threadId("child-" + UUID.randomUUID())
+					.store(store()).build();
+			return child.stream(inputs, childConfig).last();
+		});
+	}
+
+	String eventAgentName() {
+		return eventAgentName;
 	}
 
 	public Store store() {
@@ -337,6 +378,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		var child = builder();
 		if (parent != null) {
 			parent.metadata(TASK_TRACE_METADATA_KEY).ifPresent(trace -> child.addMetadata(TASK_TRACE_METADATA_KEY, trace));
+			child.eventContext(parent.eventContext);
 		}
 		return child;
 	}
@@ -367,6 +409,10 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 
 		private ConcurrentMap<String, Object> context;
 
+		private RunEventContext eventContext;
+
+		private String eventAgentName;
+
 		private CompiledGraph.StreamMode streamMode = CompiledGraph.StreamMode.VALUES;
 
 		/**
@@ -391,6 +437,8 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 			this.streamMode = config.streamMode;
 			this.store = config.store;
 			this.context = new ConcurrentHashMap<>(config.context);
+			this.eventContext = config.eventContext;
+			this.eventAgentName = config.eventAgentName;
 		}
 
 		/**
@@ -541,6 +589,17 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 
 		public Builder clearContext() {
 			this.context.clear();
+			return this;
+		}
+
+		public Builder eventContext(RunEventContext eventContext) {
+			this.eventContext = eventContext;
+			return this;
+		}
+
+		/** Identifies the next graph invocation as an agent in the event stream. */
+		public Builder eventAgentName(String name) {
+			this.eventAgentName = name;
 			return this;
 		}
 

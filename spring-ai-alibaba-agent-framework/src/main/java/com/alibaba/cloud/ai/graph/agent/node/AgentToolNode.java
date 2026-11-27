@@ -15,6 +15,10 @@
  */
 package com.alibaba.cloud.ai.graph.agent.node;
 
+import com.alibaba.cloud.ai.graph.agent.tool.StreamingToolCallback;
+import com.alibaba.cloud.ai.graph.streaming.RunEvent;
+import com.alibaba.cloud.ai.graph.streaming.RunEventContext;
+
 import com.alibaba.cloud.ai.graph.agent.context.ToolResultArchive;
 
 import com.alibaba.cloud.ai.graph.GraphLifecycleListener;
@@ -474,7 +478,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		var calls = assistant.getToolCalls();
 		var remaining = IntStream.range(0, calls.size())
 				.filter(i -> !completed.contains(keys.get(i)) && !continuations.isWaiting(keys.get(i)))
-				.mapToObj(i -> new ToolDispatch(keys.get(i), calls.get(i))).toList();
+				.mapToObj(i -> new ToolDispatch(keys.get(i), calls.get(i), i)).toList();
 
 		var batch = remaining.isEmpty() ? new ToolBatch(Map.of(), Map.of())
 				: executeToolCalls(remaining, state, config, execution);
@@ -618,15 +622,41 @@ public class AgentToolNode implements NodeActionWithConfig {
 				toolContextMap.put(AGENT_TOOL_CALL_ID_CONTEXT_KEY, dispatch.key());
 			}
 
-			// Route to async or sync execution based on callback type
+			var scope = config.eventContext().map(events -> events.child(RunEvent.ScopeKind.TOOL, req.getToolName()))
+					.orElse(null);
+			var scopedConfig = scope == null ? config : config.withEventContext(scope);
+			var toolEvents = new ToolEvents(scope, req, dispatch.index());
+			if (scope != null) {
+				toolContextMap.put(AGENT_CONFIG_CONTEXT_KEY, scopedConfig);
+				toolEvents.emit(RunEvent.Type.TOOL_STARTED, scope.options().includeToolArguments() ? req.getArguments() : null);
+			}
 			try {
-				return executeToolByType(toolCallback, req, toolContextMap, config, extraStateFromToolCall,
-						inParallelExecution, cancellationTokens, toolIndex, execution.cancellation());
+				var response = executeToolByType(toolCallback, req, toolContextMap, scopedConfig, extraStateFromToolCall,
+						inParallelExecution, cancellationTokens, toolIndex, execution.cancellation(), toolEvents);
+				boolean cancelled = execution.cancellation().isCancelled() || Thread.currentThread().isInterrupted();
+				boolean failed = response.isError() || toolEvents.failure != null;
+				if ((failed || cancelled) && toolCallback instanceof StreamingToolCallback) {
+					extraStateFromToolCall.clear();
+				}
+				toolEvents.emit(cancelled ? RunEvent.Type.TOOL_CANCELLED
+						: failed ? RunEvent.Type.TOOL_FAILED : RunEvent.Type.TOOL_COMPLETED,
+						cancelled ? null : toolEvents.failure == null ? response.getResult() : toolEvents.failure);
+				return response;
 			}
 			catch (AgentTool.Interrupted interrupted) {
 				pause.set(AgentToolContinuations.PausedCall.from(interrupted, req.getToolName(), req.getArguments()));
 				pauseSignal.set(interrupted);
+				toolEvents.emit(RunEvent.Type.TOOL_PAUSED, interrupted.interruption().interruptionId().orElse(null));
 				throw interrupted;
+			}
+			catch (RuntimeException error) {
+				toolEvents.emit(RunEvent.Type.TOOL_FAILED, RunEventContext.failure(error));
+				throw error;
+			}
+			finally {
+				if (scope != null) {
+					scope.close();
+				}
 			}
 		};
 
@@ -711,11 +741,11 @@ public class AgentToolNode implements NodeActionWithConfig {
 	private ToolCallResponse executeToolByType(ToolCallback toolCallback, ToolCallRequest request,
 			Map<String, Object> toolContextMap, RunnableConfig config, Map<String, Object> extraStateFromToolCall,
 			boolean inParallelExecution, Map<Integer, DefaultCancellationToken> cancellationTokens, int toolIndex,
-			CancellationToken cancellation) {
+			CancellationToken cancellation, ToolEvents events) {
 
 		if (toolCallback instanceof AsyncToolCallback async) {
 			return executeAsyncTool(async, request, toolContextMap, config, extraStateFromToolCall, cancellationTokens,
-					toolIndex, cancellation);
+					toolIndex, cancellation, events);
 		}
 		else if (wrapSyncToolsAsAsync && !inParallelExecution) {
 			// Wrap sync tool as async for unified async execution
@@ -726,10 +756,10 @@ public class AgentToolNode implements NodeActionWithConfig {
 			AsyncToolCallback wrappedAsync = AsyncToolCallbackAdapter.wrapIfNeeded(toolCallback, executor,
 					toolExecutionTimeout);
 			return executeAsyncTool(wrappedAsync, request, toolContextMap, config, extraStateFromToolCall,
-					cancellationTokens, toolIndex, cancellation);
+					cancellationTokens, toolIndex, cancellation, events);
 		}
 		else {
-			return executeSyncTool(toolCallback, request, toolContextMap, config);
+			return executeSyncTool(toolCallback, request, toolContextMap, config, events);
 		}
 	}
 
@@ -761,7 +791,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 	 */
 	private ToolCallResponse executeAsyncTool(AsyncToolCallback callback, ToolCallRequest request,
 			Map<String, Object> toolContextMap, RunnableConfig config, Map<String, Object> extraStateFromToolCall,
-			Map<Integer, DefaultCancellationToken> cancellationTokens, int toolIndex, CancellationToken cancellation) {
+			Map<Integer, DefaultCancellationToken> cancellationTokens, int toolIndex, CancellationToken cancellation,
+			ToolEvents events) {
 
 		ToolContext context = new ToolContext(toolContextMap);
 
@@ -779,7 +810,12 @@ public class AgentToolNode implements NodeActionWithConfig {
 				if (cancellationTokens != null && toolIndex >= 0) {
 					cancellationTokens.put(toolIndex, cancellationToken);
 				}
-				future = cancellable.callAsync(request.getArguments(), context, cancellationToken);
+				if (callback instanceof StreamingToolCallback streaming) {
+					future = streaming.callAsync(request.getArguments(), context, cancellationToken, events::delta);
+				}
+				else {
+					future = cancellable.callAsync(request.getArguments(), context, cancellationToken);
+				}
 			}
 			else {
 				future = callback.callAsync(request.getArguments(), context);
@@ -821,6 +857,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 				return ToolCallResponse.error(request.getToolCallId(), request.getToolName(), extractErrorMessage(cause));
 			}
 			else if (cause instanceof ToolExecutionException toolExecutionException) {
+				events.failed(toolExecutionException);
 				logger.error("Async tool {} execution failed, handling with processor: {}", request.getToolName(),
 						toolExecutionExceptionProcessor.getClass().getName(), toolExecutionException);
 				String result = toolExecutionExceptionProcessor.process(toolExecutionException);
@@ -848,7 +885,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 	 * Execute a sync tool with exception handling.
 	 */
 	private ToolCallResponse executeSyncTool(ToolCallback callback, ToolCallRequest request,
-			Map<String, Object> toolContextMap, RunnableConfig config) {
+			Map<String, Object> toolContextMap, RunnableConfig config, ToolEvents events) {
 
 		ToolContext context = new ToolContext(toolContextMap);
 
@@ -869,6 +906,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 			throw e;
 		}
 		catch (ToolExecutionException e) {
+			events.failed(e);
 			logger.error("Tool {} execution failed, handling with processor: {}", request.getToolName(),
 					toolExecutionExceptionProcessor.getClass().getName(), e);
 			String result = toolExecutionExceptionProcessor.process(e);
@@ -970,7 +1008,41 @@ public class AgentToolNode implements NodeActionWithConfig {
 			AgentToolContinuations continuations, CancellationToken cancellation) {
 	}
 
-	private record ToolDispatch(String key, AssistantMessage.ToolCall call) {
+	private static final class ToolEvents {
+
+		private final RunEventContext scope;
+		private final ToolCallRequest request;
+		private final int index;
+		private RunEvent.Failure failure;
+
+		private ToolEvents(RunEventContext scope, ToolCallRequest request, int index) {
+			this.scope = scope;
+			this.request = request;
+			this.index = index;
+		}
+
+		private void emit(RunEvent.Type type, Object value) {
+			if (scope != null) {
+				scope.emit(type, payload(value));
+			}
+		}
+
+		private Mono<Void> delta(Object value) {
+			return scope == null ? Mono.empty() : scope.emitReactive(RunEvent.Type.TOOL_DELTA, payload(value));
+		}
+
+		private void failed(Throwable cause) {
+			if (scope != null) {
+				failure = RunEventContext.failure(cause);
+			}
+		}
+
+		private RunEvent.Tool payload(Object value) {
+			return new RunEvent.Tool(request.getToolCallId(), index, request.getToolName(), value);
+		}
+	}
+
+	private record ToolDispatch(String key, AssistantMessage.ToolCall call, int index) {
 	}
 
 	private record ToolOutcome(ToolCallResponse response, AgentToolContinuations.PausedCall pause) {
