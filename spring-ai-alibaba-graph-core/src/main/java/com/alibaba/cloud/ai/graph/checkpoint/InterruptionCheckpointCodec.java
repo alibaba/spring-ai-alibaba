@@ -35,6 +35,13 @@ public final class InterruptionCheckpointCodec {
 	}
 
 	public static Map<String, Object> encodePause(InterruptionMetadata interruption) {
+		var data = new HashMap<>(encodeRequest(interruption));
+		data.put("state", encode(interruption.state().data()));
+		return data;
+	}
+
+	/** Encodes a request whose state is already stored in its containing checkpoint. */
+	public static Map<String, Object> encodeRequest(InterruptionMetadata interruption) {
 		var decisions = interruption.toolFeedbacks().stream().map(feedback -> {
 			Map<String, Object> decision = new HashMap<>();
 			decision.put("id", feedback.getId());
@@ -42,6 +49,8 @@ public final class InterruptionCheckpointCodec {
 			decision.put("arguments", feedback.getArguments());
 			decision.put("result", feedback.getResult() == null ? null : feedback.getResult().name());
 			decision.put("description", feedback.getDescription());
+			decision.put("allowedDecisions", feedback.getAllowedDecisions().stream().map(FeedbackResult::name).toList());
+			decision.put("response", feedback.getResponse());
 			return decision;
 		}).toList();
 		var approved = interruption.getToolsAutomaticallyApproved().stream().map(call -> {
@@ -52,7 +61,7 @@ public final class InterruptionCheckpointCodec {
 			tool.put("type", call.type());
 			return tool;
 		}).toList();
-		return Map.of("node", interruption.node(), "state", encode(interruption.state().data()),
+		return Map.of("node", interruption.node(),
 				"metadata", encode(interruption.metadata().orElseGet(Map::of)), "decisions", decisions, "approved",
 				approved, "children",
 				interruption.pendingInterruptions().stream().map(InterruptionCheckpointCodec::encodePause).toList());
@@ -60,10 +69,24 @@ public final class InterruptionCheckpointCodec {
 
 	@SuppressWarnings("unchecked")
 	public static InterruptionMetadata decodePause(Map<String, Object> data) {
+		return decodeRequest(data, new OverAllState(decode((Map<String, Object>) data.get("state"))));
+	}
+
+	@SuppressWarnings("unchecked")
+	public static InterruptionMetadata decodeRequest(Map<String, Object> data, OverAllState state) {
 		var decisions = ((List<Map<String, Object>>) data.get("decisions")).stream()
-				.map(decision -> new ToolFeedback((String) decision.get("id"), (String) decision.get("name"),
-						(String) decision.get("arguments"), decision.get("result") instanceof String result
-								? FeedbackResult.valueOf(result) : null, (String) decision.get("description")))
+				.map(decision -> {
+					var builder = ToolFeedback.builder().id((String) decision.get("id"))
+							.name((String) decision.get("name")).arguments((String) decision.get("arguments"))
+							.description((String) decision.get("description")).response((String) decision.get("response"));
+					if (decision.get("result") instanceof String result) {
+						builder.type(result);
+					}
+					if (decision.get("allowedDecisions") instanceof List<?> allowed) {
+						builder.allowedDecisions(allowed.stream().map(Object::toString).map(FeedbackResult::valueOf).toList());
+					}
+					return builder.build();
+				})
 				.toList();
 		var approved = ((List<Map<String, Object>>) data.get("approved")).stream()
 				.map(call -> new ToolCall((String) call.get("id"), (String) call.get("type"),
@@ -73,7 +96,7 @@ public final class InterruptionCheckpointCodec {
 				.map(InterruptionCheckpointCodec::decodePause)
 				.toList();
 		return new InterruptionMetadata.Builder(decode((Map<String, Object>) data.get("metadata")))
-				.nodeId((String) data.get("node")).state(new OverAllState(decode((Map<String, Object>) data.get("state"))))
+				.nodeId((String) data.get("node")).state(state)
 				.toolFeedbacks(decisions).toolsAutomaticallyApproved(approved).pendingInterruptions(children).build();
 	}
 

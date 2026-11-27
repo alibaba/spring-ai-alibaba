@@ -124,7 +124,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 				return Flux.just(GraphResponse.error(RunnableErrors.missingNode.exception(currentNodeId)));
 			}
 
-			if (action instanceof InterruptableAction) {
+			if (action instanceof InterruptableAction interruptable) {
 				context.getConfig().metadata(RunnableConfig.STATE_UPDATE_METADATA_KEY).ifPresent(updateFromFeedback -> {
 					if (updateFromFeedback instanceof Map<?, ?>) {
 						context.mergeIntoCurrentState((Map<String, Object>) updateFromFeedback);
@@ -132,11 +132,17 @@ public class NodeExecutor extends BaseGraphExecutor {
 						throw new RuntimeException();
 					}
 				});
-				Optional<InterruptionMetadata> interruptMetadata = ((InterruptableAction) action)
-					.interrupt(currentNodeId, context.cloneState(context.getCurrentStateData()), context.getConfig());
+				var state = context.cloneState(context.getCurrentStateData());
+				var pending = context.pendingInterruption(state);
+				var interruptMetadata = interruptable.interrupt(currentNodeId, state, context.getConfig(), pending);
 				if (interruptMetadata.isPresent()) {
-					resultValue.set(interruptMetadata.get());
-					return Flux.just(GraphResponse.done(interruptMetadata.get()));
+					var interruption = interruptMetadata.get();
+					if (interruption.interruptionId().isPresent()
+							&& !interruption.interruptionId().equals(pending.flatMap(InterruptionMetadata::interruptionId))) {
+						context.checkpointPendingInterruption(interruption);
+					}
+					resultValue.set(interruption);
+					return Flux.just(GraphResponse.done(interruption));
 				}
 			}
 
@@ -281,7 +287,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 					}
 					var branchFeedback = taskId.equals(selectedTask) ? feedback : null;
 					var result = new AtomicReference<BranchResult>();
-					return executeBranch(context, branchInput, branch, index, branchFeedback, feedbackStateUpdate,
+					return executeBranch(context, branchInput, branch, index, previousPause, branchFeedback, feedbackStateUpdate,
 									journal.restorePausedWrites(taskId), result::set)
 						.subscribeOn(scheduler)
 						.collectList()
@@ -331,7 +337,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 					return Flux.empty();
 				}
 				var branchFeedback = taskId.equals(selectedTask) ? feedback : null;
-				return executeBranch(context, branchInput, branch, index, branchFeedback, feedbackStateUpdate,
+				return executeBranch(context, branchInput, branch, index, interruptionsByTask.get(taskId),
+						branchFeedback, feedbackStateUpdate,
 						journal.restorePausedWrites(taskId), result -> {
 					if (result.interruption() == null) {
 						journal.saveWrites(taskId, result.updates());
@@ -368,7 +375,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 	}
 
 	private Flux<GraphResponse<NodeOutput>> executeBranch(GraphRunnerContext context, OverAllState input,
-			ParallelNode.Branch branch, int index, InterruptionMetadata feedback, Optional<Object> feedbackStateUpdate,
+			ParallelNode.Branch branch, int index, InterruptionMetadata pending, InterruptionMetadata feedback,
+			Optional<Object> feedbackStateUpdate,
 			List<Map<String, Object>> priorWrites, Consumer<BranchResult> completed) {
 		return Flux.defer(() -> {
 			var state = input.snapShot().orElseThrow();
@@ -400,7 +408,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 				completed.accept(new BranchResult(writes, pause, result.streamed()));
 			};
 			if (branch.action() instanceof InterruptableAction action) {
-				var pause = action.interrupt(branch.nodeId(), state.snapShot().orElseThrow(), config);
+				var pause = action.interrupt(branch.nodeId(), state.snapShot().orElseThrow(), config, Optional.ofNullable(pending));
 				if (pause.isPresent()) {
 					withInterruptionId.accept(new BranchResult(List.of(), pause.get(), false));
 					return Flux.empty();

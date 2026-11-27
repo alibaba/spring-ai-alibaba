@@ -94,6 +94,9 @@ public class ToolRequestConfirmMessageDTO implements MessageDTO {
 				toolFeedback.setName(feedback.getName());
 				toolFeedback.setArguments(feedback.getArguments());
 				toolFeedback.setDescription(feedback.getDescription());
+				toolFeedback.setAllowedDecisions(feedback.getAllowedDecisions().stream()
+						.map(decision -> ToolFeedback.FeedbackResult.valueOf(decision.name())).toList());
+				toolFeedback.setResponse(feedback.getResponse());
 
 				// Convert FeedbackResult
 				if (feedback.getResult() != null) {
@@ -140,21 +143,7 @@ public class ToolRequestConfirmMessageDTO implements MessageDTO {
 		// Convert ToolFeedback to InterruptionMetadata.ToolFeedback
 		if (this.toolFeedback != null && !this.toolFeedback.isEmpty()) {
 			for (ToolFeedback feedback : this.toolFeedback) {
-				InterruptionMetadata.ToolFeedback.FeedbackResult result =
-						feedback.getResult() != null
-								? InterruptionMetadata.ToolFeedback.FeedbackResult.valueOf(feedback.getResult().name())
-								: InterruptionMetadata.ToolFeedback.FeedbackResult.APPROVED;
-
-				InterruptionMetadata.ToolFeedback interruptionToolFeedback =
-						new InterruptionMetadata.ToolFeedback(
-								feedback.getId(),
-								feedback.getName(),
-								feedback.getArguments(),
-								result,
-								feedback.getDescription()
-						);
-
-				builder.addToolFeedback(interruptionToolFeedback);
+				builder.addToolFeedback(feedback.toGraphFeedback());
 			}
 		}
 
@@ -239,7 +228,28 @@ public class ToolRequestConfirmMessageDTO implements MessageDTO {
 		@JsonProperty("description")
 		private String description;
 
+		@JsonInclude(JsonInclude.Include.NON_NULL)
+		@JsonProperty("allowedDecisions")
+		private List<FeedbackResult> allowedDecisions;
+
+		@JsonInclude(JsonInclude.Include.NON_NULL)
+		@JsonProperty("response")
+		private String response;
+
 		public ToolFeedback() {
+		}
+
+		public InterruptionMetadata.ToolFeedback toGraphFeedback() {
+			var builder = InterruptionMetadata.ToolFeedback.builder().id(id).name(name)
+					.arguments(arguments).description(description).response(response);
+			if (result != null) {
+				builder.type(result.name());
+			}
+			if (allowedDecisions != null) {
+				builder.allowedDecisions(allowedDecisions.stream()
+						.map(value -> InterruptionMetadata.ToolFeedback.FeedbackResult.valueOf(value.name())).toList());
+			}
+			return builder.build();
 		}
 
 		// Getters and Setters
@@ -284,13 +294,30 @@ public class ToolRequestConfirmMessageDTO implements MessageDTO {
 			this.description = description;
 		}
 
+		public List<FeedbackResult> getAllowedDecisions() {
+			return allowedDecisions;
+		}
+
+		public void setAllowedDecisions(List<FeedbackResult> allowedDecisions) {
+			this.allowedDecisions = allowedDecisions;
+		}
+
+		public String getResponse() {
+			return response;
+		}
+
+		public void setResponse(String response) {
+			this.response = response;
+		}
+
 		/**
 		 * Enum for ToolFeedback result.
 		 */
 		public enum FeedbackResult {
 			APPROVED,
 			REJECTED,
-			EDITED;
+			EDITED,
+			RESPONDED
 		}
 	}
 
