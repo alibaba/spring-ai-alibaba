@@ -32,6 +32,7 @@ import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,7 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -77,7 +77,9 @@ public class KnowledgeRetrievalNode implements NodeAction {
 
 	private VectorStore vectorStore;
 
-	List<Document> documents;
+	private DocumentRetriever documentRetriever;
+
+	private boolean augmentPrompt = true;
 
 	// When some properties have both key and value set (e.g. userPrompt and userPromptKey), prioritize using the value from state key or the preset value
 	private boolean isKeyFirst = true;
@@ -93,8 +95,6 @@ public class KnowledgeRetrievalNode implements NodeAction {
 	private Double vectorWeight;
 
 	private static final Logger logger = LoggerFactory.getLogger(KnowledgeRetrievalNode.class);
-
-	private final Map<String, Optional<Object>> configBackupMap = new ConcurrentHashMap<>();
 
 	public KnowledgeRetrievalNode() {
 	}
@@ -115,89 +115,45 @@ public class KnowledgeRetrievalNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		backupAndRestore(true);
-		initNodeWithState(state);
-		DocumentRetriever documentRetriever = VectorStoreDocumentRetriever.builder()
-			.similarityThreshold(similarityThreshold)
-			.topK(topK)
-			.filterExpression(filterExpression)
-			.vectorStore(vectorStore)
-			.build();
-		Query query = new Query(userPrompt);
-		documents = documentRetriever.retrieve(query);
-		documents = enableRanker
-				? ranking(query, documents, new KnowledgeRetrievalDocumentRanker(rerankModel, rerankOptions))
-				: documents;
-		StringBuilder newUserPrompt = new StringBuilder(userPrompt);
-		for (Document document : documents) {
-			newUserPrompt.append("Document: ").append(document.getFormattedContent()).append("\n");
+		String prompt = resolve(state, this.userPromptKey, this.userPrompt);
+		Query query = new Query(prompt);
+		List<Document> documents = retriever(state).retrieve(query);
+		if (Boolean.TRUE.equals(resolve(state, this.enableRankerKey, this.enableRanker))) {
+			RerankModel model = resolve(state, this.rerankModelKey, this.rerankModel);
+			DashScopeRerankOptions options = resolve(state, this.rerankOptionsKey, this.rerankOptions);
+			documents = ranking(query, documents, new KnowledgeRetrievalDocumentRanker(model, options));
 		}
-		Map<String, Object> updatedState = new HashMap<>();
 
-		if (StringUtils.hasLength(this.userPromptKey)) {
-			updatedState.put(this.userPromptKey, newUserPrompt.toString());
-		}
-		else {
-			updatedState.put("user_prompt", newUserPrompt.toString());
+		Map<String, Object> updatedState = new HashMap<>();
+		if (this.augmentPrompt) {
+			StringBuilder newUserPrompt = new StringBuilder(prompt);
+			for (Document document : documents) {
+				newUserPrompt.append("Document: ").append(document.getFormattedContent()).append("\n");
+			}
+			String promptKey = StringUtils.hasLength(this.userPromptKey) ? this.userPromptKey : "user_prompt";
+			updatedState.put(promptKey, newUserPrompt.toString());
 		}
 		updatedState.put(Optional.ofNullable(this.outputKey).orElse("output"), documents);
-		backupAndRestore(false);
 		return updatedState;
 	}
 
-	private boolean check(Object obj, String key) {
-		return (obj == null && StringUtils.hasLength(key) && !this.isKeyFirst)
-				|| (StringUtils.hasLength(key) && this.isKeyFirst);
+	private DocumentRetriever retriever(OverAllState state) {
+		if (this.documentRetriever != null) {
+			return this.documentRetriever;
+		}
+		return VectorStoreDocumentRetriever.builder()
+			.similarityThreshold(resolve(state, this.similarityThresholdKey, this.similarityThreshold))
+			.topK(resolve(state, this.topKKey, this.topK))
+			.filterExpression(resolve(state, this.filterExpressionKey, this.filterExpression))
+			.vectorStore(resolve(state, this.vectorStoreKey, this.vectorStore))
+			.build();
 	}
 
-	private void backupAndRestore(boolean isBackup) {
-		if (isBackup) {
-			configBackupMap.put("userPrompt", Optional.ofNullable(this.userPrompt));
-			configBackupMap.put("topK", Optional.ofNullable(this.topK));
-			configBackupMap.put("similarityThreshold", Optional.ofNullable(this.similarityThreshold));
-			configBackupMap.put("filterExpression", Optional.ofNullable(this.filterExpression));
-			configBackupMap.put("enableRanker", Optional.ofNullable(this.enableRanker));
-			configBackupMap.put("rerankModel", Optional.ofNullable(this.rerankModel));
-			configBackupMap.put("rerankOptions", Optional.ofNullable(this.rerankOptions));
-			configBackupMap.put("vectorStore", Optional.ofNullable(this.vectorStore));
+	private <T> T resolve(OverAllState state, String key, T value) {
+		if (StringUtils.hasLength(key) && (this.isKeyFirst || value == null)) {
+			return state.<T>value(key).orElse(value);
 		}
-		else {
-			this.userPrompt = (String) configBackupMap.get("userPrompt").orElse(null);
-			this.topK = (Integer) configBackupMap.get("topK").orElse(null);
-			this.similarityThreshold = (Double) configBackupMap.get("similarityThreshold").orElse(null);
-			this.filterExpression = (Filter.Expression) configBackupMap.get("filterExpression").orElse(null);
-			this.enableRanker = (Boolean) configBackupMap.get("enableRanker").orElse(null);
-			this.rerankModel = (RerankModel) configBackupMap.get("rerankModel").orElse(null);
-			this.vectorStore = (VectorStore) configBackupMap.get("vectorStore").orElse(null);
-		}
-	}
-
-	private void initNodeWithState(OverAllState state) {
-		if (check(this.userPrompt, this.userPromptKey)) {
-			this.userPrompt = (String) state.value(userPromptKey).orElse(this.userPrompt);
-		}
-		if (check(this.topK, this.topKKey)) {
-			this.topK = (Integer) state.value(topKKey).orElse(this.topK);
-		}
-
-		if (check(this.similarityThreshold, this.similarityThresholdKey)) {
-			this.similarityThreshold = (Double) state.value(similarityThresholdKey).orElse(this.similarityThreshold);
-		}
-		if (check(this.filterExpression, this.filterExpressionKey)) {
-			this.filterExpression = (Filter.Expression) state.value(filterExpressionKey).orElse(this.filterExpression);
-		}
-		if (check(this.enableRanker, this.enableRankerKey)) {
-			this.enableRanker = (Boolean) state.value(enableRankerKey).orElse(this.enableRanker);
-		}
-		if (check(this.rerankModel, this.rerankModelKey)) {
-			this.rerankModel = (RerankModel) state.value(rerankModelKey).orElse(this.rerankModel);
-		}
-		if (check(this.rerankOptions, this.rerankOptionsKey)) {
-			this.rerankOptions = (DashScopeRerankOptions) state.value(rerankOptionsKey).orElse(this.rerankOptions);
-		}
-		if (check(this.vectorStore, this.vectorStoreKey)) {
-			this.vectorStore = (VectorStore) state.value(vectorStoreKey).orElse(this.vectorStore);
-		}
+		return value;
 	}
 
 	private List<Document> ranking(Query query, List<Document> documents, DocumentPostProcessor documentPostProcessor) {
@@ -300,6 +256,10 @@ public class KnowledgeRetrievalNode implements NodeAction {
 
 		private VectorStore vectorStore;
 
+		private DocumentRetriever documentRetriever;
+
+		private boolean augmentPrompt = true;
+
 		private String outputKey;
 
 		private String retrievalMode;
@@ -397,6 +357,28 @@ public class KnowledgeRetrievalNode implements NodeAction {
 			return this;
 		}
 
+		/**
+		 * Use a Spring AI retriever with its own search options. Vector store, top-K,
+		 * similarity threshold and filter settings must be configured on the retriever.
+		 * @param documentRetriever the retriever to call with the resolved prompt
+		 * @return this builder
+		 */
+		public Builder documentRetriever(DocumentRetriever documentRetriever) {
+			Assert.notNull(documentRetriever, "documentRetriever cannot be null");
+			this.documentRetriever = documentRetriever;
+			return this;
+		}
+
+		/**
+		 * Control whether document content is appended to the prompt in graph state.
+		 * @param augmentPrompt whether to write the augmented prompt (defaults to true)
+		 * @return this builder
+		 */
+		public Builder augmentPrompt(boolean augmentPrompt) {
+			this.augmentPrompt = augmentPrompt;
+			return this;
+		}
+
 		public Builder outputKey(String outputKey) {
 			this.outputKey = outputKey;
 			return this;
@@ -428,6 +410,19 @@ public class KnowledgeRetrievalNode implements NodeAction {
 		}
 
 		public KnowledgeRetrievalNode build() {
+			if (this.documentRetriever != null) {
+				Assert.state(this.vectorStore == null && !StringUtils.hasLength(this.vectorStoreKey)
+						&& this.topK == null && !StringUtils.hasLength(this.topKKey)
+						&& this.similarityThreshold == null && !StringUtils.hasLength(this.similarityThresholdKey)
+						&& this.filterExpression == null && !StringUtils.hasLength(this.filterExpressionKey)
+						&& this.retrievalMode == null && this.embeddingModelName == null
+						&& this.embeddingProviderName == null && this.vectorWeight == null,
+						"Configure search options on the documentRetriever instead of on the node");
+			}
+			Assert.state(this.augmentPrompt || !Objects.equals(
+					StringUtils.hasLength(this.userPromptKey) ? this.userPromptKey : "user_prompt",
+					Optional.ofNullable(this.outputKey).orElse("output")),
+					"The input and output keys must differ when augmentPrompt is disabled");
 			KnowledgeRetrievalNode knowledgeRetrievalNode = new KnowledgeRetrievalNode();
 			knowledgeRetrievalNode.userPromptKey = this.userPromptKey;
 			knowledgeRetrievalNode.userPrompt = this.userPrompt;
@@ -445,6 +440,8 @@ public class KnowledgeRetrievalNode implements NodeAction {
 			knowledgeRetrievalNode.rerankOptions = this.rerankOptions;
 			knowledgeRetrievalNode.vectorStoreKey = this.vectorStoreKey;
 			knowledgeRetrievalNode.vectorStore = this.vectorStore;
+			knowledgeRetrievalNode.documentRetriever = this.documentRetriever;
+			knowledgeRetrievalNode.augmentPrompt = this.augmentPrompt;
 			knowledgeRetrievalNode.outputKey = this.outputKey;
 			knowledgeRetrievalNode.retrievalMode = this.retrievalMode;
 			knowledgeRetrievalNode.embeddingModelName = this.embeddingModelName;
