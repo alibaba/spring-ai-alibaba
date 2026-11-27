@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.agent.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.GraphLifecycleListener;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.agent.context.CheckpointContextCompaction;
 import com.alibaba.cloud.ai.graph.agent.context.ContextWindowPolicy;
@@ -31,6 +32,8 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.InterceptorChain;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolCallbackUtils;
 import com.alibaba.cloud.ai.graph.agent.interceptor.StreamingModelInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.modelfallback.ModelFallbackInterceptor;
+import com.alibaba.cloud.ai.graph.agent.model.ModelRoutingPolicy;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientAttributes;
@@ -103,6 +106,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	private final ContextWindowPolicy contextWindowPolicy;
 
+	private final ModelRoutingPolicy modelRoutingPolicy;
+
 	private final CheckpointContextCompaction checkpointContextCompaction;
 
 	public AgentLlmNode(Builder builder) {
@@ -128,6 +133,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		this.chatOptions = builder.chatOptions instanceof ToolCallingChatOptions options ? options : null;
 		this.enableReasoningLog = builder.enableReasoningLog;
 		this.contextWindowPolicy = builder.contextWindowPolicy;
+		this.modelRoutingPolicy = builder.modelRoutingPolicy;
 		this.checkpointContextCompaction = builder.checkpointContextCompaction;
 	}
 
@@ -231,7 +237,9 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			requestBuilder.systemMessage(new SystemMessage(this.systemPrompt));
 		}
 
-		ModelRequest modelRequest = requestBuilder.build();
+		ModelRequest modelRequest = route(requestBuilder.build(), state, updatedState);
+		boolean propagateModelErrors = this.contextWindowPolicy != null || this.modelRoutingPolicy != null
+				|| this.modelInterceptors.stream().anyMatch(ModelFallbackInterceptor.class::isInstance);
 
 		// add streaming support
 		boolean stream = config.metadata("_stream_", new TypeRef<Boolean>(){}).orElse(true);
@@ -268,7 +276,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 					}
 					return ModelResponse.of(chatResponseFlux);
 				} catch (RuntimeException e) {
-					if (this.contextWindowPolicy != null) {
+					if (propagateModelErrors || request.getModelTarget() != null) {
 						throw e;
 					}
 					logger.error("Exception during streaming model call: ", e);
@@ -324,7 +332,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 					return ModelResponse.of(responseMessage, response);
 				} catch (RuntimeException e) {
-					if (this.contextWindowPolicy != null) {
+					if (propagateModelErrors || request.getModelTarget() != null) {
 						throw e;
 					}
 					logger.error("Exception during invoking model call: ", e);
@@ -355,6 +363,24 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 			return updatedState;
 		}
+	}
+
+	private ModelRequest route(ModelRequest request, OverAllState state, Map<String, Object> updates) {
+		if (this.modelRoutingPolicy == null) {
+			return request;
+		}
+		String key = "_MODEL_ROUTE_:" + this.agentName;
+		var executionId = state.value(GraphLifecycleListener.EXECUTION_ID_KEY, String.class);
+		String name;
+		if (executionId.isPresent() && state.value(key).orElse(null) instanceof Map<?, ?> route
+				&& executionId.get().equals(route.get("executionId")) && route.get("name") instanceof String saved) {
+			name = saved;
+		}
+		else {
+			name = this.modelRoutingPolicy.select(request);
+			executionId.ifPresent(id -> updates.put(key, Map.of("executionId", id, "name", name)));
+		}
+		return ModelRequest.builder(request).modelTarget(this.modelRoutingPolicy.target(name)).build();
 	}
 
 	private ChatResponse markStreamedResponse(ChatResponse response, RequestToolScope scope, RunnableConfig config) {
@@ -495,6 +521,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		var options = request.getOptions();
 		var originalOptions = originalRequest.getOptions();
 		var optionCallbacks = options != null ? options.getToolCallbacks() : null;
+		var target = request.getModelTarget();
+		var targetModel = target == null ? null : target.model();
+		var targetOptions = targetModel == null ? null : targetModel.getOptions();
+		var policy = target != null && target.contextWindowPolicy() != null
+				? target.contextWindowPolicy() : this.contextWindowPolicy;
 		boolean replaceDefaults = options != null && !Objects.equals(optionCallbacks,
 				originalOptions != null ? originalOptions.getToolCallbacks() : null);
 		var requestCallbacks = replaceDefaults ? ToolCallbackUtils.deduplicateByName(optionCallbacks)
@@ -507,8 +538,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 						ChatClientAttributes.TOOL_CALLING_ADVISOR_AUTO_REGISTER.getKey(), false))
 				.advisors(this.advisors);
 		var prepare = scope.prepareAdvisor(requestCallbacks, request.getDynamicToolCallbacks(), replaceDefaults,
-				selection);
-		var capture = scope.captureAdvisor(selection, this.contextWindowPolicy);
+				selection, targetOptions);
+		var capture = scope.captureAdvisor(selection, policy, targetModel);
 		if (promptSpec instanceof DefaultChatClientRequestSpec spec) {
 			// Graph owns dispatch and approval. On equal order ChatClient runs the
 			// last registered advisor first, so put capture before other registrations.
@@ -519,7 +550,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		else {
 			promptSpec.advisors(prepare, capture);
 		}
-		if (options != null) {
+		if (options != null && targetModel == null) {
 			// Keep provider options. Callback merging is handled after ChatClient has
 			// applied its model defaults and tool providers.
 			promptSpec.options(options.mutate().toolCallbacks((List<ToolCallback>) null));
@@ -555,6 +586,13 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		private ChatOptions chatOptions;
 
 		private ContextWindowPolicy contextWindowPolicy;
+
+		private ModelRoutingPolicy modelRoutingPolicy;
+
+		public Builder modelRouting(ModelRoutingPolicy policy) {
+			this.modelRoutingPolicy = policy;
+			return this;
+		}
 
 		private CheckpointContextCompaction checkpointContextCompaction;
 

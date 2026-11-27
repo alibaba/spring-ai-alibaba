@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor;
 
+import com.alibaba.cloud.ai.graph.agent.model.ModelTarget;
+
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -34,6 +36,7 @@ public class ModelRequest {
 	private final Map<String, Object> context;
 	private final List<Message> messages;
 	private final ToolCallingChatOptions options;
+	private final ModelTarget modelTarget;
 	private final List<String> tools;
 	private final boolean toolSelectionSpecified;
 	// dynamic tool callbacks for current request.
@@ -45,15 +48,16 @@ public class ModelRequest {
 	public ModelRequest(SystemMessage systemMessage, List<Message> messages, ToolCallingChatOptions options,
 			List<String> tools, List<ToolCallback> dynamicToolCallbacks, Map<String, String> toolDescriptions,
 			Map<String, Object> context) {
-		this(systemMessage, messages, options, tools, dynamicToolCallbacks, toolDescriptions, context, tools != null);
+		this(systemMessage, messages, options, tools, dynamicToolCallbacks, toolDescriptions, context, tools != null, null);
 	}
 
 	private ModelRequest(SystemMessage systemMessage, List<Message> messages, ToolCallingChatOptions options,
 			List<String> tools, List<ToolCallback> dynamicToolCallbacks, Map<String, String> toolDescriptions,
-			Map<String, Object> context, boolean toolSelectionSpecified) {
+			Map<String, Object> context, boolean toolSelectionSpecified, ModelTarget modelTarget) {
 		this.systemMessage = systemMessage;
 		this.messages = messages;
 		this.options = options;
+		this.modelTarget = modelTarget;
 		this.tools = tools != null ? tools : List.of();
 		this.toolSelectionSpecified = toolSelectionSpecified;
 		this.dynamicToolCallbacks = dynamicToolCallbacks;
@@ -70,6 +74,7 @@ public class ModelRequest {
 				.systemMessage(request.systemMessage)
 				.messages(request.messages)
 				.options(request.options)
+				.modelTarget(request.modelTarget)
 				.availableTools(request.tools)
 				.dynamicToolCallbacks(request.dynamicToolCallbacks)
 				.toolDescriptions(request.toolDescriptions)
@@ -88,6 +93,10 @@ public class ModelRequest {
 
 	public ToolCallingChatOptions getOptions() {
 		return options;
+	}
+
+	public ModelTarget getModelTarget() {
+		return this.modelTarget;
 	}
 
 	public List<String> getTools() {
@@ -114,6 +123,7 @@ public class ModelRequest {
 		private SystemMessage systemMessage;
 		private List<Message> messages;
 		private ToolCallingChatOptions options;
+		private ModelTarget modelTarget;
 		private List<String> tools = List.of();
 		private boolean toolSelectionSpecified;
 		private List<ToolCallback> dynamicToolCallbacks = List.of();
@@ -134,6 +144,11 @@ public class ModelRequest {
 
 		public Builder options(ToolCallingChatOptions options) {
 			this.options = options;
+			return this;
+		}
+
+		public Builder modelTarget(ModelTarget modelTarget) {
+			this.modelTarget = modelTarget;
 			return this;
 		}
 
@@ -180,7 +195,7 @@ public class ModelRequest {
 
 		public ModelRequest build() {
 			return new ModelRequest(systemMessage, messages, options, tools, dynamicToolCallbacks, toolDescriptions,
-					context, toolSelectionSpecified);
+					context, toolSelectionSpecified, modelTarget);
 		}
 	}
 }

@@ -66,22 +66,24 @@ public class DefaultBuilder extends Builder {
 		}
 
 		// Validate either chatClient or model is provided
-		if (chatClient == null && model == null) {
+		ChatModel defaultModel = model == null && this.modelRoutingPolicy != null
+				? this.modelRoutingPolicy.defaultTarget().model() : model;
+		if (chatClient == null && defaultModel == null) {
 			throw new IllegalArgumentException("Either chatClient or model must be provided");
 		}
 
 		// Get source options from ChatClient (when provided) or from ChatModel (when building from model).
 		ChatOptions sourceOptions = (chatClient != null)
 				? getChatClientDefaultOptions(chatClient)
-				: getChatModelDefaultOptions(model);
+				: getChatModelDefaultOptions(defaultModel);
 		ChatOptions effectiveOptions = mergeSourceOptionsWithAgentOptions(sourceOptions, this.chatOptions);
 
 		if (chatClient == null) {
-			ChatModel effectiveModel = withDefaultOptions(model, effectiveOptions);
+			ChatModel effectiveModel = withDefaultOptions(defaultModel, effectiveOptions);
 			ChatClient.Builder clientBuilder = ChatClient.builder(effectiveModel,
 					this.observationRegistry == null ? ObservationRegistry.NOOP : this.observationRegistry,
 					this.customObservationConvention, this.advisorObservationConvention);
-			if (effectiveOptions != null && effectiveModel == model) {
+			if (effectiveOptions != null && effectiveModel == defaultModel) {
 				clientBuilder.defaultOptions(effectiveOptions.mutate());
 			}
 			chatClient = clientBuilder.build();
@@ -99,6 +101,7 @@ public class DefaultBuilder extends Builder {
 				.agentName(this.name)
 				.chatOptions(effectiveOptions)
 				.contextWindowPolicy(this.contextWindowPolicy)
+				.modelRouting(this.modelRoutingPolicy)
 				.chatClient(chatClient);
 
 		if (outputKey != null && !outputKey.isEmpty()) {
