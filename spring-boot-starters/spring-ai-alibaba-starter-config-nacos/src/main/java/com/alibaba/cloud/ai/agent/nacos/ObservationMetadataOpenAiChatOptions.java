@@ -44,9 +44,9 @@ final class ObservationMetadataOpenAiChatOptions extends OpenAiChatOptions imple
 				options.getLogprobs(), options.getTopLogprobs(), options.getMaxCompletionTokens(), options.getN(),
 				copyList(options.getOutputModalities()), options.getOutputAudio(), options.getResponseFormat(),
 				options.getStreamOptions(), options.getSeed(), options.getToolChoice(), options.getUser(),
-				options.getParallelToolCalls(), options.getStore(), copyMap(options.getMetadata()),
+				options.getParallelToolCalls(), options.getStore(), options.getStrict(), copyMap(options.getMetadata()),
 				options.getReasoningEffort(), options.getVerbosity(), options.getServiceTier(),
-				options.getPromptCacheKey(), copyMap(options.getExtraBody()));
+				options.getPromptCacheKey(), options.getReplayReasoningContent(), copyMap(options.getExtraBody()));
 		this.observationMetadata = sharedObservationMetadata ? useObservationMetadata(observationMetadata)
 				: copyObservationMetadata(observationMetadata);
 	}
@@ -148,11 +148,13 @@ final class ObservationMetadataOpenAiChatOptions extends OpenAiChatOptions imple
 			this.user = options.getUser();
 			this.parallelToolCalls = options.getParallelToolCalls();
 			this.store = options.getStore();
+			this.strict = options.getStrict();
 			this.metadata = copyMap(options.getMetadata());
 			this.reasoningEffort = options.getReasoningEffort();
 			this.verbosity = options.getVerbosity();
 			this.serviceTier = options.getServiceTier();
 			this.promptCacheKey = options.getPromptCacheKey();
+			this.replayReasoningContent = options.getReplayReasoningContent();
 			this.extraBody = copyMap(options.getExtraBody());
 		}
 

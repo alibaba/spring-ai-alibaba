@@ -31,7 +31,11 @@ import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
+import com.alibaba.cloud.ai.graph.serializer.MessagePartsCodec;
+
+import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SerializationHelper.PARTS_FIELD;
 import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SerializationHelper.deserializeMetadata;
+import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SerializationHelper.serializeParts;
 import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SerializationHelper.serializeMetadata;
 
 public interface UserMessageHandler {
@@ -71,12 +75,7 @@ public interface UserMessageHandler {
 		private void serializeFields(UserMessage msg, JsonGenerator gen, SerializerProvider provider) throws IOException {
 			gen.writeStringField(Field.TEXT.name, msg.getText());
 			serializeMetadata(gen, msg.getMetadata());
-
-			// gen.writeArrayFieldStart( Property.MEDIA.field);
-			// for (var media : msg.getMedia()) {
-			// gen.writeObject(media);
-			// }
-			// gen.writeEndArray();
+			serializeParts(gen, msg);
 		}
 	}
 
@@ -91,8 +90,13 @@ public interface UserMessageHandler {
 			var mapper = (ObjectMapper) jsonParser.getCodec();
 			ObjectNode node = mapper.readTree(jsonParser);
 
-			var text = node.findValue(Field.TEXT.name).asText();
 			var metadata = deserializeMetadata(mapper, node);
+			if (node.hasNonNull(PARTS_FIELD)) {
+				return UserMessage.builder().parts(MessagePartsCodec.read(node.get(PARTS_FIELD).toString()))
+						.metadata(metadata).build();
+			}
+
+			var text = node.findValue(Field.TEXT.name).asText();
 
 			return UserMessage.builder().text(text).metadata(metadata).build();
 

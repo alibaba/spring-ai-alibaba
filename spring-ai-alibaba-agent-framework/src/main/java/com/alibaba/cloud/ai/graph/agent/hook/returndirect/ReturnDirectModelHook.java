@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent.hook.returndirect;
 
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.Prioritized;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
@@ -26,6 +27,8 @@ import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolResultPart;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -82,11 +85,13 @@ public class ReturnDirectModelHook extends MessagesModelHook {
 		}
 
 		if (returnDirect) {
-			// Generate AssistantMessage from ToolResponseMessage
-			String generatedText = generateAssistantMessageText(toolResponseMessage);
-			AssistantMessage newAssistantMessage = AssistantMessage.builder()
-					.content(generatedText)
-					.build();
+			var results = toolResponseMessage.getResults();
+			var parts = results.stream().flatMap(result -> result.content().stream()).toList();
+			boolean plainText = parts.stream().allMatch(part -> part instanceof TextPart
+					&& part.payload() == null && part.attributes().isEmpty());
+			AssistantMessage newAssistantMessage = results.size() > 1 && plainText
+					? new AssistantMessage(generateAssistantMessageText(results))
+					: parts.isEmpty() ? new AssistantMessage("") : AssistantMessage.builder().parts(parts).build();
 
 			// Create new messages list with the generated AssistantMessage
 			List<Message> newMessages = new ArrayList<>(previousMessages);
@@ -100,44 +105,39 @@ public class ReturnDirectModelHook extends MessagesModelHook {
 		return new AgentCommand(previousMessages);
 	}
 
-	/**
-	 * Generate AssistantMessage text from ToolResponseMessage responses.
-	 * If there's only one response, returns its responseData directly.
-	 * If there are multiple responses, generates a JSON array.
-	 */
-	private String generateAssistantMessageText(ToolResponseMessage toolResponseMessage) {
-		List<ToolResponseMessage.ToolResponse> responses = toolResponseMessage.getResponses();
-		if (responses.isEmpty()) {
-			return "";
-		} else if (responses.size() == 1) {
-			// If there's only one response, use responseData directly
-			// Handle null responseData: return empty string for single response
-			return responses.get(0).responseData();
-		} else {
-			// If there are multiple responses, generate a JSON array
-			StringBuilder jsonArray = new StringBuilder("[");
-			for (int i = 0; i < responses.size(); i++) {
-				if (i > 0) {
-					jsonArray.append(",");
-				}
-				String responseData = responses.get(i).responseData();
-				// Handle null responseData: treat as JSON null
-				if (responseData == null) {
-					jsonArray.append("null");
-				} else {
-					String trimmed = responseData.trim();
-					// If responseData is already in JSON format, add it directly; otherwise add it as a string
-					if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-						jsonArray.append(responseData);
-					} else {
-						// Escape JSON string
-						jsonArray.append("\"").append(escapeJsonString(responseData)).append("\"");
-					}
-				}
+	@Override
+	protected Map<String, Object> beforeModelStateUpdates(OverAllState state, List<Message> previous,
+			List<Message> updated) {
+		if (updated.size() == previous.size() + 1 && getAgent() != null) {
+			String key = getAgent().getOutputKey();
+			if (key != null && !key.isEmpty() && !"messages".equals(key)) {
+				return Map.of(key, updated.get(updated.size() - 1));
 			}
-			jsonArray.append("]");
-			return jsonArray.toString();
 		}
+		return Map.of();
+	}
+
+	/**
+	 * Retains the JSON array output for multiple plain-text tool results.
+	 */
+	private String generateAssistantMessageText(List<ToolResultPart> responses) {
+		StringBuilder jsonArray = new StringBuilder("[");
+		for (int i = 0; i < responses.size(); i++) {
+			if (i > 0) {
+				jsonArray.append(",");
+			}
+			String responseData = responses.get(i).toToolResponse().responseData();
+			if (responseData == null) {
+				jsonArray.append("null");
+			}
+			else if (responseData.stripLeading().startsWith("{") || responseData.stripLeading().startsWith("[")) {
+				jsonArray.append(responseData);
+			}
+			else {
+				jsonArray.append("\"").append(escapeJsonString(responseData)).append("\"");
+			}
+		}
+		return jsonArray.append("]").toString();
 	}
 
 	/**

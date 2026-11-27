@@ -16,6 +16,9 @@
 package com.alibaba.cloud.ai.graph.plain_text;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.serializer.Serializer;
+import com.alibaba.cloud.ai.graph.serializer.std.MessageSerializer;
+import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 
@@ -25,6 +28,15 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.chat.messages.part.MediaPart;
+import org.springframework.ai.chat.messages.part.OpaquePayload;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
+import org.springframework.ai.chat.messages.part.ToolResultPart;
+import org.springframework.ai.chat.messages.part.UnknownPart;
+import org.springframework.ai.content.Media;
+import org.springframework.util.MimeTypeUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -39,6 +51,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -52,6 +66,71 @@ class SpringAIJacksonStateSerializerTest {
 	void setUp() {
 		AgentStateFactory<OverAllState> stateFactory = OverAllState::new;
 		serializer = new SpringAIJacksonStateSerializer(stateFactory);
+	}
+
+	@Test
+	void preservesOrderedMessagePartsInJsonAndBinaryCheckpoints() throws Exception {
+		var media = MediaPart.of(Media.builder().id("image").mimeType(MimeTypeUtils.IMAGE_PNG)
+				.data(new byte[] { 1, 2, 3 }).build());
+		var user = UserMessage.builder().part(TextPart.of("before")).part(media).part(TextPart.of("after")).build();
+		var signature = new OpaquePayload("fixture", "signature", "encoded");
+		var reasoning = new ReasoningPart("thinking", "summary", signature, Map.of());
+		var toolCall = new ToolCallPart(new AssistantMessage.ToolCall("call", "function", "lookup", "{}"),
+				signature, Map.of("itemId", "fixture"));
+		var unknown = new UnknownPart("fixture", "unknown", "{}", null, Map.of());
+		var assistant = AssistantMessage.builder().parts(List.of(reasoning, toolCall, TextPart.of("done"), unknown)).build();
+		var failed = new ToolResultPart("call", "lookup", List.of(TextPart.of("denied"), media), true,
+				null, Map.of("source", "test"));
+		var tool = ToolResponseMessage.builder().result(failed).build();
+
+		for (var codec : List.of(serializer, new SpringAIStateSerializer(OverAllState::new))) {
+			var state = codec.cloneObject(Map.of("messages", List.of(user, assistant, tool)));
+			var restored = state.<List<?>>value("messages").orElseThrow();
+			var userParts = assertInstanceOf(UserMessage.class, restored.get(0)).getParts();
+			assertEquals(TextPart.of("before"), userParts.get(0));
+			assertEquals(TextPart.of("after"), userParts.get(2));
+			assertArrayEquals(new byte[] { 1, 2, 3 }, assertInstanceOf(MediaPart.class, userParts.get(1))
+					.media().getDataAsByteArray());
+			assertEquals(assistant.getParts(), assertInstanceOf(AssistantMessage.class, restored.get(1)).getParts());
+			var result = assertInstanceOf(ToolResponseMessage.class, restored.get(2)).getResults().get(0);
+			assertTrue(result.isError());
+			assertEquals("call", result.id());
+			assertEquals(failed.attributes(), result.attributes());
+			assertArrayEquals(new byte[] { 1, 2, 3 }, assertInstanceOf(MediaPart.class, result.content().get(1))
+					.media().getDataAsByteArray());
+		}
+	}
+
+	@Test
+	void writesPlainBinaryMessagesWithTheLegacyTypeDiscriminator() throws Exception {
+		var messages = List.of(new UserMessage("plain"), new AssistantMessage("reply"));
+		for (var original : messages) {
+			var bytes = new ByteArrayOutputStream();
+			try (var out = new ObjectOutputStream(bytes)) {
+				new MessageSerializer().write(original, out);
+			}
+			try (var in = new ObjectInputStream(new ByteArrayInputStream(bytes.toByteArray()))) {
+				assertEquals(original.getMessageType(), in.readObject());
+			}
+			try (var in = new ObjectInputStream(new ByteArrayInputStream(bytes.toByteArray()))) {
+				assertEquals(original, new MessageSerializer().read(in));
+			}
+		}
+	}
+
+	@Test
+	void readsTheLegacyBinaryUserMessageFormat() throws Exception {
+		var bytes = new ByteArrayOutputStream();
+		try (var out = new ObjectOutputStream(bytes)) {
+			out.writeObject(MessageType.USER);
+			Serializer.writeUTF("legacy", out);
+			out.writeObject(Map.of("source", "legacy"));
+		}
+		try (var in = new ObjectInputStream(new ByteArrayInputStream(bytes.toByteArray()))) {
+			var message = assertInstanceOf(UserMessage.class, new MessageSerializer().read(in));
+			assertEquals("legacy", message.getText());
+			assertEquals("legacy", message.getMetadata().get("source"));
+		}
 	}
 
 	@Test

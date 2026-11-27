@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.agent.hook;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.part.TextPart;
 
 import java.util.List;
 
@@ -57,9 +58,10 @@ public interface TokenCounter {
 			for (Message msg : messages) {
 				// Handle ToolResponseMessage - count tokens in tool responses
 				if (msg instanceof ToolResponseMessage toolResponseMessage) {
-					for (ToolResponseMessage.ToolResponse response : toolResponseMessage.getResponses()) {
-						// Count tokens in tool response data
-						total += response.responseData().length() / charsPerToken;
+					for (var result : toolResponseMessage.getResults()) {
+						int textLength = result.content().stream().filter(TextPart.class::isInstance)
+								.map(TextPart.class::cast).mapToInt(part -> part.text().length()).sum();
+						total += textLength / charsPerToken;
 					}
 				}
 				// Handle AssistantMessage - count tokens in tool calls
@@ -71,7 +73,9 @@ public interface TokenCounter {
 					// Count tokens in tool calls
 					for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 						// Count tokens in tool arguments (JSON string)
-						total += toolCall.arguments().length() / charsPerToken;
+						if (toolCall.arguments() != null) {
+							total += toolCall.arguments().length() / charsPerToken;
+						}
 					}
 				}
 				// Handle other message types

@@ -92,12 +92,10 @@
         <dependency>
             <groupId>com.alibaba.nacos</groupId>
             <artifactId>nacos-client</artifactId>
-            <version>${nacos3.version}</version>
         </dependency>
         <dependency>
             <groupId>com.alibaba.nacos</groupId>
             <artifactId>nacos-maintainer-client</artifactId>
-            <version>${nacos3.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.alibaba.nacos</groupId>

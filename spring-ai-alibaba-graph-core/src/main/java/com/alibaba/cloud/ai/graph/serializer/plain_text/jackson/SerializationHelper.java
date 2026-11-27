@@ -18,13 +18,23 @@ package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 import java.io.IOException;
 import java.util.Map;
 
+import com.alibaba.cloud.ai.graph.serializer.MessagePartsCodec;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.ai.chat.messages.AbstractMessage;
 
 class SerializationHelper {
+
+	static final String PARTS_FIELD = "parts";
+
+	static void serializeParts(JsonGenerator gen, AbstractMessage message) throws IOException {
+		gen.writeFieldName(PARTS_FIELD);
+		gen.writeRawValue(MessagePartsCodec.write(message.getParts()));
+	}
 
 	static final String METADATA_FIELD = "metadata";
 

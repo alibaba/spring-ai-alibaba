@@ -34,7 +34,11 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 
+import com.alibaba.cloud.ai.graph.serializer.MessagePartsCodec;
+
+import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SerializationHelper.PARTS_FIELD;
 import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SerializationHelper.deserializeMetadata;
+import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SerializationHelper.serializeParts;
 import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SerializationHelper.serializeMetadata;
 
 public interface AssistantMessageHandler {
@@ -86,12 +90,7 @@ public interface AssistantMessageHandler {
 		gen.writeEndArray();
 
 		serializeMetadata(gen, msg.getMetadata());
-
-		// gen.writeArrayFieldStart( Property.MEDIA.field);
-		// for (var media : msg.getMedia()) {
-		// gen.writeObject(media);
-		// }
-		// gen.writeEndArray();
+		serializeParts(gen, msg);
 	}
 }
 
@@ -106,8 +105,13 @@ public interface AssistantMessageHandler {
 			var mapper = (ObjectMapper) jsonParser.getCodec();
 			ObjectNode node = mapper.readTree(jsonParser);
 
-			var text = node.findValue(Field.TEXT.name).asText();
 			var metadata = deserializeMetadata(mapper, node);
+			if (node.hasNonNull(PARTS_FIELD)) {
+				return AssistantMessage.builder().parts(MessagePartsCodec.read(node.get(PARTS_FIELD).toString()))
+						.properties(metadata).build();
+			}
+
+			var text = node.findValue(Field.TEXT.name).asText();
 			var requestsNode = node.findValue(Field.TOOL_CALLS.name);
 
 			if (requestsNode.isNull() || requestsNode.isEmpty()) {

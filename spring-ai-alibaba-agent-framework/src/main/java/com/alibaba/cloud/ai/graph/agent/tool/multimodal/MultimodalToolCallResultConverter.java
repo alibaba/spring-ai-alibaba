@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.agent.tool.multimodal;
 
+import com.alibaba.cloud.ai.graph.agent.tool.multimodal.ToolMultimodalResult.FormattedMedia;
+import com.alibaba.cloud.ai.graph.agent.tool.multimodal.ToolMultimodalResult.MediaFormats;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
@@ -120,8 +122,8 @@ public class MultimodalToolCallResultConverter implements ToolCallResultConverte
 		}
 
 		Object data = media.getData();
-		if (data instanceof ToolMultimodalResult.MediaFormats formats) {
-			handleMediaFormats(formats, mimeTypeStr, itemMap);
+		if (media instanceof FormattedMedia formattedMedia) {
+			handleMediaFormats(formattedMedia.formats(), mimeTypeStr, itemMap);
 		}
 		else if (data instanceof URI uri) {
 			putUriOrEncodeToDataUrl(uri, mimeTypeStr, itemMap);
@@ -204,7 +206,7 @@ public class MultimodalToolCallResultConverter implements ToolCallResultConverte
 		}
 	}
 
-	private void handleMediaFormats(ToolMultimodalResult.MediaFormats formats, String mimeTypeStr,
+	private void handleMediaFormats(MediaFormats formats, String mimeTypeStr,
 			Map<String, Object> itemMap) {
 		String url = formats.url();
 		String base64 = formats.base64();

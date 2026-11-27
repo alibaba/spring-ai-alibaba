@@ -102,13 +102,13 @@ There's a ChatBot example provided by the community at [examples/chatbot](https:
 	  <dependency>
 	    <groupId>com.alibaba.cloud.ai</groupId>
 	    <artifactId>spring-ai-alibaba-agent-framework</artifactId>
-	    <version>2.0.0.0-RC1</version>
+	    <version>2.1.0.0</version>
 	  </dependency>
 	  <!-- Assume you are going to use DashScope Model. Refer to docs for how to choose model.-->
 	  <dependency>
 	    <groupId>com.alibaba.cloud.ai</groupId>
 	    <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
-	    <version>2.0.0.0-RC1</version>
+	    <version>2.1.0.0</version>
 	  </dependency>
 	</dependencies>
 	```

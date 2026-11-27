@@ -17,10 +17,13 @@
 package com.alibaba.cloud.ai.a2a.registry.nacos.utils;
 
 import java.util.List;
+import java.util.Map;
 
 import com.alibaba.nacos.api.ai.model.a2a.AgentCapabilities;
 import com.alibaba.nacos.api.ai.model.a2a.AgentCard;
 import com.alibaba.nacos.api.ai.model.a2a.AgentSkill;
+import com.alibaba.nacos.api.ai.model.a2a.SecurityScheme;
+import io.a2a.spec.HTTPAuthSecurityScheme;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -112,6 +115,25 @@ class AgentCardConverterUtilTest {
 			assertThat(result).isNotNull();
 			assertThat(result.getSupportsAuthenticatedExtendedCard()).isFalse();
 		});
+	}
+
+	@Test
+	void roundTripsHttpSecuritySchemeBetweenNacosAndA2a() {
+		var nacosCard = createMinimalAgentCard();
+		var bearer = new SecurityScheme();
+		bearer.put("type", "http");
+		bearer.put("scheme", "bearer");
+		bearer.put("bearerFormat", "JWT");
+		nacosCard.setSecuritySchemes(Map.of("auth", bearer));
+
+		var a2aCard = AgentCardConverterUtil.convertToA2aAgentCard(nacosCard);
+		assertThat(a2aCard.securitySchemes().get("auth")).isInstanceOfSatisfying(HTTPAuthSecurityScheme.class,
+				scheme -> {
+					assertThat(scheme.getScheme()).isEqualTo("bearer");
+					assertThat(scheme.getBearerFormat()).isEqualTo("JWT");
+				});
+		var restored = AgentCardConverterUtil.convertToNacosAgentCard(a2aCard);
+		assertThat(restored.getSecuritySchemes().get("auth")).containsAllEntriesOf(bearer);
 	}
 
 	private static AgentCard createMinimalAgentCard() {

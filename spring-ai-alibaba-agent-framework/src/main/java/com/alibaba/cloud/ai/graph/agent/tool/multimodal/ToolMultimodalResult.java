@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent.tool.multimodal;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.ai.content.Media;
 
 import org.springframework.core.io.ByteArrayResource;
@@ -122,8 +123,8 @@ public final class ToolMultimodalResult {
 	 * @param url    URL reference (may be null)
 	 * @param base64 Base64-encoded data (raw string, not data URL; may be null)
 	 */
-	public static Media mediaFromUrlAndBase64(String url, String base64, MimeType mimeType) {
-		return Media.builder().mimeType(mimeType).data(new MediaFormats(url, base64)).build();
+	public static Media mediaFromUrlAndBase64(@Nullable String url, @Nullable String base64, MimeType mimeType) {
+		return new FormattedMedia(mimeType, new MediaFormats(url, base64));
 	}
 
 	/**
@@ -132,14 +133,38 @@ public final class ToolMultimodalResult {
 	 * @param base64 Base64-encoded data (raw string, not data URL)
 	 */
 	public static Media mediaFromBase64(String base64, MimeType mimeType) {
-		return Media.builder().mimeType(mimeType).data(new MediaFormats(null, base64)).build();
+		return mediaFromUrlAndBase64(null, base64, mimeType);
 	}
 
 	/**
 	 * Holds both URL and base64 when available. Used by {@link MultimodalToolCallResultConverter}
 	 * to prefer the format matching OutputFormat without unnecessary conversion.
 	 */
-	public record MediaFormats(String url, String base64) {
+	public record MediaFormats(@Nullable String url, @Nullable String base64) {
+	}
+
+	static final class FormattedMedia extends Media {
+
+		private final MediaFormats formats;
+
+		private FormattedMedia(MimeType mimeType, MediaFormats formats) {
+			super(mimeType, preferredUri(mimeType, formats));
+			this.formats = formats;
+		}
+
+		MediaFormats formats() {
+			return this.formats;
+		}
+
+		private static URI preferredUri(MimeType mimeType, MediaFormats formats) {
+			String url = formats.url();
+			if (url != null && !url.isBlank()) {
+				return URI.create(url);
+			}
+			String base64 = formats.base64();
+			return URI.create("data:" + mimeType + ";base64," + (base64 != null ? base64 : ""));
+		}
+
 	}
 
 	public static class Builder {

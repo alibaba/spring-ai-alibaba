@@ -33,7 +33,11 @@ import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
+import com.alibaba.cloud.ai.graph.serializer.MessagePartsCodec;
+
+import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SerializationHelper.PARTS_FIELD;
 import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SerializationHelper.deserializeMetadata;
+import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SerializationHelper.serializeParts;
 import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SerializationHelper.serializeMetadata;
 
 public interface ToolResponseMessageHandler {
@@ -86,6 +90,7 @@ public interface ToolResponseMessageHandler {
 			gen.writeEndArray();
 
 			serializeMetadata(gen, msg.getMetadata());
+			serializeParts(gen, msg);
 		}
 	}
 
@@ -101,8 +106,13 @@ public interface ToolResponseMessageHandler {
 			var mapper = (ObjectMapper) jsonParser.getCodec();
 			ObjectNode node = mapper.readTree(jsonParser);
 
-			var responsesNode = node.findValue(Field.RESPONSES.name);
 			var metadata = deserializeMetadata(mapper, node);
+			if (node.hasNonNull(PARTS_FIELD)) {
+				return ToolResponseMessage.builder().parts(MessagePartsCodec.read(node.get(PARTS_FIELD).toString()))
+						.metadata(metadata).build();
+			}
+
+			var responsesNode = node.findValue(Field.RESPONSES.name);
 
 			if (responsesNode.isNull() || responsesNode.isEmpty()) {
 				return ToolResponseMessage.builder()

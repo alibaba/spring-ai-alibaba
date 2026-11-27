@@ -20,6 +20,8 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
+import com.alibaba.cloud.ai.graph.utils.FinishReasonMetadata;
+import com.alibaba.cloud.ai.graph.utils.ChatResponseStreamAggregator;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
@@ -35,9 +37,11 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -52,6 +56,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.function.UnaryOperator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,6 +82,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 	private List<ModelInterceptor> modelInterceptors = new ArrayList<>();
 
 	private List<StreamingModelInterceptor> streamingInterceptors = new ArrayList<>();
+	private List<UnaryOperator<AssistantMessage>> streamingOutputFilters = List.of();
 
 	private String outputKey;
 
@@ -128,6 +134,10 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	public void setModelInterceptors(List<ModelInterceptor> modelInterceptors) {
 		this.modelInterceptors = modelInterceptors;
+	}
+
+	public void setStreamingOutputFilters(List<UnaryOperator<AssistantMessage>> filters) {
+		this.streamingOutputFilters = List.copyOf(filters);
 	}
 
 	public void setStreamingInterceptors(List<StreamingModelInterceptor> streamingInterceptors) {
@@ -222,7 +232,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 						}
 					}
 					Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(request, config).stream().chatResponse();
-					if (enableReasoningLog) {
+					if (enableReasoningLog && streamingOutputFilters.isEmpty()) {
 						chatResponseFlux = chatResponseFlux.doOnNext(chatResponse -> {
 							if (chatResponse != null && chatResponse.getResult() != null && chatResponse.getResult().getOutput() != null) {
 								if (chatResponse.getResult().getOutput().hasToolCalls()) {
@@ -254,7 +264,17 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 			// Execute the chained handler
 			ModelResponse modelResponse = chainedHandler.call(modelRequest);
-			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", modelResponse.getMessage());
+			Object output = modelResponse.getMessage();
+			if (!streamingOutputFilters.isEmpty()) {
+				if (output instanceof Flux<?> chunks) {
+					output = ChatResponseStreamAggregator.aggregate(chunks.cast(ChatResponse.class),
+							config.mergeReasoningContent()).map(this::filterStreamedResponse).flux();
+				}
+				else if (output instanceof AssistantMessage assistant) {
+					output = filterStreamedMessage(assistant);
+				}
+			}
+			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", output);
 		} else {
 			// Create base handler that actually calls the model
 			ModelCallHandler baseHandler = request -> {
@@ -267,11 +287,12 @@ public class AgentLlmNode implements NodeActionWithConfig {
 					ChatResponse response = buildChatClientRequestSpec(request, config).call().chatResponse();
 
 					AssistantMessage responseMessage = new AssistantMessage("Empty response from model for unknown reason");
-					if (response != null && response.getResult() != null) {
-						responseMessage = response.getResult().getOutput();
+					if (response != null && response.getResult() != null && response.getResult().getOutput() != null) {
+						var generation = response.getResult();
+						responseMessage = FinishReasonMetadata.apply(generation.getOutput(), generation.getMetadata());
 					}
 
-					if (enableReasoningLog) {
+					if (enableReasoningLog && streamingOutputFilters.isEmpty()) {
 						logger.info("[ThreadId {}] Agent {} reasoning round {} returned: {}.", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, iterations.get(), responseMessage);
 					}
 
@@ -304,6 +325,19 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 			return updatedState;
 		}
+	}
+
+	private ChatResponse filterStreamedResponse(ChatResponse response) {
+		var generation = response.getResult();
+		var filtered = filterStreamedMessage(generation.getOutput());
+		return new ChatResponse(List.of(new Generation(filtered, generation.getMetadata())), response.getMetadata());
+	}
+
+	private AssistantMessage filterStreamedMessage(AssistantMessage output) {
+		for (var filter : streamingOutputFilters) {
+			output = filter.apply(output);
+		}
+		return output;
 	}
 
 	public void setAdvisors(List<Advisor> advisors) {
@@ -395,7 +429,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			if (message instanceof UserMessage userMessage) {
 				// Check if outputSchema is already present to avoid duplication
 				if (!userMessage.getText().contains(outputSchema)) {
-					messages.set(i, userMessage.mutate().text(userMessage.getText() + System.lineSeparator() + outputSchema).build());
+					messages.set(i, userMessage.mutate().part(TextPart.of(System.lineSeparator() + outputSchema)).build());
 				}
 				break;
 			}

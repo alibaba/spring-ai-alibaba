@@ -81,9 +81,11 @@ public class GlobTool implements BiFunction<String, ToolContext, String> {
 	}
 
 	public static ToolCallback createGlobToolCallback(String description) {
-		return FunctionToolCallback.builder("glob", new GlobTool())
-				.description(description)
-				.inputType(String.class)
-				.build();
+		var tool = new GlobTool();
+		return FunctionToolCallback.builder("glob", (Input input, ToolContext context) ->
+				tool.apply(input.pattern(), context)).description(description).inputType(Input.class).build();
 	}
+	private record Input(@ToolParam(description = "The glob pattern to match files") String pattern) {
+	}
+
 }

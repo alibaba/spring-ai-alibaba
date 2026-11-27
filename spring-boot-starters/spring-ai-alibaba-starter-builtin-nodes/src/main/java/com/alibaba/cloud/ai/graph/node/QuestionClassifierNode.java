@@ -24,6 +24,10 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.decision.DecisionModel;
+import org.springframework.ai.decision.DecisionPrompt;
+import org.springframework.ai.decision.question.ChoiceQuestion;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -81,7 +85,7 @@ public class QuestionClassifierNode implements NodeAction {
 
 	private final ChatClient chatClient;
 
-	private String inputText;
+	private final DecisionModel decisionModel;
 
 	// Categories may contain {} placeholder variables that need to be processed
 	private final Map<String, String> categories;
@@ -95,10 +99,16 @@ public class QuestionClassifierNode implements NodeAction {
 
 	public QuestionClassifierNode(ChatClient chatClient, String inputTextKey, Map<String, String> categories,
 			List<String> classificationInstructions, String outputKey) {
+		this(chatClient, null, inputTextKey, categories, classificationInstructions, outputKey);
+	}
+
+	private QuestionClassifierNode(ChatClient chatClient, DecisionModel decisionModel, String inputTextKey,
+			Map<String, String> categories, List<String> classificationInstructions, String outputKey) {
 		this.chatClient = chatClient;
+		this.decisionModel = decisionModel;
 		this.inputTextKey = inputTextKey;
 		this.categories = categories;
-		this.classificationInstructions = classificationInstructions;
+		this.classificationInstructions = classificationInstructions == null ? List.of() : List.copyOf(classificationInstructions);
 		this.systemPromptTemplate = new SystemPromptTemplate(CLASSIFIER_PROMPT_TEMPLATE);
 		this.outputKey = outputKey;
 	}
@@ -123,8 +133,13 @@ public class QuestionClassifierNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		if (StringUtils.hasLength(inputTextKey)) {
-			this.inputText = (String) state.value(inputTextKey).orElse(this.inputText);
+		String inputText = state.<String>value(inputTextKey)
+				.orElseThrow(() -> new IllegalArgumentException("Missing classifier input: " + inputTextKey));
+		Map<String, String> renderedCategories = categories.entrySet().stream()
+				.collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> renderTemplate(state, e.getValue())));
+		List<String> renderedInstructions = renderTemplates(state, classificationInstructions);
+		if (decisionModel != null) {
+			return classifyWithDecisionModel(state, inputText, renderedCategories, renderedInstructions);
 		}
 
 		List<Message> messages = new ArrayList<>();
@@ -137,16 +152,11 @@ public class QuestionClassifierNode implements NodeAction {
 		messages.add(userMessage2);
 		messages.add(assistantMessage2);
 
-		Map<String, String> renderedCategories = categories.entrySet()
-			.stream()
-			.map(e -> Map.entry(e.getKey(), renderTemplate(state, e.getValue())))
-			.collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
-
 		List<String> categoriesList = renderedCategories.values().stream().toList();
 
 		ChatResponse response = chatClient.prompt()
 			.system(systemPromptTemplate.render(Map.of("inputText", inputText, "categories", categoriesList,
-					"classificationInstructions", renderTemplates(state, classificationInstructions))))
+					"classificationInstructions", renderedInstructions)))
 			.user(inputText)
 			.messages(messages)
 			.call()
@@ -176,6 +186,28 @@ public class QuestionClassifierNode implements NodeAction {
 		return updatedState;
 	}
 
+	private Map<String, Object> classifyWithDecisionModel(OverAllState state, String inputText,
+			Map<String, String> categories, List<String> instructions) {
+		String questionName = "category";
+		String questionText = String.join("\n", instructions);
+		var question = ChoiceQuestion.builder().text("Which category best matches the input?\n" + questionText);
+		categories.forEach(question::option);
+		var prompt = DecisionPrompt.builder().text(inputText).question(questionName, question.build()).build();
+		var response = decisionModel.call(prompt);
+		if (response == null || !response.hasAnswer(questionName)) {
+			throw new IllegalStateException("Decision model returned no classification answer");
+		}
+
+		String selected = response.getChoice(questionName).getValue();
+		if (!categories.containsKey(selected)) {
+			throw new IllegalStateException("Decision model returned an unknown category ID: " + selected);
+		}
+		if (state.value("messages").isPresent()) {
+			return Map.of(outputKey, selected, "messages", new AssistantMessage(categories.get(selected)));
+		}
+		return Map.of(outputKey, selected);
+	}
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -185,6 +217,8 @@ public class QuestionClassifierNode implements NodeAction {
 		private String inputTextKey;
 
 		private ChatClient chatClient;
+
+		private DecisionModel decisionModel;
 
 		private Map<String, String> categories;
 
@@ -199,6 +233,15 @@ public class QuestionClassifierNode implements NodeAction {
 
 		public Builder chatClient(ChatClient chatClient) {
 			this.chatClient = chatClient;
+			return this;
+		}
+
+		/**
+		 * Selects a category through Spring AI's typed choice API. Provide at least two
+		 * categories and use their stable graph IDs as the option names.
+		 */
+		public Builder decisionModel(DecisionModel decisionModel) {
+			this.decisionModel = decisionModel;
 			return this;
 		}
 
@@ -232,8 +275,12 @@ public class QuestionClassifierNode implements NodeAction {
 		}
 
 		public QuestionClassifierNode build() {
-			return new QuestionClassifierNode(chatClient, inputTextKey, categories, classificationInstructions,
-					outputKey);
+			Assert.isTrue((chatClient == null) != (decisionModel == null),
+					"Provide exactly one classifier model: ChatClient or DecisionModel");
+			Assert.isTrue(decisionModel == null || (categories != null && categories.size() >= 2),
+					"DecisionModel classification needs at least two categories");
+			return new QuestionClassifierNode(chatClient, decisionModel, inputTextKey, categories,
+					classificationInstructions, outputKey);
 		}
 
 	}

@@ -26,9 +26,9 @@ import com.alibaba.nacos.api.ai.listener.NacosAgentCardEvent;
 import com.alibaba.nacos.api.ai.model.a2a.AgentCard;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.exception.runtime.NacosRuntimeException;
-import com.alibaba.nacos.common.utils.JacksonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.util.JsonHelper;
 
 /**
  * Implementation of AgentCardProvider for getting agent card from nacos a2a
@@ -37,6 +37,8 @@ import org.slf4j.LoggerFactory;
  * @author xiweng.yy
  */
 public class NacosAgentCardProvider implements AgentCardProvider {
+
+	private static final JsonHelper JSON = new JsonHelper();
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(NacosAgentCardProvider.class);
 
@@ -66,7 +68,7 @@ public class NacosAgentCardProvider implements AgentCardProvider {
 				public void onEvent(NacosAgentCardEvent event) {
 					AgentCard newAgentCard = event.getAgentCard();
 					if (LOGGER.isDebugEnabled()) {
-						LOGGER.debug("Received new Agent Card: {}", JacksonUtils.toJson(newAgentCard));
+						LOGGER.debug("Received new Agent Card: {}", JSON.toJson(newAgentCard));
 					}
 					agentCard.setAgentCard(AgentCardConverterUtil.convertToA2aAgentCard(newAgentCard));
 				}

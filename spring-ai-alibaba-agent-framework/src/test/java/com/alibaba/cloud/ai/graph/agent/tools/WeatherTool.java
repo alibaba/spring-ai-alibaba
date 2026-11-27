@@ -37,11 +37,13 @@ public class WeatherTool implements BiFunction<String, ToolContext, String> {
 		return "Sunny, 25°C, light breeze from the east.";
 	}
 
-	public static ToolCallback createWeatherTool(String name, WeatherTool poetTool) {
-		return FunctionToolCallback.builder(name, poetTool)
-				.description("Weather information tool")
-				.inputType(String.class)
-				.build();
+	public static ToolCallback createWeatherTool(String name, WeatherTool weatherTool) {
+		return FunctionToolCallback.builder(name, (WeatherInput input, ToolContext context) ->
+				weatherTool.apply(input.location(), context)).description("Weather information tool")
+				.inputType(WeatherInput.class).build();
+	}
+
+	private record WeatherInput(@ToolParam(description = "The city or region to check") String location) {
 	}
 
 }

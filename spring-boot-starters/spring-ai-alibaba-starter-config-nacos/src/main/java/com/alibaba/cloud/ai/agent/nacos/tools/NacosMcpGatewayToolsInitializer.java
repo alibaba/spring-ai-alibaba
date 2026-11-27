@@ -23,6 +23,7 @@ import java.util.Map;
 
 import com.alibaba.cloud.ai.agent.nacos.vo.McpServersVO;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
+import com.alibaba.cloud.ai.mcp.utils.NacosMcpProtocol;
 import com.alibaba.nacos.api.ai.model.mcp.McpServerDetailInfo;
 import com.alibaba.nacos.api.ai.model.mcp.McpServerRemoteServiceConfig;
 import com.alibaba.nacos.api.ai.model.mcp.McpTool;
@@ -70,9 +71,9 @@ public class NacosMcpGatewayToolsInitializer {
 					logger.warn("No service detail info found for service: {}", serviceName);
 					continue;
 				}
-				String protocol = serviceDetail.getProtocol();
+				String protocol = NacosMcpProtocol.resolve(serviceDetail);
 				if ("http".equalsIgnoreCase(protocol) || "https".equalsIgnoreCase(protocol)
-						|| "mcp-sse".equalsIgnoreCase(protocol) || "mcp-streamable".equalsIgnoreCase(protocol)) {
+						|| "mcp-sse".equalsIgnoreCase(protocol) || NacosMcpProtocol.isStreamable(protocol)) {
 					List<ToolCallback> tools = parseToolsFromMcpServerDetailInfo(serviceDetail, serverVO);
 					if (CollectionUtils.isEmpty(tools)) {
 						logger.warn("No tools defined for service: {}", serviceName);
@@ -99,7 +100,7 @@ public class NacosMcpGatewayToolsInitializer {
 	private List<ToolCallback> parseToolsFromMcpServerDetailInfo(McpServerDetailInfo mcpServerDetailInfo, McpServersVO.McpServerVO serverVO) {
 		try {
 			McpToolSpecification toolSpecification = mcpServerDetailInfo.getToolSpec();
-			String protocol = mcpServerDetailInfo.getProtocol();
+			String protocol = NacosMcpProtocol.resolve(mcpServerDetailInfo);
 			McpServerRemoteServiceConfig mcpServerRemoteServiceConfig = mcpServerDetailInfo.getRemoteServerConfig();
 			List<ToolCallback> toolCallbacks = new ArrayList<>();
 			if (toolSpecification != null) {

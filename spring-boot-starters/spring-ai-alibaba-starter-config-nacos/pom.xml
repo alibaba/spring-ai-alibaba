@@ -61,8 +61,6 @@
         <dependency>
             <groupId>com.alibaba.nacos</groupId>
             <artifactId>nacos-maintainer-client</artifactId>
-            <version>${nacos3.version}</version>
-
             <exclusions>
                 <exclusion>
                     <groupId>com.alibaba.nacos</groupId>
@@ -121,7 +119,6 @@
         <dependency>
             <groupId>com.alibaba.nacos</groupId>
             <artifactId>nacos-client</artifactId>
-            <version>${nacos3.version}</version>
             <exclusions>
 
                 <exclusion>
@@ -134,7 +131,14 @@
         <dependency>
             <groupId>com.alibaba.nacos</groupId>
             <artifactId>nacos-client-mse-extension</artifactId>
-            <version>1.0.6</version>
+        </dependency>
+
+        <!-- The MSE KMS config filter loads Guava at runtime. -->
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+            <scope>runtime</scope>
         </dependency>
 
         <dependency>

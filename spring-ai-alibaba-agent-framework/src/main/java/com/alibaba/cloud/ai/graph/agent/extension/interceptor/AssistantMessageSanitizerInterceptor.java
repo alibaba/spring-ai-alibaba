@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.part.TextPart;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -127,12 +128,7 @@ public class AssistantMessageSanitizerInterceptor extends ModelInterceptor {
 			if (needsSanitizing(msg)) {
 				AssistantMessage assistantMsg = (AssistantMessage) msg;
 				// text == null -> use empty string; keep toolCalls, metadata and media intact.
-				AssistantMessage fixed = AssistantMessage.builder()
-						.content("")
-						.toolCalls(assistantMsg.getToolCalls())
-						.properties(assistantMsg.getMetadata())
-						.media(assistantMsg.getMedia())
-						.build();
+				AssistantMessage fixed = assistantMsg.mutate().part(TextPart.of("")).build();
 				if (log.isDebugEnabled()) {
 					log.debug("[{}] AssistantMessage text was null with tool calls; patched content to empty string", NAME);
 				}

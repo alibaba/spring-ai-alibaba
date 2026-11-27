@@ -21,10 +21,12 @@ import com.alibaba.cloud.ai.graph.agent.Prioritized;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.tool.ToolCallback;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 
 import static com.alibaba.cloud.ai.graph.RunnableConfig.AGENT_HOOK_NAME_PREFIX;
 
@@ -98,6 +100,14 @@ public interface Hook extends Prioritized {
 	 * @see ModelInterceptor
 	 */
 	default List<ModelInterceptor> getModelInterceptors() {
+		return List.of();
+	}
+
+	/**
+	 * Filters a complete model reply before the graph publishes its streaming output.
+	 * The agent buffers the current reply if any such filter is configured.
+	 */
+	default List<UnaryOperator<AssistantMessage>> getStreamingOutputFilters() {
 		return List.of();
 	}
 

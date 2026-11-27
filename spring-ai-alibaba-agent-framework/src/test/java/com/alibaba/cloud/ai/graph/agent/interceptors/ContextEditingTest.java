@@ -29,6 +29,14 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MediaPart;
+import org.springframework.ai.chat.messages.part.OpaquePayload;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
+import org.springframework.ai.chat.messages.part.ToolResultPart;
+import org.springframework.ai.content.Media;
+import org.springframework.util.MimeTypeUtils;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -36,11 +44,14 @@ import org.springframework.ai.chat.prompt.Prompt;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 /**
  * Tests for ContextEditingInterceptor. Uses pre-constructed messages with
@@ -123,6 +134,7 @@ class ContextEditingTest {
 		ContextEditingInterceptor contextEditingInterceptor = ContextEditingInterceptor.builder()
 				.trigger(50)
 				.keep(0)
+				.clearToolInputs(true)
 				.clearAtLeast(100)
 				.tokenCounter(messages -> messages.stream()
 						.mapToInt(message -> message instanceof AssistantMessage ? 100 : 0)
@@ -142,6 +154,37 @@ class ContextEditingTest {
 
 		assertTrue(capturedRequest.get() != null, "Updated request should be passed to handler");
 		assertEquals(1, countClearedToolCalls(capturedRequest.get().getMessages()));
+	}
+
+	@Test
+	void clearsOldToolPartsAndRetainsTheirCorrelationAndUnrelatedParts() {
+		var signature = new OpaquePayload("fixture", "signature", "value");
+		var signedCall = new ToolCallPart(new AssistantMessage.ToolCall("signed", "function", "search", "{}"),
+				signature, Map.of());
+		var unsignedCall = ToolCallPart.of(new AssistantMessage.ToolCall("unsigned", "function", "search", "long input"));
+		var media = MediaPart.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data("fixture").build());
+		var reasoning = ReasoningPart.of("reasoning");
+		var assistant = AssistantMessage.builder().parts(List.of(media, signedCall, reasoning, unsignedCall)).build();
+		var failed = new ToolResultPart("unsigned", "search", List.of(media), true, null, Map.of("key", "#1"));
+		var response = ToolResponseMessage.builder().result(failed).build();
+		var interceptor = ContextEditingInterceptor.builder().trigger(0).keep(0).clearToolInputs(true)
+				.clearAtLeast(100).build();
+
+		var observed = new AtomicReference<List<Message>>();
+		interceptor.interceptModel(ModelRequest.builder().messages(List.of(assistant, response)).build(), request -> {
+			observed.set(request.getMessages());
+			return ModelResponse.of(new AssistantMessage("done"));
+		});
+
+		var edited = assertInstanceOf(AssistantMessage.class, observed.get().get(0));
+		assertEquals(List.of(media, signedCall, reasoning), edited.getParts().subList(0, 3));
+		assertEquals("{}", edited.getToolCalls().get(1).arguments());
+		var result = assertInstanceOf(ToolResponseMessage.class, observed.get().get(1)).getResults().get(0);
+		assertEquals(List.of(TextPart.of(PLACEHOLDER)), result.content());
+		assertEquals("unsigned", result.id());
+		assertTrue(result.isError());
+		assertEquals(failed.attributes(), result.attributes());
+		assertSame(media, response.getResults().get(0).content().get(0));
 	}
 
 	/**
@@ -229,7 +272,7 @@ class ContextEditingTest {
 		for (Message msg : messages) {
 			if (msg instanceof AssistantMessage assistantMessage) {
 				for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
-					if (PLACEHOLDER.equals(toolCall.arguments())) {
+					if ("{}".equals(toolCall.arguments())) {
 						cleared++;
 					}
 				}
@@ -255,7 +298,7 @@ class ContextEditingTest {
 			}
 			else if (msg instanceof AssistantMessage am && !am.getToolCalls().isEmpty()) {
 				for (AssistantMessage.ToolCall tc : am.getToolCalls()) {
-					if (PLACEHOLDER.equals(tc.arguments())) {
+					if ("{}".equals(tc.arguments())) {
 						hasCleared = true;
 						break;
 					}

@@ -25,6 +25,8 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.SubGraphNode;
+import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
+import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.action.EdgeAction;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.agent.exception.AgentException;
@@ -63,6 +65,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.model.tool.ToolCallDecisions;
+import com.alibaba.cloud.ai.graph.agent.tool.ToolCallResults;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.tool.ToolCallback;
 
@@ -155,6 +159,10 @@ public class ReactAgent extends BaseAgent {
 		}
 		if (this.streamingInterceptors != null && !this.streamingInterceptors.isEmpty()) {
 			this.llmNode.setStreamingInterceptors(this.streamingInterceptors);
+		}
+		if (this.hooks != null) {
+			this.llmNode.setStreamingOutputFilters(this.hooks.stream()
+					.flatMap(hook -> hook.getStreamingOutputFilters().stream()).toList());
 		}
 
         // Set tools flag if tool interceptors are present.
@@ -318,6 +326,9 @@ public class ReactAgent extends BaseAgent {
 		List<Hook> effectiveHooks = new ArrayList<>();
 		effectiveHooks.add(InstructionAgentHook.create());
 		effectiveHooks.addAll(hooks);
+		if (hasTools && hooks.stream().noneMatch(HumanInTheLoopHook.class::isInstance)) {
+			effectiveHooks.add(HumanInTheLoopHook.builder().build());
+		}
 
 		// Validate hook uniqueness
 		Set<String> hookNames = new HashSet<>();
@@ -403,6 +414,10 @@ public class ReactAgent extends BaseAgent {
 		setupHookEdges(graph, beforeAgentHooks, afterAgentHooks, beforeModelHooks, afterModelHooks,
 				entryNode, loopEntryNode, loopExitNode, exitNode, this);
 		return graph;
+	}
+
+	public boolean requiresToolConfirmation(AssistantMessage.ToolCall call, RunnableConfig config) {
+		return toolNode.requiresConfirmation(call, config);
 	}
 
 	/**
@@ -587,7 +602,7 @@ public class ReactAgent extends BaseAgent {
 			setupToolRouting(graph, loopExitNode, loopEntryNode, exitNode, agentInstance);
 		} else if (!loopExitNode.equals(AGENT_MODEL_NAME)) {
 			// No tools but have after_model - connect to exit
-			addHookEdge(graph, loopExitNode, exitNode, loopEntryNode, exitNode, afterModelHooks.get(afterModelHooks.size() - 1).canJumpTo());
+			addHookEdge(graph, loopExitNode, exitNode, loopEntryNode, exitNode, afterModelHooks.get(0).canJumpTo());
 		} else {
 			// No tools and no after_model - direct to exit
 			graph.addEdge(loopExitNode, exitNode);
@@ -622,15 +637,6 @@ public class ReactAgent extends BaseAgent {
 			String defaultNext,
 			String modelDestination,
 			String endDestination) throws GraphStateException {
-		if (!hooks.isEmpty()) {
-			Hook first = hooks.get(0);
-			addHookEdge(graph,
-					Hook.getFullHookName(first) + nameSuffix,
-					StateGraph.END,
-					modelDestination, endDestination,
-					first.canJumpTo());
-		}
-
 		for (int i = hooks.size() - 1; i > 0; i--) {
 			Hook m1 = hooks.get(i);
 			Hook m2 = hooks.get(i - 1);
@@ -705,7 +711,7 @@ public class ReactAgent extends BaseAgent {
 				destinations.put(modelDestination, modelDestination);
 			}
 
-			graph.addConditionalEdges(name, edge_async(router), destinations);
+			graph.addConditionalEdges(name, consumeJump(router), destinations);
 		} else {
 			graph.addEdge(name, defaultDestination);
 		}
@@ -719,10 +725,16 @@ public class ReactAgent extends BaseAgent {
 			ReactAgent agentInstance) throws GraphStateException {
 
 		// Model to tools routing
-		graph.addConditionalEdges(loopExitNode, edge_async(agentInstance.makeModelToTools(loopEntryNode, exitNode)), Map.of(AGENT_TOOL_NAME, AGENT_TOOL_NAME, exitNode, exitNode, loopEntryNode, loopEntryNode));
+		graph.addConditionalEdges(loopExitNode, consumeJump(agentInstance.makeModelToTools(loopEntryNode, exitNode)), Map.of(AGENT_TOOL_NAME, AGENT_TOOL_NAME, exitNode, exitNode, loopEntryNode, loopEntryNode));
 
 		// Tools to model routing
 		graph.addConditionalEdges(AGENT_TOOL_NAME, edge_async(agentInstance.makeToolsToModelEdge(loopEntryNode, exitNode)), Map.of(loopEntryNode, loopEntryNode, exitNode, exitNode));
+	}
+
+	private static AsyncCommandAction consumeJump(EdgeAction edge) {
+		return AsyncCommandAction.node_async((state, config) -> new Command(edge.apply(state),
+				state.value("jump_to").isPresent()
+						? Map.of("jump_to", OverAllState.MARK_FOR_REMOVAL) : Map.of()));
 	}
 
 	private static String resolveJump(JumpTo jumpTo, String modelDestination, String endDestination, String defaultDestination) {
@@ -811,13 +823,8 @@ public class ReactAgent extends BaseAgent {
 					ToolResponseMessage toolResponseMessage = (ToolResponseMessage) lastMessage;
 
 					if (assistantMessage.hasToolCalls()) {
-						Set<String> requestedToolIds = assistantMessage.getToolCalls().stream()
-								.map(AssistantMessage.ToolCall::id)
-								.collect(java.util.stream.Collectors.toSet());
-
-						Set<String> executedToolIds = toolResponseMessage.getResponses().stream()
-								.map(ToolResponseMessage.ToolResponse::id)
-								.collect(java.util.stream.Collectors.toSet());
+						List<String> requestedToolIds = ToolCallDecisions.toolCallKeys(assistantMessage);
+						Set<String> executedToolIds = ToolCallResults.settledKeys(assistantMessage, toolResponseMessage.getResults());
 
 						if (executedToolIds.containsAll(requestedToolIds)) {
 							return modelDestination; // All requested tools were executed or responded

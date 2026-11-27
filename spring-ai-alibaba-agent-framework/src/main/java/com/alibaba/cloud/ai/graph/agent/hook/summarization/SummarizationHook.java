@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
 import com.alibaba.cloud.ai.graph.agent.hook.TokenCounter;
+import com.alibaba.cloud.ai.graph.agent.tool.ToolCallResults;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.AgentCommand;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.UpdatePolicy;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
@@ -33,9 +34,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +73,6 @@ public class SummarizationHook extends MessagesModelHook {
 
 	private static final String SUMMARY_PREFIX = "## Previous conversation summary:";
 	private static final int DEFAULT_MESSAGES_TO_KEEP = 20;
-	private static final int SEARCH_RANGE_FOR_TOOL_PAIRS = 5;
 	private static final boolean DEFAULT_KEEP_FIRST_USER_MESSAGE = true;
 
 	private final ChatModel model;
@@ -177,87 +175,17 @@ public class SummarizationHook extends MessagesModelHook {
 			return 0;
 		}
 
-		int targetCutoff = messages.size() - messagesToKeep;
-
-		// Search backwards from targetCutoff to find a safe cutoff point
-		for (int i = targetCutoff; i >= 0; i--) {
-			if (isSafeCutoffPoint(messages, i)) {
+		int cutoff = messages.size() - messagesToKeep;
+		for (int i = 0; i < cutoff;) {
+			Message message = messages.get(i);
+			int end = message instanceof AssistantMessage assistant && assistant.hasToolCalls()
+					? ToolCallResults.responseEnd(messages, i) : i + 1;
+			if (end > cutoff) {
 				return i;
 			}
+			i = end;
 		}
-
-		return 0;
-	}
-
-	/**
-	 * Check if cutting at index would separate AI/Tool message pairs.
-	 */
-	private boolean isSafeCutoffPoint(List<Message> messages, int cutoffIndex) {
-		if (cutoffIndex >= messages.size()) {
-			return true;
-		}
-
-		int searchStart = Math.max(0, cutoffIndex - SEARCH_RANGE_FOR_TOOL_PAIRS);
-		int searchEnd = Math.min(messages.size(), cutoffIndex + SEARCH_RANGE_FOR_TOOL_PAIRS);
-
-		for (int i = searchStart; i < searchEnd; i++) {
-			if (!hasToolCalls(messages.get(i))) {
-				continue;
-			}
-
-			AssistantMessage aiMessage = (AssistantMessage) messages.get(i);
-			Set<String> toolCallIds = extractToolCallIds(aiMessage);
-			if (cutoffSeparatesToolPair(messages, i, cutoffIndex, toolCallIds)) {
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	/**
-	 * Check if message is an AI message with tool calls.
-	 */
-	private boolean hasToolCalls(Message message) {
-		return message instanceof AssistantMessage assistantMessage && !assistantMessage.getToolCalls().isEmpty();
-	}
-
-	/**
-	 * Extract tool call IDs from an AI message.
-	 */
-	private Set<String> extractToolCallIds(AssistantMessage aiMessage) {
-		Set<String> toolCallIds = new HashSet<>();
-		for (AssistantMessage.ToolCall toolCall : aiMessage.getToolCalls()) {
-			String callId = toolCall.id();
-			toolCallIds.add(callId);
-		}
-		return toolCallIds;
-	}
-
-	/**
-	 * Check if cutoff separates an AI message from its corresponding tool messages.
-	 */
-	private boolean cutoffSeparatesToolPair(
-			List<Message> messages,
-			int aiMessageIndex,
-			int cutoffIndex,
-			Set<String> toolCallIds) {
-		for (int j = aiMessageIndex + 1; j < messages.size(); j++) {
-			Message message = messages.get(j);
-			if (message instanceof ToolResponseMessage toolResponseMessage) {
-				// Check if any response in this ToolResponseMessage matches our tool call IDs
-				for (ToolResponseMessage.ToolResponse response : toolResponseMessage.getResponses()) {
-					if (toolCallIds.contains(response.id())) {
-						boolean aiBeforeCutoff = aiMessageIndex < cutoffIndex;
-						boolean toolBeforeCutoff = j < cutoffIndex;
-						if (aiBeforeCutoff != toolBeforeCutoff) {
-							return true;
-						}
-					}
-				}
-			}
-		}
-		return false;
+		return cutoff;
 	}
 
 	private String createSummary(List<Message> messages) {

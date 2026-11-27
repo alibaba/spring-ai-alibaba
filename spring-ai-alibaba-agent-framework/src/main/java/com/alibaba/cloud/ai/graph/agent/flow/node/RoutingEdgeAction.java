@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ContentFilteredException;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -163,7 +164,7 @@ public class RoutingEdgeAction implements AsyncEdgeAction {
 
 				if (attempt == 0) {
 					// First attempt: use original messages
-					decision = this.chatClient.prompt().messages(messages).call().entity(this.outputConverter);
+					decision = RoutingModelResponse.entity(this.chatClient.prompt().messages(messages).call(), this.outputConverter);
 				}
 				else {
 					// Retry attempts: add error feedback to help the model correct its decision
@@ -198,8 +199,8 @@ public class RoutingEdgeAction implements AsyncEdgeAction {
 						messagesWithFeedback.add(new UserMessage(errorFeedback));
 					}
 
-					decision = this.chatClient.prompt().messages(messagesWithFeedback).call()
-							.entity(this.outputConverter);
+					decision = RoutingModelResponse.entity(this.chatClient.prompt().messages(messagesWithFeedback).call(),
+							this.outputConverter);
 				}
 
 				String decisionValue = decision.agent();
@@ -221,6 +222,9 @@ public class RoutingEdgeAction implements AsyncEdgeAction {
 					logger.warn("RoutingAgent {} attempt {}/{} returned invalid agent name: {}",
 							rootAgent.name(), attempt, maxRetries, decisionValue);
 				}
+			}
+			catch (ContentFilteredException e) {
+				throw e;
 			}
 			catch (Exception e) {
 				if (attempt == maxRetries) {
