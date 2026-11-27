@@ -19,6 +19,8 @@ package com.alibaba.cloud.ai.graph.agent.flow.strategy;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.agent.Agent;
+import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LoopAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.loop.LoopStrategy;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
@@ -62,8 +64,12 @@ public class LoopGraphBuildingStrategy extends AbstractFlowGraphBuildingStrategy
 		this.graph.addNode(loopStrategy.loopDispatchNodeName(), node_async(loopStrategy::loopDispatch));
 		this.graph.addEdge(loopStrategy.loopInitNodeName(), loopStrategy.loopDispatchNodeName());
 
-		// Add sub-agent node
-		this.graph.addNode(subAgent.name(), subAgent.getGraph());
+		if (subAgent instanceof BaseAgent || subAgent instanceof FlowAgent) {
+			FlowGraphBuildingStrategy.addSubAgentNode(subAgent, this.graph);
+		}
+		else {
+			this.graph.addNode(subAgent.name(), subAgent.getGraph());
+		}
 
 		// Connect beforeModel hooks in the loop (execute before EVERY iteration)
 		String loopEntryNode;

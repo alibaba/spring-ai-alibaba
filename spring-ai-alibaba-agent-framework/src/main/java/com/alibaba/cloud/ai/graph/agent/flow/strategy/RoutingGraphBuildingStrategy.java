@@ -22,6 +22,7 @@ import java.util.Map;
 
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.action.AsyncMultiCommandAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
@@ -85,8 +86,10 @@ public class RoutingGraphBuildingStrategy extends AbstractFlowGraphBuildingStrat
 			}
 			baseAgentList.add((BaseAgent) subAgent);
 		}
-		graph.addNode(mergeNodeName, node_async(new RoutingMergeNode(config.getChatModel(), baseAgentList,
-				RoutingMergeNode.DEFAULT_MERGED_OUTPUT_KEY, RoutingNode.selectionKey(rootAgent.name()))));
+		var merge = new RoutingMergeNode(config.getChatModel(), baseAgentList,
+				RoutingMergeNode.DEFAULT_MERGED_OUTPUT_KEY, RoutingNode.selectionKey(rootAgent.name()));
+		graph.addNode(mergeNodeName, AsyncNodeActionWithConfig.node_async(
+				(state, run) -> merge.apply(state, run, mergeNodeName)));
 
 		// Step 5: Process sub-agents for routing
 		Map<String, String> edgeRoutingMap = new HashMap<>();

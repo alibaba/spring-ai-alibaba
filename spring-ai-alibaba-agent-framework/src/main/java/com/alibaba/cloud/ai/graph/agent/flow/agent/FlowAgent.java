@@ -22,6 +22,8 @@ import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.internal.node.Node;
+import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNode;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
@@ -30,6 +32,13 @@ import java.util.List;
 import java.util.concurrent.Executor;
 
 public abstract class FlowAgent extends Agent {
+
+	/** Adapts this agent to a workflow while retaining its runtime configuration. */
+	public Node asNode() {
+		return new SubCompiledGraphNode(name(), getAndCompileGraph(), run ->
+				run.metadata("_stream_").filter(Boolean.FALSE::equals).isPresent()
+						? buildNonStreamConfig(run) : buildStreamConfig(run));
+	}
 
 	protected List<String> interruptBefore;
 

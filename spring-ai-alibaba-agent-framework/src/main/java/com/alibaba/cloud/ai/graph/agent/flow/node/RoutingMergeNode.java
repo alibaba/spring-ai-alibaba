@@ -16,9 +16,13 @@
 package com.alibaba.cloud.ai.graph.agent.flow.node;
 
 import com.alibaba.cloud.ai.graph.GraphResponse;
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.Message;
@@ -27,6 +31,9 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -76,6 +83,10 @@ public class RoutingMergeNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
+		return apply(state, null, null);
+	}
+
+	public Map<String, Object> apply(OverAllState state, RunnableConfig config, String nodeId) {
 		logger.debug("RoutingMergeNode: merging results from {} sub-agents", subAgents.size());
 
 		List<String> formattedResults = new ArrayList<>();
@@ -110,8 +121,14 @@ public class RoutingMergeNode implements NodeAction {
 			return Map.of(mergedOutputKey, lastResult);
 		}
 
-		String query = extractOriginalQuery(state);
-		String finalAnswer = synthesize(query, formattedResults);
+		if (formattedResults.isEmpty()) {
+			return Map.of(mergedOutputKey, "No results found from any knowledge source.");
+		}
+		Prompt prompt = synthesisPrompt(extractOriginalQuery(state), formattedResults);
+		if (config != null && !config.metadata("_stream_").filter(Boolean.FALSE::equals).isPresent()) {
+			return Map.of(mergedOutputKey, streamSynthesis(prompt, state, config, nodeId));
+		}
+		String finalAnswer = chatModel.call(prompt).getResult().getOutput().getText();
 		logger.debug("RoutingMergeNode: synthesized {} sources into merged result", formattedResults.size());
 
 		return Map.of(mergedOutputKey, finalAnswer);
@@ -127,21 +144,42 @@ public class RoutingMergeNode implements NodeAction {
 		return state.<String>value("input").orElse("");
 	}
 
-	private String synthesize(String query, List<String> formattedResults) {
-		if (formattedResults == null || formattedResults.isEmpty()) {
-			return "No results found from any knowledge source.";
-		}
+	private Prompt synthesisPrompt(String query, List<String> formattedResults) {
 		String formatted = String.join("\n\n", formattedResults);
 		String systemPrompt = SYNTHESIZE_SYSTEM_TEMPLATE.formatted(query);
-		Prompt prompt = new Prompt(List.of(
+		return new Prompt(List.of(
 				new SystemMessage(systemPrompt),
 				new UserMessage(formatted)));
-		ChatResponse response = chatModel.call(prompt);
-		return response.getResult().getOutput().getText();
+	}
+
+	private Flux<GraphResponse<NodeOutput>> streamSynthesis(Prompt prompt, OverAllState state,
+			RunnableConfig config, String nodeId) {
+		return Flux.defer(() -> {
+			var text = new StringBuilder();
+			String agent = config.metadata(RunnableConfig.AGENT_NAME_KEY).map(Object::toString).orElse("");
+			Flux<ChatResponse> chunks = Flux.defer(() -> chatModel.stream(prompt))
+					.onErrorResume(UnsupportedOperationException.class, error -> text.isEmpty()
+							? Mono.fromCallable(() -> chatModel.call(prompt)).subscribeOn(Schedulers.boundedElastic()).flux()
+							: Flux.error(error));
+			return chunks.<GraphResponse<NodeOutput>>handle((response, sink) -> {
+				if (response.getResult() != null && response.getResult().getOutput() != null) {
+					var message = response.getResult().getOutput();
+					if (message.getText() != null && !message.getText().isEmpty()) {
+						text.append(message.getText());
+						sink.next(GraphResponse.of(new StreamingOutput<>(message, response, nodeId, agent,
+								state.snapShot().orElseThrow(), OutputType.AGENT_MODEL_STREAMING)));
+					}
+				}
+			}).concatWith(Mono.fromSupplier(() -> GraphResponse.done(Map.of(mergedOutputKey, text.toString()))));
+		});
 	}
 
 	public static String extractText(Object output, String outputKey) {
 		if (output instanceof Message message) {
+			return message.getText();
+		}
+		if (output instanceof List<?> messages && !messages.isEmpty()
+				&& messages.get(messages.size() - 1) instanceof Message message) {
 			return message.getText();
 		}
 		if (output instanceof GraphResponse<?> gr) {
@@ -151,10 +189,7 @@ public class RoutingMergeNode implements NodeAction {
 				if (v instanceof Map<?, ?> map) {
 					v = map.get(outputKey);
 				}
-				if (v instanceof Message m) {
-					return m.getText();
-				}
-				return v.toString();
+				return extractText(v, outputKey);
 			}
 			return "";
 		}
