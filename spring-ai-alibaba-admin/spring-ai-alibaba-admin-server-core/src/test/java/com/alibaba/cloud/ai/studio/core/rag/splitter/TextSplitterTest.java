@@ -70,4 +70,38 @@ class TextSplitterTest {
 		assertTrue(result.isEmpty());
 	}
 
+	@Test
+	void regexSplitterShouldPreserveEveryLessonParagraph() {
+		Document input = Document.builder()
+			.text("Cell structure\n\nPhotosynthesis steps\n\nSafety instructions")
+			.metadata(java.util.Map.of("source", "biology-lesson.txt"))
+			.build();
+		List<Document> chunks = new RegexTextSplitter("\\n\\n", 0).split(input);
+		assertEquals(List.of("Cell structure", "Photosynthesis steps", "Safety instructions"),
+				chunks.stream().map(chunk -> chunk.getText().strip()).toList());
+		assertTrue(chunks.stream().allMatch(chunk -> "biology-lesson.txt".equals(chunk.getMetadata().get("source"))));
+	}
+
+	@Test
+	void regexSplitterShouldOverlapFromThePreviousChunkEnd() {
+		Document input = Document.builder().text("Alpha|Beta|Gamma").build();
+		List<Document> chunks = new RegexTextSplitter("\\|", 2).split(input);
+		assertEquals(List.of("Alpha|", "a|Beta|", "a|Gamma"), chunks.stream().map(Document::getText).toList());
+	}
+
+	@Test
+	void regexSplitterShouldKeepTextWithoutAMatchAndWithoutATrailingRemainder() {
+		RegexTextSplitter splitter = new RegexTextSplitter("\\|", 0);
+		assertEquals(List.of("Cell structure"),
+				splitter.split(Document.builder().text("Cell structure").build())
+					.stream()
+					.map(Document::getText)
+					.toList());
+		assertEquals(List.of("Alpha|", "Beta|"),
+				splitter.split(Document.builder().text("Alpha|Beta|").build())
+					.stream()
+					.map(Document::getText)
+					.toList());
+	}
+
 }

@@ -60,10 +60,9 @@ public class RegexTextSplitter extends TextSplitter {
 
 		int lastEnd = 0;
 		while (matcher.find()) {
-			int start = matcher.start();
 			int end = matcher.end();
 
-			int overlapStart = Math.max(0, start - overlapSize);
+			int overlapStart = Math.max(0, lastEnd - overlapSize);
 			if (lastEnd == 0) {
 				segments.add(text.substring(0, end));
 			}
