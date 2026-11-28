@@ -112,7 +112,12 @@ public class KnowledgeBaseDocumentRetriever implements DocumentRetriever {
 			LogUtils.monitor("DocumentRetriever", "retrieve", start, FAIL, query.text(), null);
 			throw e;
 		}
-		catch (InterruptedException | ExecutionException e) {
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			LogUtils.monitor("DocumentRetriever", "retrieve", start, FAIL, query.text(), null);
+			throw new BizException(ErrorCode.DOCUMENT_RETRIEVAL_ERROR.toError(), e);
+		}
+		catch (ExecutionException e) {
 			LogUtils.monitor("DocumentRetriever", "retrieve", start, FAIL, query.text(), null);
 			throw new BizException(ErrorCode.DOCUMENT_RETRIEVAL_ERROR.toError(), e);
 		}
