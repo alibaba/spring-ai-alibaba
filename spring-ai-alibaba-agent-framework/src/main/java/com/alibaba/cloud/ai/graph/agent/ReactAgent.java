@@ -50,9 +50,11 @@ import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.returndirect.ReturnDirectModelHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.StreamingModelInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.skills.SkillsInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.toolselection.ToolSelectionInterceptor;
+import com.alibaba.cloud.ai.graph.agent.permission.ToolPermissionPolicy.Decision;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
 import com.alibaba.cloud.ai.graph.agent.structured.StructuredOutputException;
@@ -481,6 +483,11 @@ public class ReactAgent extends BaseAgent {
 	public boolean requiresToolConfirmation(AssistantMessage message, AssistantMessage.ToolCall call,
 			RunnableConfig config, boolean explicitlyConfigured) {
 		return toolNode.requiresConfirmation(message, call, config, explicitlyConfigured);
+	}
+
+	/** Evaluates the policy for a tool made available to the current model request. */
+	public Decision toolPermission(AssistantMessage message, ToolCallRequest request, RunnableConfig config) {
+		return toolNode.toolPermission(message, request, config);
 	}
 
 	/**

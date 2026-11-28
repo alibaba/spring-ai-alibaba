@@ -177,6 +177,7 @@ public class DefaultBuilder extends Builder {
 		AgentToolNode toolNode;
 		AgentToolNode.Builder toolBuilder = AgentToolNode.builder()
 				.agentName(this.name)
+				.toolPermissionPolicy(this.toolPermissionPolicy)
 				.toolResultArchive(this.toolResultArchive)
 				.deferredToolCatalog(this.deferredToolCatalog)
 				.parallelToolExecution(this.parallelToolExecution)

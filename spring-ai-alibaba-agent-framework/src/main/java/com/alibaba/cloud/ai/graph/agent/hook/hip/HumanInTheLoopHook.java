@@ -30,6 +30,8 @@ import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallExecutionContext;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallResponse;
+import com.alibaba.cloud.ai.graph.agent.permission.ToolPermissionPolicy.Decision;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolCallResults;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
@@ -48,11 +50,13 @@ import org.springframework.ai.chat.messages.part.ToolResultPart;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -61,6 +65,9 @@ import org.springframework.ai.model.tool.ToolCallDecisions;
 @HookPositions(HookPosition.AFTER_MODEL)
 public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWithConfig, InterruptableAction {
 	public static final String HITL_NODE_NAME = "HITL";
+
+	/** Interruption metadata listing the call keys denied by policy before review. */
+	public static final String DENIED_TOOL_CALL_KEYS = "permissionDeniedToolCallKeys";
 
 	private static final ObjectReader ARGUMENTS_READER =
 			new ObjectMapper().reader().with(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
@@ -108,6 +115,10 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 			if (part instanceof ToolCallPart callPart) {
 				String key = keys.next();
 				AssistantMessage.ToolCall call = callPart.toolCall();
+				if (reviewed.denied().contains(key)) {
+					var result = ToolCallResponse.permissionDenied(call.id(), call.name()).toToolResultPart();
+					settled.add(ToolCallResults.withCallKey(result, key));
+				}
 				ToolFeedback decision = reviewed.decisions().get(key);
 				if (decision != null) {
 					switch (decision.getResult()) {
@@ -173,10 +184,14 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 		}
 
 		var request = pending.orElseGet(() -> buildInterruptionMetadata(lastMessage, state, config));
+		Set<String> denied = deniedToolCallKeys(request);
 		if (request.toolFeedbacks().isEmpty()) {
+			if (!denied.isEmpty()) {
+				config.context().put(REVIEWED_CALLS, new ReviewedCalls(Map.of(), denied));
+			}
 			return Optional.empty();
 		}
-		checkPendingCalls(lastMessage, request);
+		checkPendingCalls(lastMessage, request, denied);
 		Object feedback = config.metadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY).orElse(null);
 		if (feedback == null || "placeholder".equals(feedback)) {
 			return Optional.of(request);
@@ -198,27 +213,36 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 			return Optional.of(request);
 		}
 		config.metadata().orElseThrow().remove(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY);
-		config.context().put(REVIEWED_CALLS, new ReviewedCalls(decisions));
+		config.context().put(REVIEWED_CALLS, new ReviewedCalls(decisions, denied));
 		return Optional.empty();
 	}
 
-	private static void checkPendingCalls(AssistantMessage message, InterruptionMetadata request) {
+	private static Set<String> deniedToolCallKeys(InterruptionMetadata request) {
+		return request.metadata(DENIED_TOOL_CALL_KEYS).filter(List.class::isInstance)
+				.map(value -> Set.copyOf(((List<?>) value).stream().map(String.class::cast).toList()))
+				.orElseGet(Set::of);
+	}
+
+	private static void checkPendingCalls(AssistantMessage message, InterruptionMetadata request, Set<String> denied) {
 		var calls = message.getToolCalls();
 		var keys = ToolCallDecisions.toolCallKeys(message);
 		Map<String, ToolFeedback> actions = new HashMap<>();
 		request.toolFeedbacks().forEach(action -> actions.put(action.getId(), action));
 		List<AssistantMessage.ToolCall> automaticallyApproved = new ArrayList<>();
+		Set<String> unmatchedDenied = new HashSet<>(denied);
 		for (int i = 0; i < calls.size(); i++) {
 			var call = calls.get(i);
 			var action = actions.remove(keys.get(i));
-			if (action == null) {
+			if (action == null && !unmatchedDenied.remove(keys.get(i))) {
 				automaticallyApproved.add(call);
 			}
-			else if (!call.name().equals(action.getName()) || !Objects.equals(call.arguments(), action.getArguments())) {
+			else if (action != null && (!call.name().equals(action.getName())
+					|| !Objects.equals(call.arguments(), action.getArguments()))) {
 				throw new IllegalArgumentException("Tool call '" + keys.get(i) + "' changed after review was requested");
 			}
 		}
-		if (!actions.isEmpty() || !automaticallyApproved.equals(request.getToolsAutomaticallyApproved())) {
+		if (!actions.isEmpty() || !unmatchedDenied.isEmpty()
+				|| !automaticallyApproved.equals(request.getToolsAutomaticallyApproved())) {
 			throw new IllegalArgumentException("The tool call batch changed after review was requested");
 		}
 	}
@@ -268,23 +292,28 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 		var keys = ToolCallDecisions.toolCallKeys(lastMessage).iterator();
 		Map<String, AssistantMessage.ToolCall> pending = new LinkedHashMap<>();
 		List<AssistantMessage.ToolCall> automaticallyApproved = new ArrayList<>();
+		List<String> denied = new ArrayList<>();
 		for (var call : lastMessage.getToolCalls()) {
 			String key = keys.next();
-			if (requiresConfirmation(lastMessage, call, state, config)) {
+			var request = ToolCallRequest.builder().toolCall(call).context(config.metadata().orElseGet(Map::of))
+					.executionContext(new ToolCallExecutionContext(config, state)).build();
+			Decision decision = getAgent() == null ? Decision.ALLOW : getAgent().toolPermission(lastMessage, request, config);
+			if (decision == Decision.DENY) {
+				denied.add(key);
+			}
+			else if (requiresConfirmation(lastMessage, call, request, config, decision)) {
 				pending.put(key, call);
 			}
 			else {
 				automaticallyApproved.add(call);
 			}
 		}
-		return buildInterruptionMetadata(state, pending, automaticallyApproved);
+		return buildInterruptionMetadata(state, pending, automaticallyApproved, denied);
 	}
 
 	private boolean requiresConfirmation(AssistantMessage message, AssistantMessage.ToolCall call,
-			OverAllState state, RunnableConfig config) {
-		boolean explicitlyConfigured = requiresConfiguredReview(ToolCallRequest.builder()
-				.toolCall(call).context(config.metadata().orElseGet(Map::of))
-				.executionContext(new ToolCallExecutionContext(config, state)).build());
+			ToolCallRequest request, RunnableConfig config, Decision decision) {
+		boolean explicitlyConfigured = decision == Decision.REVIEW || requiresConfiguredReview(request);
 		return getAgent() != null ? getAgent().requiresToolConfirmation(message, call, config, explicitlyConfigured)
 				: explicitlyConfigured;
 	}
@@ -349,9 +378,13 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 	}
 
 	private InterruptionMetadata buildInterruptionMetadata(OverAllState state,
-			Map<String, AssistantMessage.ToolCall> pending, List<AssistantMessage.ToolCall> automaticallyApproved) {
+			Map<String, AssistantMessage.ToolCall> pending, List<AssistantMessage.ToolCall> automaticallyApproved,
+			List<String> denied) {
 		InterruptionMetadata.Builder builder = InterruptionMetadata.builder(Hook.getFullHookName(this), state)
 				.toolsAutomaticallyApproved(automaticallyApproved);
+		if (!denied.isEmpty()) {
+			builder.addMetadata(DENIED_TOOL_CALL_KEYS, List.copyOf(denied));
+		}
 		if (!pending.isEmpty()) {
 			builder.interruptionId(UUID.randomUUID().toString());
 		}
@@ -385,7 +418,7 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 		return Map.of(confirmedCallsStateKey(getAgentName()), new ReplaceStrategy());
 	}
 
-	private record ReviewedCalls(Map<String, ToolFeedback> decisions) {
+	private record ReviewedCalls(Map<String, ToolFeedback> decisions, Set<String> denied) {
 	}
 
 	public static class Builder {

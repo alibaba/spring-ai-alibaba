@@ -23,9 +23,11 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
+import java.util.stream.Stream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -61,13 +63,14 @@ public class GlobTool implements BiFunction<String, ToolContext, String> {
 
 			List<String> matchedFiles = new ArrayList<>();
 
-			Files.walk(basePathObj)
-					.filter(Files::isRegularFile)
-					.filter(path -> {
-						Path relativePath = basePathObj.relativize(path);
-						return matcher.matches(relativePath) || matcher.matches(path);
-					})
-					.forEach(path -> matchedFiles.add(path.toString()));
+			try (Stream<Path> paths = Files.walk(basePathObj)) {
+				paths.filter(path -> Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
+						.filter(path -> {
+							Path relativePath = basePathObj.relativize(path);
+							return matcher.matches(relativePath) || matcher.matches(path);
+						})
+						.forEach(path -> matchedFiles.add(path.toString()));
+			}
 
 			if (matchedFiles.isEmpty()) {
 				return "No files found matching pattern: " + pattern;

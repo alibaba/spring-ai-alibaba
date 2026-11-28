@@ -58,6 +58,20 @@ mvn -B -f examples/documentation/pom.xml test
 
 The live DashScope examples read `AI_DASHSCOPE_API_KEY` from the environment.
 
+## Tool permissions
+
+`ToolPermissionsExample` uses a scripted model and a temporary directory to
+show a permitted read, a denied read, and a write that runs after approval.
+It uses no model credentials. From the repository root, install the current
+framework and run the example.
+
+```bash
+mvn -B -pl :spring-ai-alibaba-bom,:spring-ai-alibaba-agent-framework -am -DskipTests install
+mvn -B -f examples/documentation/pom.xml compile org.codehaus.mojo:exec-maven-plugin:3.6.3:java \
+  -Dexec.cleanupDaemonThreads=false \
+  -Dexec.mainClass=com.alibaba.cloud.ai.examples.documentation.framework.advanced.ToolPermissionsExample
+```
+
 ## Context management with native OpenAI
 
 `OpenAiContextManagementExample` runs a report audit with the Spring AI
