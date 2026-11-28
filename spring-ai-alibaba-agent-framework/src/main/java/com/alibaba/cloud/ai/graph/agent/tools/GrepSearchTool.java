@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -282,20 +283,8 @@ public class GrepSearchTool implements BiFunction<GrepSearchTool.Request, ToolCo
 	}
 
 	private boolean matchIncludePattern(String filename, String pattern) {
-		// Simple glob matching - convert glob to regex
-		// This is a simplified version; for production use a proper glob library
-		String regex = pattern
-				.replace(".", "\\.")
-				.replace("*", ".*")
-				.replace("?", ".");
-
-		// Handle brace expansion like *.{js,ts}
-		if (pattern.contains("{") && pattern.contains("}")) {
-			regex = regex.replaceAll("\\{([^}]+)\\}", "($1)").replace(",", "|");
-		}
-
 		try {
-			return filename.matches(regex);
+			return FileSystems.getDefault().getPathMatcher("glob:" + pattern).matches(Paths.get(filename));
 		} catch (PatternSyntaxException e) {
 			return false;
 		}
