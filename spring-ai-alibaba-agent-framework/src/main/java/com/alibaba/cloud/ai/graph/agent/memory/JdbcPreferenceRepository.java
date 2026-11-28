@@ -21,6 +21,8 @@ import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.SQLIntegrityConstraintViolationException;
+import java.sql.SQLTransactionRollbackException;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
@@ -110,12 +112,16 @@ final class JdbcPreferenceRepository {
 		SQLException retryFailure = null;
 		for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
 			try (var connection = this.dataSource.getConnection()) {
+				boolean previousAutoCommit = connection.getAutoCommit();
+				int previousIsolation = connection.getTransactionIsolation();
+				boolean committed = false;
 				connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 				connection.setAutoCommit(false);
 				try {
 					Receipt result = change(connection, scope, change, requestHash, source);
 					if (result != null) {
 						connection.commit();
+						committed = true;
 						return result;
 					}
 					connection.rollback();
@@ -132,6 +138,9 @@ final class JdbcPreferenceRepository {
 						throw failure;
 					}
 					retryFailure = failure;
+				}
+				finally {
+					restoreConnectionState(connection, previousAutoCommit, previousIsolation, committed || retryFailure != null);
 				}
 			}
 			catch (SQLException failure) {
@@ -254,10 +263,31 @@ final class JdbcPreferenceRepository {
 		statement.setString(2, key.storeKey());
 	}
 
+	private static void restoreConnectionState(Connection connection, boolean autoCommit, int isolation,
+			boolean suppressErrors) throws SQLException {
+		try {
+			if (!connection.isClosed()) {
+				connection.setAutoCommit(autoCommit);
+				connection.setTransactionIsolation(isolation);
+			}
+		}
+		catch (SQLException failure) {
+			if (!suppressErrors) {
+				throw failure;
+			}
+		}
+	}
+
 	private static boolean retryable(SQLException failure) {
+		if (failure instanceof SQLTransactionRollbackException) {
+			return true;
+		}
 		String state = failure.getSQLState();
-		// Uniqueness races with the first write or a duplicate operation. Retry after rollback.
-		return "23505".equals(state) || "40001".equals(state) || "40P01".equals(state);
+		// Uniqueness races with the first write or a duplicate operation across PostgreSQL/H2 (23505)
+		// and MySQL/MariaDB/Oracle/ANSI SQL (23000), plus serialization/deadlock states (40001/40P01).
+		return "23505".equals(state) || "23000".equals(state)
+				|| (failure instanceof SQLIntegrityConstraintViolationException && state == null)
+				|| "40001".equals(state) || "40P01".equals(state);
 	}
 
 	private static String hash(List<?> values) {

@@ -15,7 +15,13 @@
  */
 package com.alibaba.cloud.ai.graph.agent.memory;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
@@ -174,6 +180,47 @@ class PreferenceMemoryTest {
 		verifyConcurrentCorrections(h2(database), h2(database));
 	}
 
+	@Test
+	void retriesMySqlStyle23000UniqueConstraintRacesToSettleConflictsAndReplays() throws Exception {
+		var database = this.directory.resolve("concurrent-mysql-23000");
+		verifyConcurrentCorrections(mysqlStyle23000DataSource(h2(database)), mysqlStyle23000DataSource(h2(database)));
+	}
+
+	@Test
+	void restoresPooledConnectionAutoCommitAndTransactionIsolationAfterChangesAndFailures() throws Exception {
+		var backing = h2(this.directory.resolve("pooled-state"));
+		try (Connection physical = backing.getConnection()) {
+			physical.setAutoCommit(true);
+			physical.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+			DataSource pooled = nonClosingPooledDataSource(physical);
+			var memory = memory(pooled);
+			memory.initializeSchema();
+			try (var statement = physical.createStatement()) {
+				statement.executeUpdate("""
+						ALTER TABLE saa_agent_preference_receipts ADD CONSTRAINT deny_pooled_receipt
+						CHECK (operation_id <> 'failed-pooled-receipt')
+						""");
+			}
+			physical.setAutoCommit(true);
+			physical.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+
+			var config = config("writer", "tenant", "alice", true);
+			assertThat(memory.save(config, REPLY_FORMAT, "markdown", 0, "pooled-1").status()).isEqualTo(Status.SAVED);
+			assertThat(physical.getAutoCommit()).isTrue();
+			assertThat(physical.getTransactionIsolation()).isEqualTo(Connection.TRANSACTION_SERIALIZABLE);
+
+			assertThat(memory.save(config, REPLY_FORMAT, "bullets", 0, "pooled-conflict").status())
+					.isEqualTo(Status.VERSION_CONFLICT);
+			assertThat(physical.getAutoCommit()).isTrue();
+			assertThat(physical.getTransactionIsolation()).isEqualTo(Connection.TRANSACTION_SERIALIZABLE);
+
+			assertThatThrownBy(() -> memory.save(config, REPLY_LANGUAGE, "zh-CN", 0, "failed-pooled-receipt"))
+					.isInstanceOf(IllegalStateException.class);
+			assertThat(physical.getAutoCommit()).isTrue();
+			assertThat(physical.getTransactionIsolation()).isEqualTo(Connection.TRANSACTION_SERIALIZABLE);
+		}
+	}
+
 	@ParameterizedTest
 	@CsvSource({ "REPLY_LANGUAGE,zh-CN,en-US", "REPLY_FORMAT,paragraphs,bullets" })
 	void replaysTheApprovedReceiptAfterACommittedWriteAndFailedCheckpoint(Key key, String originalValue,
@@ -329,6 +376,59 @@ class PreferenceMemoryTest {
 		source.setURL("jdbc:h2:file:" + path.toAbsolutePath());
 		source.setUser("sa");
 		return source;
+	}
+
+	private static DataSource mysqlStyle23000DataSource(DataSource delegate) {
+		return (DataSource) Proxy.newProxyInstance(DataSource.class.getClassLoader(), new Class<?>[] { DataSource.class },
+				(proxy, method, args) -> {
+					Object result = invokeUnwrapping(delegate, method, args);
+					return result instanceof Connection conn ? wrapConnectionWith23000(conn, false) : result;
+				});
+	}
+
+	private static DataSource nonClosingPooledDataSource(Connection physical) {
+		return (DataSource) Proxy.newProxyInstance(DataSource.class.getClassLoader(), new Class<?>[] { DataSource.class },
+				(proxy, method, args) -> "getConnection".equals(method.getName())
+						? wrapConnectionWith23000(physical, true)
+						: invokeUnwrapping(physical, method, args));
+	}
+
+	private static Connection wrapConnectionWith23000(Connection delegate, boolean ignoreClose) {
+		return (Connection) Proxy.newProxyInstance(Connection.class.getClassLoader(), new Class<?>[] { Connection.class },
+				(proxy, method, args) -> {
+					if (ignoreClose && "close".equals(method.getName())) {
+						return null;
+					}
+					Object result = invokeUnwrapping(delegate, method, args);
+					if (!ignoreClose && result instanceof PreparedStatement statement) {
+						return wrapStatementWith23000(statement);
+					}
+					return result;
+				});
+	}
+
+	private static PreparedStatement wrapStatementWith23000(PreparedStatement delegate) {
+		return (PreparedStatement) Proxy.newProxyInstance(PreparedStatement.class.getClassLoader(),
+				new Class<?>[] { PreparedStatement.class }, (proxy, method, args) -> {
+					try {
+						return invokeUnwrapping(delegate, method, args);
+					}
+					catch (SQLException ex) {
+						if ("23505".equals(ex.getSQLState())) {
+							throw new SQLIntegrityConstraintViolationException(ex.getMessage(), "23000", 1062, ex);
+						}
+						throw ex;
+					}
+				});
+	}
+
+	private static Object invokeUnwrapping(Object target, java.lang.reflect.Method method, Object[] args) throws Throwable {
+		try {
+			return method.invoke(target, args);
+		}
+		catch (InvocationTargetException ex) {
+			throw ex.getTargetException();
+		}
 	}
 
 	private static FileSystemSaver saver(Path path) {
