@@ -53,14 +53,13 @@ public class RequestContextThreadPoolWrapper implements ExecutorService {
 	public void execute(@NotNull Runnable command) {
 		RequestContext context = RequestContextHolder.getRequestContext();
 		delegate.execute(() -> {
+			RequestContext previous = RequestContextHolder.getRequestContext();
 			try {
-				if (context != null) {
-					RequestContextHolder.setRequestContext(context);
-				}
+				RequestContextHolder.setRequestContext(context);
 				command.run();
 			}
 			finally {
-				RequestContextHolder.clearRequestContext();
+				restoreContext(previous);
 			}
 		});
 	}
@@ -73,14 +72,13 @@ public class RequestContextThreadPoolWrapper implements ExecutorService {
 	public <T> Future<T> submit(@NotNull Callable<T> task) {
 		RequestContext context = RequestContextHolder.getRequestContext();
 		return delegate.submit(() -> {
+			RequestContext previous = RequestContextHolder.getRequestContext();
 			try {
-				if (context != null) {
-					RequestContextHolder.setRequestContext(context);
-				}
+				RequestContextHolder.setRequestContext(context);
 				return task.call();
 			}
 			finally {
-				RequestContextHolder.clearRequestContext();
+				restoreContext(previous);
 			}
 		});
 	}
@@ -94,14 +92,13 @@ public class RequestContextThreadPoolWrapper implements ExecutorService {
 	public <T> Future<T> submit(@NotNull Runnable task, T result) {
 		RequestContext context = RequestContextHolder.getRequestContext();
 		return delegate.submit(() -> {
+			RequestContext previous = RequestContextHolder.getRequestContext();
 			try {
-				if (context != null) {
-					RequestContextHolder.setRequestContext(context);
-				}
+				RequestContextHolder.setRequestContext(context);
 				task.run();
 			}
 			finally {
-				RequestContextHolder.clearRequestContext();
+				restoreContext(previous);
 			}
 		}, result);
 	}
@@ -114,14 +111,13 @@ public class RequestContextThreadPoolWrapper implements ExecutorService {
 	public Future<?> submit(@NotNull Runnable task) {
 		RequestContext context = RequestContextHolder.getRequestContext();
 		return delegate.submit(() -> {
+			RequestContext previous = RequestContextHolder.getRequestContext();
 			try {
-				if (context != null) {
-					RequestContextHolder.setRequestContext(context);
-				}
+				RequestContextHolder.setRequestContext(context);
 				task.run();
 			}
 			finally {
-				RequestContextHolder.clearRequestContext();
+				restoreContext(previous);
 			}
 		});
 	}
@@ -174,16 +170,24 @@ public class RequestContextThreadPoolWrapper implements ExecutorService {
 	private <T> Collection<? extends Callable<T>> wrapCallables(Collection<? extends Callable<T>> tasks,
 			RequestContext context) {
 		return tasks.stream().map(task -> (Callable<T>) () -> {
+			RequestContext previous = RequestContextHolder.getRequestContext();
 			try {
-				if (context != null) {
-					RequestContextHolder.setRequestContext(context);
-				}
+				RequestContextHolder.setRequestContext(context);
 				return task.call();
 			}
 			finally {
-				RequestContextHolder.clearRequestContext();
+				restoreContext(previous);
 			}
 		}).collect(java.util.stream.Collectors.toList());
+	}
+
+	private static void restoreContext(RequestContext previous) {
+		if (previous == null) {
+			RequestContextHolder.clearRequestContext();
+		}
+		else {
+			RequestContextHolder.setRequestContext(previous);
+		}
 	}
 
 	/**
