@@ -94,7 +94,7 @@ class ReactAgentOpenAiTest {
 	void setUp() {
 		OpenAiChatModel openAiChatModel = OpenAiChatModel.builder()
 				.options(OpenAiChatOptions.builder()
-						.baseUrl("https://dashscope.aliyuncs.com/compatible-mode/")
+						.baseUrl("https://dashscope.aliyuncs.com/compatible-mode/v1")
 						.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 						.model("qwen-plus")
 						.build())

@@ -235,6 +235,9 @@ class AgentToolCallingAdvisorBoundaryTest {
 		assertEquals(1, parentCalls.get());
 
 		parent = directAgentToolParent(directory, parallel, childModel, parentModel, childTools, parentTools);
+		assertEquals(first.pendingInterruptions().stream().map(InterruptionMetadata::interruptionId).toList(),
+				parent.getPendingInterruption(run).orElseThrow().pendingInterruptions().stream()
+						.map(InterruptionMetadata::interruptionId).toList());
 		var recovered = assertInstanceOf(InterruptionMetadata.class, parent.invokeAndGetOutput(Map.of(), run.withResume())
 				.orElseThrow());
 		assertEquals(first.pendingInterruptions().stream().map(InterruptionMetadata::interruptionId).toList(),
@@ -247,6 +250,7 @@ class AgentToolCallingAdvisorBoundaryTest {
 		assertEquals(1, parentCalls.get());
 
 		parent = directAgentToolParent(directory, parallel, childModel, parentModel, childTools, parentTools);
+		assertEquals(left.interruptionId(), parent.getPendingInterruption(run).orElseThrow().interruptionId());
 		var result = parent.invokeAndGetOutput(Map.of(), approve(run, afterFirst)).orElseThrow();
 		var messages = result.state().<List<?>>value("messages").orElseThrow();
 		var reply = messages.stream().filter(ToolResponseMessage.class::isInstance).map(ToolResponseMessage.class::cast)
@@ -259,6 +263,7 @@ class AgentToolCallingAdvisorBoundaryTest {
 		assertEquals(2, childTools.agentToolNodeExecutions.get());
 		assertEquals(1, parentTools.agentToolNodeExecutions.get());
 		assertEquals(2, parentCalls.get());
+		assertTrue(parent.getPendingInterruption(run).isEmpty());
 	}
 
 	private static RunnableConfig approve(RunnableConfig run, InterruptionMetadata interruption) {

@@ -41,6 +41,7 @@ import com.alibaba.cloud.ai.graph.agent.tool.AsyncToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.AsyncToolCallbackAdapter;
 import com.alibaba.cloud.ai.graph.agent.tool.CancellableAsyncToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.CancellationToken;
+import com.alibaba.cloud.ai.graph.agent.tool.ContextSourceTool;
 import com.alibaba.cloud.ai.graph.agent.tool.DeferredToolCatalog;
 import com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken;
 import com.alibaba.cloud.ai.graph.agent.tool.StateAwareToolCallback;
@@ -623,7 +624,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 				return ToolCallResponse.error(req.getToolCallId(), req.getToolName(), "Tool call requires confirmation");
 			}
 
-			String limitMessage = continuation == null ? execution.budget().reserve(req.getToolName()) : null;
+			String limitMessage = continuation == null ? execution.budget().reserve(req.getToolName(), toolCallback) : null;
 			if (limitMessage != null) {
 				return ToolCallResponse.error(req.getToolCallId(), req.getToolName(), limitMessage);
 			}
@@ -664,7 +665,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 						inParallelExecution, cancellationTokens, toolIndex, execution.cancellation(), toolEvents);
 				boolean cancelled = execution.cancellation().isCancelled() || Thread.currentThread().isInterrupted();
 				boolean failed = response.isError() || toolEvents.failure != null;
-				if ((failed || cancelled) && toolCallback instanceof StreamingToolCallback) {
+				if (failed || cancelled) {
 					extraStateFromToolCall.clear();
 				}
 				toolEvents.emit(cancelled ? RunEvent.Type.TOOL_CANCELLED
@@ -696,6 +697,9 @@ public class AgentToolNode implements NodeActionWithConfig {
 		try {
 			var response = chainedHandler.call(request);
 			if (pause.get() == null) {
+				if (response.isError()) {
+					extraStateFromToolCall.clear();
+				}
 				return ToolOutcome.completed(response);
 			}
 		}
@@ -940,7 +944,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 			if (enableActingLog) {
 				logger.info("[ThreadId {}] Agent {} acting, tool {} finished",
 						config.threadId().orElse(THREAD_ID_DEFAULT), agentName, request.getToolName());
-				if (logger.isDebugEnabled()) {
+				if (logger.isDebugEnabled() && !(callback instanceof ContextSourceTool)) {
 					logger.debug("Tool {} returned: {}", request.getToolName(), result);
 				}
 			}
@@ -1077,9 +1081,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		}
 
 		private void failed(Throwable cause) {
-			if (scope != null) {
-				failure = RunEventContext.failure(cause);
-			}
+			failure = RunEventContext.failure(cause);
 		}
 
 		private RunEvent.Tool payload(Object value) {
@@ -1122,13 +1124,15 @@ public class AgentToolNode implements NodeActionWithConfig {
 			total = counts.values().stream().mapToInt(Integer::intValue).sum();
 		}
 
-		synchronized String reserve(String name) {
+		synchronized String reserve(String name, ToolCallback callback) {
 			if (closed) {
 				return "Tool execution batch has already completed";
 			}
 			int count = counts.getOrDefault(name, 0);
-			if (count >= maxCallsPerTool) {
-				return "Tool call limit (%d) exceeded for tool '%s' in this turn".formatted(maxCallsPerTool, name);
+			int limit = callback instanceof ContextSourceTool source
+					? Math.min(maxCallsPerTool, source.maxCallsPerTurn()) : maxCallsPerTool;
+			if (count >= limit) {
+				return "Tool call limit (%d) exceeded for tool '%s' in this turn".formatted(limit, name);
 			}
 			if (total >= maxTotalToolCalls) {
 				return "Total tool call limit (%d) exceeded in this turn".formatted(maxTotalToolCalls);

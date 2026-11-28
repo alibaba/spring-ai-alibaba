@@ -47,6 +47,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import org.slf4j.Logger;
@@ -147,6 +148,16 @@ public class GraphRunnerContext {
 				.orElseThrow(() -> new IllegalStateException("Resume request without a configured checkpoint saver!"));
 		var checkpoint = saver.get(config)
 				.orElseThrow(() -> new IllegalStateException("Resume request without a valid checkpoint!"));
+		var feedbackId = config.metadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY)
+				.filter(InterruptionMetadata.class::isInstance).map(InterruptionMetadata.class::cast)
+				.flatMap(InterruptionMetadata::interruptionId);
+		boolean historical = config.checkPointId().isPresent()
+				&& (compiledGraph.compileConfig.taskCheckpoints() || feedbackId.isPresent())
+				&& saver.get(config.withCheckPointId(null))
+						.map(latest -> !latest.getId().equals(checkpoint.getId())).orElse(false);
+		if (feedbackId.isPresent() && (historical || END.equals(checkpoint.getNextNodeId()))) {
+			throw new IllegalArgumentException("No pending interruption with ID '" + feedbackId.get() + "'");
+		}
 		this.currentCheckpoint = checkpoint;
 		if (captureWrites && checkpoint.runtimeData().containsKey(BRANCH_WRITES)) {
 			CheckpointWrite.decodeAll(checkpoint.runtimeData().get(BRANCH_WRITES)).stream()
@@ -156,11 +167,7 @@ public class GraphRunnerContext {
 			// Earlier child checkpoints contain only a state snapshot.
 			captureWrites = false;
 		}
-		this.replayingHistoricalCheckpoint = compiledGraph.compileConfig.taskCheckpoints()
-				&& config.checkPointId().isPresent()
-				&& saver.get(config.withCheckPointId(null))
-						.map(latest -> !latest.getId().equals(checkpoint.getId()))
-						.orElse(false);
+		this.replayingHistoricalCheckpoint = compiledGraph.compileConfig.taskCheckpoints() && historical;
 
 		Object subgraphPaused = checkpoint.runtimeData().get(SUBGRAPH_PAUSED);
 		if (!Boolean.FALSE.equals(subgraphPaused)
@@ -198,7 +205,7 @@ public class GraphRunnerContext {
 
 		// A child starts from the parent state already materialized by its reducers.
 		this.overallState = stateCreate(isParallelBranch() || isEmbeddedRun()
-				? inputs : compiledGraph.getInitialState(inputs, config), initialState);
+				? inputs : compiledGraph.getInitialState(inputs, config, true), initialState);
 		this.currentNodeId = START;
 		this.nextNodeId = null;
 	}
@@ -365,11 +372,21 @@ public class GraphRunnerContext {
 		checkpointPausedNode(Map.of(PENDING_INTERRUPTION, InterruptionCheckpointCodec.encodeRequest(interruption)));
 	}
 
-	@SuppressWarnings("unchecked")
 	public Optional<InterruptionMetadata> pendingInterruption(OverAllState state) {
-		if (currentCheckpoint != null && currentCheckpoint.getNextNodeId().equals(currentNodeId)
-				&& currentCheckpoint.runtimeData().get(PENDING_INTERRUPTION) instanceof Map<?, ?> request) {
-			return Optional.of(InterruptionCheckpointCodec.decodeRequest((Map<String, Object>) request, state));
+		if (currentCheckpoint != null && currentCheckpoint.getNextNodeId().equals(currentNodeId)) {
+			return savedInterruption(currentCheckpoint, () -> state);
+		}
+		return Optional.empty();
+	}
+
+	static boolean hasPendingApproval(Checkpoint checkpoint) {
+		return checkpoint.runtimeData().containsKey(PENDING_INTERRUPTION);
+	}
+
+	@SuppressWarnings("unchecked")
+	static Optional<InterruptionMetadata> savedInterruption(Checkpoint checkpoint, Supplier<OverAllState> state) {
+		if (checkpoint.runtimeData().get(PENDING_INTERRUPTION) instanceof Map<?, ?> request) {
+			return Optional.of(InterruptionCheckpointCodec.decodeRequest((Map<String, Object>) request, state.get()));
 		}
 		return Optional.empty();
 	}

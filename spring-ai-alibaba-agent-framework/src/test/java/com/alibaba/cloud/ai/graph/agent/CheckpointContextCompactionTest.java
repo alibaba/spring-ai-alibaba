@@ -23,14 +23,19 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback.FeedbackResult;
 import com.alibaba.cloud.ai.graph.agent.context.CheckpointContextCompaction;
 import com.alibaba.cloud.ai.graph.agent.context.ContextWindowPolicy;
+import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
+import com.alibaba.cloud.ai.graph.agent.tools.ToolContextHelper;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.file.FileSystemSaver;
+import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -42,6 +47,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
@@ -164,12 +170,72 @@ class CheckpointContextCompactionTest {
 
 		var afterRestart = ReactAgent.builder().name(AGENT).model(model).saver(saver()).tools(tool)
 			.checkpointContextCompaction(policy).build();
+		var saved = afterRestart.getCurrentState(config);
+		assertThat(saved.state().value(STATE_KEY)).isPresent();
+		assertThat(afterRestart.getPendingInterruption(config).flatMap(InterruptionMetadata::interruptionId))
+			.isEqualTo(interruption.interruptionId());
+		assertThatThrownBy(() -> afterRestart.call("A conflicting new turn", config))
+			.hasStackTraceContaining("The thread has a pending approval");
+		assertThat(afterRestart.getCurrentState(config).config().checkPointId()).isEqualTo(saved.config().checkPointId());
+		assertThat(toolCalls).hasValue(0);
+
 		var state = afterRestart.stream(Map.of(), resumed).blockLast(TIMEOUT).state();
 		assertThat(state.<List<Message>>value("messages").orElseThrow()).extracting(Message::getText)
 			.contains(EARLY, "done");
 		assertThat(summaryCalls).hasValue(1);
 		assertThat(toolCalls).hasValue(1);
 		assertThat(agentCalls).hasValue(2);
+		assertThat(afterRestart.getPendingInterruption(config)).isEmpty();
+		assertThatThrownBy(() -> afterRestart.invokeAndGetOutput(Map.of(), resumed))
+			.hasStackTraceContaining("No pending interruption with ID");
+		var historical = resumed.withCheckPointId(saved.config().checkPointId().orElseThrow());
+		assertThatThrownBy(() -> afterRestart.invokeAndGetOutput(Map.of(), historical))
+			.hasStackTraceContaining("No pending interruption with ID");
+		assertThat(toolCalls).hasValue(1);
+	}
+
+	@Test
+	void commitsSuccessfulToolStateWithItsResultsAndReloadsItOnTheSameThread() throws Exception {
+		var notes = new AgentHook() {
+			@Override
+			public String getName() {
+				return "notes";
+			}
+
+			@Override
+			public Map<String, KeyStrategy> getKeyStrategys() {
+				return Map.of("notes", new AppendStrategy());
+			}
+		};
+		var appendNote = FunctionToolCallback.builder("append_note",
+				(BiFunction<Map<String, String>, ToolContext, String>) (input, context) -> {
+					String note = input.get("text");
+					ToolContextHelper.getStateForUpdate(context).orElseThrow().put("notes", List.of(note));
+					if (note.equals("failed")) {
+						throw new IllegalStateException("The note could not be validated");
+					}
+					return "stored";
+				}).description("Append a note").inputType(Map.class).build();
+		ChatModel model = prompt -> {
+			if (prompt.getInstructions().stream().anyMatch(ToolResponseMessage.class::isInstance)) {
+				return answer("finished");
+			}
+			var calls = List.of("first", "failed", "last").stream()
+					.map(note -> new AssistantMessage.ToolCall(note, "function", "append_note",
+							"{\"text\":\"" + note + "\"}")).toList();
+			return new ChatResponse(List.of(new Generation(AssistantMessage.builder().toolCalls(calls).build())));
+		};
+		var thread = RunnableConfig.builder().threadId("notes").build();
+		var first = ReactAgent.builder().name(AGENT).model(model).saver(saver()).hooks(notes).tools(appendNote)
+				.parallelToolExecution(true).build();
+		assertThat(first.call("Store the notes", thread).getText()).isEqualTo("finished");
+
+		var restarted = ReactAgent.builder().name(AGENT).model(model).saver(saver()).build();
+		var saved = restarted.getCurrentState(thread).state();
+		assertThat(saved.<List<String>>value("notes").orElseThrow()).containsExactly("first", "last");
+		assertThat(saved.<List<Message>>value("messages").orElseThrow()).filteredOn(ToolResponseMessage.class::isInstance)
+				.singleElement().satisfies(message -> assertThat(((ToolResponseMessage) message).getResults())
+						.extracting(result -> result.id()).containsExactly("first", "failed", "last"));
 	}
 
 	@Test

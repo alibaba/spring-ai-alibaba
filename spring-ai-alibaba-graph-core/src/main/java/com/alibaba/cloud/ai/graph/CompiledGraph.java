@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.Errors;
@@ -265,6 +266,17 @@ public class CompiledGraph {
 	}
 
 	/**
+	 * Returns the persisted approval request at the head of the given thread.
+	 * The caller is responsible for authorizing access to the thread.
+	 */
+	public Optional<InterruptionMetadata> getPendingInterruption(RunnableConfig config) {
+		var latest = config.withCheckPointId(null);
+		return compileConfig.checkpointSaver().flatMap(saver -> saver.get(latest))
+				.flatMap(checkpoint -> GraphRunnerContext.savedInterruption(checkpoint,
+						() -> StateSnapshot.of(keyStrategyMap, checkpoint, latest, stateGraph.getStateFactory()).state()));
+	}
+
+	/**
 	 * Same of {@link #stateOf(RunnableConfig)} but throws an IllegalStateException
 	 * if
 	 * checkpoint is not found.
@@ -475,10 +487,18 @@ public class CompiledGraph {
 	 * @return the initial state
 	 */
 	public Map<String, Object> getInitialState(Map<String, Object> inputs, RunnableConfig config) {
+		return getInitialState(inputs, config, false);
+	}
 
+	Map<String, Object> getInitialState(Map<String, Object> inputs, RunnableConfig config, boolean checkPendingApproval) {
 		return compileConfig.checkpointSaver()
 				.flatMap(saver -> saver.get(config))
-				.map(cp -> OverAllState.updateState(cp.getState(), inputs, keyStrategyMap))
+				.map(cp -> {
+					if (checkPendingApproval && GraphRunnerContext.hasPendingApproval(cp)) {
+						throw new IllegalStateException("The thread has a pending approval. Resume it before starting a new turn.");
+					}
+					return OverAllState.updateState(cp.getState(), inputs, keyStrategyMap);
+				})
 				.orElseGet(() -> OverAllState.updateState(new HashMap<>(), inputs, keyStrategyMap));
 	}
 

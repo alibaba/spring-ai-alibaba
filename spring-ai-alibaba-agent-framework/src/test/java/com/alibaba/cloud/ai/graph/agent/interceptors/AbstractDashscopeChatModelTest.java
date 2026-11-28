@@ -35,7 +35,7 @@ import org.springframework.ai.openai.OpenAiChatOptions;
 abstract class AbstractDashscopeChatModelTest {
 
 	// Base URL only. Spring AI's OpenAI client appends the chat-completions path.
-	private static final String DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode";
+	private static final String DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1";
 
 	private static final String DEFAULT_MODEL = "qwen-plus";
 
