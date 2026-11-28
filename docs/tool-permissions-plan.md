@@ -2,7 +2,7 @@
 
 现有框架可以根据工具元数据和 `HumanInTheLoopHook` 请求审批，并通过 Graph 检查点保存调用批次和审批决定。工具筛选解决模型能看到哪些工具，拦截器提供应用扩展点。框架仍缺少可配置的拒绝规则、统一的默认决策，以及内置文件工具的路径权限。在审批与执行之间，拦截器还可以改写调用，因此两处都需要检查。
 
-Deep Agents 的文件权限使用 READ 与 WRITE、顺序规则和允许、拒绝、人工审批三种决策。它对内置文件工具定义了覆盖范围，并将 shell、MCP 和自定义工具的资源访问交给各自的运行边界。Spring AI Alibaba 采用相同的声明式思路，并复用已有的 Graph 审批协议。[Deep Agents Permissions](https://docs.langchain.com/oss/python/deepagents/permissions)
+文件权限按 READ 与 WRITE 声明顺序规则，并支持允许、拒绝和人工审批三种决策。内置文件工具使用路径规则。Shell、MCP 和自定义工具的资源访问由各自的运行环境控制。人工审批复用 Graph 检查点和恢复协议。
 
 ## 实施
 
