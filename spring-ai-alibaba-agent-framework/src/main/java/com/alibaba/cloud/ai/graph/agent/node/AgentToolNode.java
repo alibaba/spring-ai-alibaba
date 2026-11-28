@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.graph.streaming.RunEventContext;
 import com.alibaba.cloud.ai.graph.agent.context.ToolResultArchive;
 
 import com.alibaba.cloud.ai.graph.GraphLifecycleListener;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
@@ -49,6 +50,8 @@ import com.alibaba.cloud.ai.graph.agent.tool.ToolCancelledException;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolStateCollector;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
+import com.alibaba.cloud.ai.graph.state.SequentialUpdates;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -301,16 +304,13 @@ public class AgentToolNode implements NodeActionWithConfig {
 	 *
 	 * <h3>State Merge Semantics</h3>
 	 * <p>
-	 * Sequential mode uses <b>last-write-wins</b> semantics for state updates. When
-	 * multiple tools write to the same key, the last tool's value overwrites previous
-	 * values. This preserves the original behavior from before parallel execution was
-	 * introduced.
-	 * </p>
-	 * <p>
-	 * Note: This differs from parallel execution mode, which respects
-	 * {@link com.alibaba.cloud.ai.graph.KeyStrategy} for merge operations. If you
-	 * need deterministic merge behavior (e.g., APPEND for lists), use parallel execution
-	 * mode instead.
+	 * Sequential mode preserves per-tool updates in tool-call order for keys configured
+	 * with a custom {@link com.alibaba.cloud.ai.graph.KeyStrategy} (via
+	 * {@link SequentialUpdates} when multiple tools update the same non-replace key),
+	 * defaulting to {@link KeyStrategy#REPLACE} (<b>last-write-wins</b>) when no custom
+	 * strategy is configured. {@link OverAllState} then applies each ordered update
+	 * step-by-step against the evolving state value without re-applying the strategy to
+	 * an already-reduced value.
 	 * </p>
 	 *
 	 * @see #executeToolCallsParallel(List, OverAllState, RunnableConfig)
@@ -319,6 +319,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 			OverAllState state, RunnableConfig config, ToolExecution execution) {
 
 		Map<String, Object> mergedUpdates = new HashMap<>(); // Accumulated results from successful tools
+		Map<String, KeyStrategy> keyStrategies = state.keyStrategies();
 		Map<String, ToolOutcome> outcomes = new LinkedHashMap<>();
 
 		for (var dispatch : toolCalls) {
@@ -329,10 +330,26 @@ public class AgentToolNode implements NodeActionWithConfig {
 					false, execution, null, -1);
 			outcomes.put(dispatch.key(), outcome);
 			// Merge immediately - subsequent timeout clear() won't affect already-merged data
-			mergedUpdates.putAll(toolSpecificUpdate);
+			for (Map.Entry<String, Object> entry : toolSpecificUpdate.entrySet()) {
+				String key = entry.getKey();
+				Object newValue = entry.getValue();
+				KeyStrategy strategy = keyStrategies != null
+						? keyStrategies.getOrDefault(key, KeyStrategy.REPLACE) : KeyStrategy.REPLACE;
+				if (newValue == OverAllState.MARK_FOR_REMOVAL
+						|| !mergedUpdates.containsKey(key) || isReplaceStrategy(strategy)) {
+					mergedUpdates.put(key, newValue);
+				}
+				else {
+					mergedUpdates.put(key, SequentialUpdates.append(mergedUpdates.get(key), newValue));
+				}
+			}
 		}
 
 		return new ToolBatch(outcomes, mergedUpdates);
+	}
+
+	private static boolean isReplaceStrategy(KeyStrategy strategy) {
+		return strategy == null || strategy == KeyStrategy.REPLACE || strategy.getClass() == ReplaceStrategy.class;
 	}
 
 	/**
@@ -351,14 +368,15 @@ public class AgentToolNode implements NodeActionWithConfig {
 	 * same key concurrently:
 	 * <ul>
 	 * <li>Keys with {@code APPEND} strategy: values from all tools are appended</li>
-	 * <li>Keys with {@code REPLACE} strategy: last value wins (non-deterministic order)</li>
+	 * <li>Keys with {@code REPLACE} strategy: last value wins (in call index order)</li>
 	 * </ul>
 	 * </p>
 	 * <p>
-	 * Note: This differs from sequential execution mode, which uses simple last-write-wins
-	 * semantics via {@code Map.putAll()}. The difference is intentional - parallel mode
-	 * was designed with KeyStrategy support from the start, while sequential mode preserves
-	 * the original behavior for backward compatibility.
+	 * Both sequential and parallel execution modes honor configured
+	 * {@link com.alibaba.cloud.ai.graph.KeyStrategy} instances; parallel mode collects
+	 * isolated per-tool maps via {@link ToolStateCollector} and merges them in tool-call
+	 * index order once all futures settle, whereas sequential mode folds each completed
+	 * tool's isolated update map immediately in execution order.
 	 * </p>
 	 *
 	 * @param toolCalls the tool calls to execute

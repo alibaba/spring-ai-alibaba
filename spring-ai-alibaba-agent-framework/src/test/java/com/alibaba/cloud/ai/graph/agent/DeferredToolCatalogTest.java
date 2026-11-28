@@ -179,6 +179,36 @@ class DeferredToolCatalogTest {
 		assertThat(executed).hasValue(0);
 	}
 
+	@Test
+	void combinesToolsLoadedBySequentialCallsInDefaultMode() throws Exception {
+		var loads = new AtomicInteger();
+		var executed = new AtomicInteger();
+		var catalog = DeferredToolCatalog.builder()
+			.tool("first", "First deferred tool", () -> {
+				loads.incrementAndGet();
+				return callback("first", "First deferred tool", executed, false);
+			})
+			.tool("second", "Second deferred tool", () -> {
+				loads.incrementAndGet();
+				return callback("second", "Second deferred tool", executed, false);
+			}).build();
+		var calls = new AtomicInteger();
+		var model = new StubModel(prompt -> switch (calls.getAndIncrement()) {
+			case 0 -> toolCalls(new ToolCall("first", "function", "load_tools", "{\"names\":[\"first\"]}"),
+					new ToolCall("second", "function", "load_tools", "{\"names\":[\"second\"]}"));
+			case 1 -> {
+				assertTools(prompt, "first", "second");
+				yield answer("both loaded sequentially");
+			}
+			default -> throw new AssertionError("Unexpected model request");
+		});
+		var agent = ReactAgent.builder().name("sequential_discovery").model(model).deferredTools(catalog).build();
+
+		assertThat(agent.call("load two tools sequentially").getText()).isEqualTo("both loaded sequentially");
+		assertThat(loads).hasValue(2);
+		assertThat(executed).hasValue(0);
+	}
+
 	private static DeferredToolCatalog catalog(AtomicInteger loads, AtomicInteger calls, boolean confirmation) {
 		return DeferredToolCatalog.builder().tool("reports", "Monthly report lookup", () -> {
 			loads.incrementAndGet();

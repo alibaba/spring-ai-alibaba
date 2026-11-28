@@ -115,6 +115,44 @@ class OnDemandSkillsTest {
 		verify(registry, times(3)).readSkillContent("reports");
 	}
 
+	@Test
+	void activatesGroupedToolsForMultipleSkillsReadInOneSequentialTurn() throws Exception {
+		var reports = SkillMetadata.builder().name("reports").description("Report instructions")
+			.skillPath("/private/registry/reports").build();
+		var charts = SkillMetadata.builder().name("charts").description("Chart instructions")
+			.skillPath("/private/registry/charts").build();
+		var registry = mock(SkillRegistry.class);
+		when(registry.get("reports")).thenReturn(Optional.of(reports));
+		when(registry.get("charts")).thenReturn(Optional.of(charts));
+		when(registry.readSkillContent("reports")).thenReturn("report skill");
+		when(registry.readSkillContent("charts")).thenReturn("chart skill");
+		var hook = SkillsAgentHook.builder().skillRegistry(registry).onDemand(2, 64)
+			.groupedTools(Map.of("reports", List.of(tool("run_report")), "charts", List.of(tool("draw_chart")))).build();
+		var rounds = new AtomicInteger();
+		var model = new StubModel(prompt -> {
+			var names = ((ToolCallingChatOptions) prompt.getOptions()).getToolCallbacks().stream()
+				.map(callback -> callback.getToolDefinition().name()).toList();
+			return switch (rounds.getAndIncrement()) {
+				case 0 -> {
+					assertThat(names).doesNotContain("run_report", "draw_chart");
+					yield new ChatResponse(List.of(new Generation(AssistantMessage.builder()
+						.toolCalls(List.of(
+								new AssistantMessage.ToolCall("r1", "function", "read_skill", "{\"skill_name\":\"reports\"}"),
+								new AssistantMessage.ToolCall("r2", "function", "read_skill", "{\"skill_name\":\"charts\"}")))
+						.build())));
+				}
+				case 1 -> {
+					assertThat(names).contains("run_report", "draw_chart");
+					yield answer("both skills active");
+				}
+				default -> throw new AssertionError("Unexpected model request");
+			};
+		});
+		var agent = ReactAgent.builder().name("multi-skills").model(model).hooks(List.of(hook)).build();
+
+		assertThat(agent.call("load both skills").getText()).isEqualTo("both skills active");
+	}
+
 	private static ToolCallback tool(String name) {
 		return FunctionToolCallback.builder(name, input -> "done").description("Example " + name)
 			.inputType(Map.class).build();

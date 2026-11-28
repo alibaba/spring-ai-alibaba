@@ -15,12 +15,17 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.state.ReplaceAllWith;
+import com.alibaba.cloud.ai.graph.state.SequentialUpdates;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.store.Store;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.util.JsonHelper;
 import org.springframework.util.CollectionUtils;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -89,6 +94,8 @@ public final class OverAllState implements Serializable {
 	 * go through this map.
 	 */
 	private final Map<String, Object> data;
+
+	private transient Message lastSequentialMessage;
 
 	/**
 	 * Mapping of keys to their respective update strategies. Determines how values for
@@ -278,8 +285,23 @@ public final class OverAllState implements Serializable {
 			}
 			if (partialState.get(key) == MARK_FOR_REMOVAL) {
 				this.data.remove(key);
+			} else if ("messages".equals(key) && partialState.get(key) instanceof SequentialUpdates sequential) {
+				SequentialResult seqResult = applySequentialUpdates(data.get(key), sequential, strategy);
+				this.lastSequentialMessage = seqResult.lastEmittedMessage();
+				if (seqResult.value() == MARK_FOR_REMOVAL) {
+					this.data.remove(key);
+				}
+				else {
+					this.data.put(key, seqResult.value());
+				}
 			} else {
-				this.data.put(key, strategy.apply(data.get(key), partialState.get(key)));
+				Object updated = applyPartialValue(data.get(key), partialState.get(key), strategy);
+				if (updated == MARK_FOR_REMOVAL) {
+					this.data.remove(key);
+				}
+				else {
+					this.data.put(key, updated);
+				}
 			}
 		});
 		return data();
@@ -308,7 +330,13 @@ public final class OverAllState implements Serializable {
 				this.data.remove(key);
 			}
 			else {
-				this.data.put(key, strategy.apply(data.get(key), partialState.get(key)));
+				Object updated = applyPartialValue(data.get(key), partialState.get(key), strategy);
+				if (updated == MARK_FOR_REMOVAL) {
+					this.data.remove(key);
+				}
+				else {
+					this.data.put(key, updated);
+				}
 			}
 		});
 	}
@@ -422,9 +450,184 @@ public final class OverAllState implements Serializable {
 				channel = KeyStrategy.REPLACE;
 			}
 
-			Object newValue = channel.apply(state.get(entry.getKey()), entry.getValue());
-			return entryOf(entry.getKey(), newValue);
+			Object newValue = applyPartialValue(state.get(entry.getKey()), entry.getValue(), channel);
+			return entryOf(entry.getKey(), newValue == MARK_FOR_REMOVAL ? null : newValue);
 		}).collect(toMapAllowingNulls(Map.Entry::getKey, Map.Entry::getValue));
+	}
+
+	Message consumeLastSequentialMessage() {
+		Message result = this.lastSequentialMessage;
+		this.lastSequentialMessage = null;
+		return result;
+	}
+
+	record SequentialResult(Object value, Message lastEmittedMessage) {
+	}
+
+	static Object applyPartialValue(Object currentValue, Object partialValue, KeyStrategy strategy) {
+		if (partialValue instanceof SequentialUpdates sequential) {
+			return applySequentialUpdates(currentValue, sequential, strategy).value();
+		}
+		return strategy.apply(currentValue, partialValue);
+	}
+
+	static SequentialResult applySequentialUpdates(Object currentValue, SequentialUpdates sequential,
+			KeyStrategy strategy) {
+		Object acc = currentValue;
+		boolean removed = false;
+		List<Message> survivingEmitted = new ArrayList<>();
+		for (Object step : sequential.updates()) {
+			List<Message> beforeMessages = extractMessages(acc);
+			if (step == MARK_FOR_REMOVAL) {
+				acc = null;
+				removed = true;
+			}
+			else {
+				acc = strategy.apply(acc, step);
+				if (acc == MARK_FOR_REMOVAL) {
+					acc = null;
+					removed = true;
+				}
+				else {
+					removed = false;
+				}
+			}
+			updateSurvivingEmittedMessages(survivingEmitted, beforeMessages,
+					removed ? List.of() : extractMessages(acc), step);
+		}
+		Message lastMessage = survivingEmitted.isEmpty() ? null : survivingEmitted.get(survivingEmitted.size() - 1);
+		return new SequentialResult(removed ? MARK_FOR_REMOVAL : acc, lastMessage);
+	}
+
+	private static void updateSurvivingEmittedMessages(List<Message> survivingEmitted, List<Message> before,
+			List<Message> after, Object step) {
+		if (after.isEmpty() || step == MARK_FOR_REMOVAL) {
+			survivingEmitted.clear();
+			return;
+		}
+		if (after.equals(before)) {
+			return;
+		}
+		if (step instanceof ReplaceAllWith<?> replace) {
+			survivingEmitted.clear();
+			List<Message> stepMessages = extractMessages(replace.newValues());
+			Map<Message, Integer> remainingAfter = countMessages(after);
+			for (Message candidate : stepMessages) {
+				int available = remainingAfter.getOrDefault(candidate, 0);
+				if (available > 0) {
+					survivingEmitted.add(candidate);
+					remainingAfter.put(candidate, available - 1);
+				}
+			}
+			if (survivingEmitted.isEmpty() && !stepMessages.isEmpty()) {
+				Map<Message, Integer> beforeCounts = countMessages(before);
+				Map<Message, Integer> afterCounts = countMessages(after);
+				for (Message committed : after) {
+					int delta = afterCounts.getOrDefault(committed, 0) - beforeCounts.getOrDefault(committed, 0);
+					if (delta > 0) {
+						survivingEmitted.add(committed);
+						beforeCounts.put(committed, beforeCounts.getOrDefault(committed, 0) + 1);
+					}
+				}
+			}
+			return;
+		}
+		Map<Message, Integer> beforeCounts = countMessages(before);
+		Map<Message, Integer> afterCounts = countMessages(after);
+		for (Map.Entry<Message, Integer> entry : beforeCounts.entrySet()) {
+			int drop = entry.getValue() - afterCounts.getOrDefault(entry.getKey(), 0);
+			for (int d = 0; d < drop; d++) {
+				removeLastOccurrence(survivingEmitted, entry.getKey());
+			}
+		}
+		Map<Message, Integer> remainingAfter = new HashMap<>(afterCounts);
+		List<Message> stillPresent = new ArrayList<>(survivingEmitted.size());
+		for (Message msg : survivingEmitted) {
+			int rem = remainingAfter.getOrDefault(msg, 0);
+			if (rem > 0) {
+				stillPresent.add(msg);
+				remainingAfter.put(msg, rem - 1);
+			}
+		}
+		survivingEmitted.clear();
+		survivingEmitted.addAll(stillPresent);
+
+		List<Message> stepMessages = extractMessages(step);
+		if (stepMessages.isEmpty()) {
+			return;
+		}
+		Map<Message, Integer> netAdded = new HashMap<>();
+		for (Map.Entry<Message, Integer> entry : afterCounts.entrySet()) {
+			int diff = entry.getValue() - beforeCounts.getOrDefault(entry.getKey(), 0);
+			if (diff > 0) {
+				netAdded.put(entry.getKey(), diff);
+			}
+		}
+		boolean matchedStepCandidate = false;
+		for (Message candidate : stepMessages) {
+			int avail = netAdded.getOrDefault(candidate, 0);
+			if (avail > 0) {
+				survivingEmitted.add(candidate);
+				netAdded.put(candidate, avail - 1);
+				matchedStepCandidate = true;
+			}
+			else if (afterCounts.getOrDefault(candidate, 0) > 0) {
+				removeLastOccurrence(survivingEmitted, candidate);
+				survivingEmitted.add(candidate);
+				matchedStepCandidate = true;
+			}
+		}
+		if (!matchedStepCandidate) {
+			for (Message committed : after) {
+				int avail = netAdded.getOrDefault(committed, 0);
+				if (avail > 0) {
+					survivingEmitted.add(committed);
+					netAdded.put(committed, avail - 1);
+				}
+			}
+		}
+	}
+
+	private static List<Message> extractMessages(Object source) {
+		if (source == null || source == MARK_FOR_REMOVAL) {
+			return List.of();
+		}
+		List<Message> result = new ArrayList<>();
+		collectMessages(source, result);
+		return result;
+	}
+
+	private static void collectMessages(Object source, Collection<Message> target) {
+		if (source instanceof Message msg) {
+			target.add(msg);
+		}
+		else if (source instanceof SequentialUpdates nested) {
+			for (Object item : nested.updates()) {
+				collectMessages(item, target);
+			}
+		}
+		else if (source instanceof Collection<?> items) {
+			for (Object item : items) {
+				collectMessages(item, target);
+			}
+		}
+	}
+
+	private static Map<Message, Integer> countMessages(List<Message> messages) {
+		Map<Message, Integer> counts = new HashMap<>();
+		for (Message msg : messages) {
+			counts.merge(msg, 1, Integer::sum);
+		}
+		return counts;
+	}
+
+	private static void removeLastOccurrence(List<Message> list, Message target) {
+		for (int i = list.size() - 1; i >= 0; i--) {
+			if (Objects.equals(list.get(i), target)) {
+				list.remove(i);
+				return;
+			}
+		}
 	}
 
 	private static <T, K, U> Collector<T, ?, Map<K, U>> toMapRemovingNulls(Function<? super T, ? extends K> keyMapper,

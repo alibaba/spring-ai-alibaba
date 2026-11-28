@@ -15,10 +15,22 @@
  */
 package com.alibaba.cloud.ai.graph.agent.node;
 
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
+import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.agent.tool.AsyncToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.StateAwareToolCallback;
+import com.alibaba.cloud.ai.graph.checkpoint.CheckpointWrite;
+import com.alibaba.cloud.ai.graph.state.RemoveByValue;
+import com.alibaba.cloud.ai.graph.state.RemoveMessage;
+import com.alibaba.cloud.ai.graph.state.ReplaceAllWith;
+import com.alibaba.cloud.ai.graph.state.SequentialUpdates;
+import com.alibaba.cloud.ai.graph.state.strategy.MessageIdStrategy;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,6 +38,7 @@ import org.junit.jupiter.api.Timeout;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -40,6 +53,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_STATE_FOR_UPDATE_CONTEXT_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -221,6 +235,300 @@ class AgentToolNodeSequentialStateIsolationTest {
 		}
 	}
 
+	@Test
+	@Timeout(value = 15, unit = TimeUnit.SECONDS)
+	@DisplayName("Sequential execution: MARK_FOR_REMOVAL sentinel should not be consumed by APPEND KeyStrategy")
+	void testSequentialMarkForRemovalSentinelPreservedOnAppendKey() throws Exception {
+		ToolCallback appendTool = new StateWritingSyncTool("appendTool", "items", List.of("x"));
+		ToolCallback removeTool = new StateWritingSyncTool("removeTool", "items", OverAllState.MARK_FOR_REMOVAL);
+
+		AgentToolNode toolNode = baseBuilder.toolCallbacks(List.of(appendTool, removeTool))
+			.parallelToolExecution(false)
+			.toolExecutionTimeout(Duration.ofSeconds(30))
+			.build();
+
+		AssistantMessage assistantMessage = createAssistantMessageWithToolCalls(
+				createToolCall("call_1", "appendTool", "{}"), createToolCall("call_2", "removeTool", "{}"));
+
+		OverAllState state = createStateWithMessages(assistantMessage);
+		state.registerKeyAndStrategy("items", KeyStrategy.APPEND);
+		state.updateState(Map.of("items", List.of("initial")));
+
+		RunnableConfig config = RunnableConfig.builder().threadId("test-thread").build();
+
+		Map<String, Object> result = toolNode.apply(state, config);
+
+		assertThat(result.get("items")).isSameAs(OverAllState.MARK_FOR_REMOVAL);
+		state.updateState(result);
+		assertThat(state.value("items")).isEmpty();
+	}
+
+	@Test
+	@Timeout(value = 15, unit = TimeUnit.SECONDS)
+	@DisplayName("Sequential execution: APPEND control directives (ReplaceAllWith, RemoveByValue, MARK_FOR_REMOVAL) survive folding")
+	void testSequentialAppendDirectivesSurviveBatchFolding() throws Exception {
+		RunnableConfig config = RunnableConfig.builder().threadId("test-thread").build();
+
+		// 1. Append followed by ReplaceAllWith replaces pre-batch and batch items
+		ToolCallback appendX = new StateWritingSyncTool("appendX", "items", List.of("x"));
+		ToolCallback replaceY = new StateWritingSyncTool("replaceY", "items", ReplaceAllWith.of(List.of("y")));
+		AgentToolNode replaceLastNode = baseBuilder.toolCallbacks(List.of(appendX, replaceY))
+			.parallelToolExecution(false)
+			.toolExecutionTimeout(Duration.ofSeconds(30))
+			.build();
+		OverAllState state1 = createStateWithMessages(createAssistantMessageWithToolCalls(
+				createToolCall("call_1", "appendX", "{}"), createToolCall("call_2", "replaceY", "{}")));
+		state1.registerKeyAndStrategy("items", KeyStrategy.APPEND);
+		state1.updateState(Map.of("items", List.of("old")));
+		state1.updateState(replaceLastNode.apply(state1, config));
+		assertThat(state1.value("items")).contains(List.of("y"));
+
+		// 2. ReplaceAllWith followed by Append keeps replacement semantics and appends later item
+		ToolCallback replaceX = new StateWritingSyncTool("replaceX", "items", ReplaceAllWith.of(List.of("x")));
+		ToolCallback appendY = new StateWritingSyncTool("appendY", "items", List.of("y"));
+		AgentToolNode replaceFirstNode = baseBuilder.toolCallbacks(List.of(replaceX, appendY))
+			.parallelToolExecution(false)
+			.toolExecutionTimeout(Duration.ofSeconds(30))
+			.build();
+		OverAllState state2 = createStateWithMessages(createAssistantMessageWithToolCalls(
+				createToolCall("call_1", "replaceX", "{}"), createToolCall("call_2", "appendY", "{}")));
+		state2.registerKeyAndStrategy("items", KeyStrategy.APPEND);
+		state2.updateState(Map.of("items", List.of("old")));
+		state2.updateState(replaceFirstNode.apply(state2, config));
+		assertThat(state2.value("items")).contains(List.of("x", "y"));
+
+		// 3. MARK_FOR_REMOVAL followed by Append starts fresh without pre-batch items
+		ToolCallback clearItems = new StateWritingSyncTool("clearItems", "items", OverAllState.MARK_FOR_REMOVAL);
+		AgentToolNode clearThenAppendNode = baseBuilder.toolCallbacks(List.of(clearItems, appendY))
+			.parallelToolExecution(false)
+			.toolExecutionTimeout(Duration.ofSeconds(30))
+			.build();
+		OverAllState state3 = createStateWithMessages(createAssistantMessageWithToolCalls(
+				createToolCall("call_1", "clearItems", "{}"), createToolCall("call_2", "appendY", "{}")));
+		state3.registerKeyAndStrategy("items", KeyStrategy.APPEND);
+		state3.updateState(Map.of("items", List.of("old")));
+		state3.updateState(clearThenAppendNode.apply(state3, config));
+		assertThat(state3.value("items")).contains(List.of("y"));
+
+		// 4. RemoveByValue removes pre-batch and in-batch items accurately
+		ToolCallback appendXY = new StateWritingSyncTool("appendXY", "items", List.of("x", "y"));
+		ToolCallback removeOld = new StateWritingSyncTool("removeOld", "items", RemoveByValue.of("old"));
+		ToolCallback removeX = new StateWritingSyncTool("removeX", "items", RemoveByValue.of("x"));
+		AgentToolNode removeNode = baseBuilder.toolCallbacks(List.of(appendXY, removeOld, removeX))
+			.parallelToolExecution(false)
+			.toolExecutionTimeout(Duration.ofSeconds(30))
+			.build();
+		OverAllState state4 = createStateWithMessages(createAssistantMessageWithToolCalls(
+				createToolCall("call_1", "appendXY", "{}"),
+				createToolCall("call_2", "removeOld", "{}"),
+				createToolCall("call_3", "removeX", "{}")));
+		state4.registerKeyAndStrategy("items", KeyStrategy.APPEND);
+		state4.updateState(Map.of("items", List.of("old", "keep")));
+		state4.updateState(removeNode.apply(state4, config));
+		assertThat(state4.value("items")).contains(List.of("keep", "y"));
+
+		// 5. Intra-tool atomic [b, RemoveByValue(b)] keeps 'b' when no prior 'b' existed
+		ToolCallback appendA = new StateWritingSyncTool("appendA", "items", List.of("a"));
+		ToolCallback appendAndRemoveB = new StateWritingSyncTool("appendAndRemoveB", "items",
+				List.of("b", RemoveByValue.of("b")));
+		AgentToolNode atomicBatchNode = baseBuilder.toolCallbacks(List.of(appendA, appendAndRemoveB))
+			.parallelToolExecution(false)
+			.toolExecutionTimeout(Duration.ofSeconds(30))
+			.build();
+		OverAllState state5 = createStateWithMessages(createAssistantMessageWithToolCalls(
+				createToolCall("call_1", "appendA", "{}"), createToolCall("call_2", "appendAndRemoveB", "{}")));
+		state5.registerKeyAndStrategy("items", KeyStrategy.APPEND);
+		state5.updateState(atomicBatchNode.apply(state5, config));
+		assertThat(state5.value("items")).contains(List.of("a", "b"));
+
+		// 6. Non-associative custom KeyStrategy applies state-first without double-reducing
+		ToolCallback writeA = new StateWritingSyncTool("writeA", "custom", "a");
+		ToolCallback writeB = new StateWritingSyncTool("writeB", "custom", "b");
+		AgentToolNode customStrategyNode = baseBuilder.toolCallbacks(List.of(writeA, writeB))
+			.parallelToolExecution(false)
+			.toolExecutionTimeout(Duration.ofSeconds(30))
+			.build();
+		OverAllState state6 = createStateWithMessages(createAssistantMessageWithToolCalls(
+				createToolCall("call_1", "writeA", "{}"), createToolCall("call_2", "writeB", "{}")));
+		state6.registerKeyAndStrategy("custom", (oldVal, newVal) -> newVal + "-merged");
+		state6.updateState(Map.of("custom", "init"));
+		Map<String, Object> rawDelta = customStrategyNode.apply(state6, config);
+		Map<String, Object> roundTrippedDelta = CheckpointWrite.decode(CheckpointWrite.encode(rawDelta));
+		state6.updateState(roundTrippedDelta);
+		assertThat(state6.value("custom")).contains("b-merged");
+
+		// 7. StreamingOutput honors later ReplaceAllWith / RemoveByValue on SequentialUpdates("messages")
+		Message msgA = new UserMessage("stale-A");
+		Message msgB = new UserMessage("fresh-B");
+		StateGraph replaceGraph = new StateGraph(() -> Map.of("messages", KeyStrategy.APPEND))
+			.addNode("step", (s, c) -> CompletableFuture.completedFuture(
+					Map.of("messages", SequentialUpdates.of(List.of(msgA, ReplaceAllWith.of(List.of(msgB)))))))
+			.addEdge(StateGraph.START, "step")
+			.addEdge("step", StateGraph.END);
+		var replaceOutputs = replaceGraph.compile().stream(Map.of()).collectList().block(Duration.ofSeconds(5));
+		StreamingOutput<?> stepOutput = replaceOutputs.stream()
+			.filter(o -> "step".equals(o.node()) && o instanceof StreamingOutput<?>)
+			.map(o -> (StreamingOutput<?>) o)
+			.findFirst()
+			.orElseThrow();
+		assertThat(stepOutput.message()).isEqualTo(msgB);
+
+		StateGraph removeAllGraph = new StateGraph(() -> Map.of("messages", KeyStrategy.APPEND))
+			.addNode("step", (s, c) -> CompletableFuture.completedFuture(
+					Map.of("messages", SequentialUpdates.of(List.of(msgA, ReplaceAllWith.of(List.of()))))))
+			.addEdge(StateGraph.START, "step")
+			.addEdge("step", StateGraph.END);
+		var removeOutputs = removeAllGraph.compile().stream(Map.of("messages", List.of(new UserMessage("prior"))))
+			.collectList().block(Duration.ofSeconds(5));
+		StreamingOutput<?> emptyStepOutput = removeOutputs.stream()
+			.filter(o -> "step".equals(o.node()) && o instanceof StreamingOutput<?>)
+			.map(o -> (StreamingOutput<?>) o)
+			.findFirst()
+			.orElseThrow();
+		assertThat(emptyStepOutput.message()).isNull();
+
+		// 8. streamFromInitialNode uses OverAllState's active strategy & custom message reducers are not re-run
+		Message identifiedA = UserMessage.builder().text("identified-A")
+			.metadata(Map.of(MessageIdStrategy.MESSAGE_ID, "id-x")).build();
+		StateGraph overrideStrategyGraph = new StateGraph(() -> Map.of("messages", KeyStrategy.APPEND))
+			.addNode("step", (s, c) -> CompletableFuture.completedFuture(
+					Map.of("messages", SequentialUpdates.of(List.of(identifiedA, new RemoveMessage("id-x"))))))
+			.addEdge(StateGraph.START, "step")
+			.addEdge("step", StateGraph.END);
+		OverAllState initialOverrideState = new OverAllState(new HashMap<>(Map.of("messages", new ArrayList<>())));
+		initialOverrideState.registerKeyAndStrategy("messages", new MessageIdStrategy());
+		var overrideOutputs = overrideStrategyGraph.compile()
+			.streamFromInitialNode(initialOverrideState, config)
+			.collectList().block(Duration.ofSeconds(5));
+		StreamingOutput<?> overrideStepOutput = overrideOutputs.stream()
+			.filter(o -> "step".equals(o.node()) && o instanceof StreamingOutput<?>)
+			.map(o -> (StreamingOutput<?>) o)
+			.findFirst()
+			.orElseThrow();
+		assertThat(overrideStepOutput.message()).isNull();
+
+		AtomicInteger reducerInvocations = new AtomicInteger();
+		KeyStrategy statefulMessageReducer = (oldVal, newVal) -> {
+			reducerInvocations.incrementAndGet();
+			if (oldVal == null && newVal instanceof List<?> seedList) {
+				return new ArrayList<>(seedList);
+			}
+			List<Object> copy = new ArrayList<>((List<?>) oldVal);
+			copy.add(newVal);
+			return copy;
+		};
+		StateGraph customMessageReducerGraph = new StateGraph(() -> Map.of("messages", statefulMessageReducer))
+			.addNode("step", (s, c) -> CompletableFuture.completedFuture(
+					Map.of("messages", SequentialUpdates.of(List.of(msgA, msgB)))))
+			.addEdge(StateGraph.START, "step")
+			.addEdge("step", StateGraph.END);
+		var customReducerOutputs = customMessageReducerGraph.compile()
+			.stream(Map.of("messages", new ArrayList<>(List.of(new UserMessage("seed")))))
+			.collectList().block(Duration.ofSeconds(5));
+		StreamingOutput<?> customReducerStepOutput = customReducerOutputs.stream()
+			.filter(o -> "step".equals(o.node()) && o instanceof StreamingOutput<?>)
+			.map(o -> (StreamingOutput<?>) o)
+			.findFirst()
+			.orElseThrow();
+		assertThat(customReducerStepOutput.message()).isEqualTo(msgB);
+		// 1 call for initial seed + 2 calls for [msgA, msgB] during commit; 0 extra calls during buildNodeOutput
+		assertThat(reducerInvocations).hasValue(3);
+
+		// 9. Custom delegating APPEND reducer does not re-emit pre-existing message when batch adds and removes msgA
+		Message oldSeed = new UserMessage("old-seed");
+		KeyStrategy metricsAppendWrapper = (oldVal, newVal) -> KeyStrategy.APPEND.apply(oldVal, newVal);
+		StateGraph cancelledCustomBatchGraph = new StateGraph(() -> Map.of("messages", metricsAppendWrapper))
+			.addNode("step", (s, c) -> CompletableFuture.completedFuture(
+					Map.of("messages", SequentialUpdates.of(List.of(msgA, RemoveByValue.of(msgA))))))
+			.addEdge(StateGraph.START, "step")
+			.addEdge("step", StateGraph.END);
+		var cancelledOutputs = cancelledCustomBatchGraph.compile()
+			.stream(Map.of("messages", List.of(oldSeed)))
+			.collectList().block(Duration.ofSeconds(5));
+		StreamingOutput<?> cancelledStepOutput = cancelledOutputs.stream()
+			.filter(o -> "step".equals(o.node()) && o instanceof StreamingOutput<?>)
+			.map(o -> (StreamingOutput<?>) o)
+			.findFirst()
+			.orElseThrow();
+		assertThat(cancelledStepOutput.message()).isNull();
+
+		// 10. Overridden ReplaceStrategy subclass retains ordered updates
+		KeyStrategy overriddenReplace = new ReplaceStrategy() {
+			@Override
+			public Object apply(Object oldVal, Object newVal) {
+				return (oldVal == null ? "" : oldVal + "+") + newVal;
+			}
+		};
+		OverAllState state10 = createStateWithMessages(createAssistantMessageWithToolCalls(
+				createToolCall("call_1", "writeA", "{}"), createToolCall("call_2", "writeB", "{}")));
+		state10.registerKeyAndStrategy("custom", overriddenReplace);
+		state10.updateState(customStrategyNode.apply(state10, config));
+		assertThat(state10.value("custom")).contains("a+b");
+
+		// 11. Prepending custom reducer preserves batch order (msgB over msgA) & excludes conditional edge updates
+		Message edgeMsgC = new UserMessage("edge-C");
+		KeyStrategy prependingReducer = (oldVal, newVal) -> {
+			List<Object> base = oldVal instanceof List<?> list ? new ArrayList<>(list) : new ArrayList<>();
+			if (newVal instanceof List<?> incoming) {
+				base.addAll(0, incoming);
+			}
+			else if (newVal != null) {
+				base.add(0, newVal);
+			}
+			return base;
+		};
+		AsyncCommandAction edgeWithMessageUpdate = (s, c) -> CompletableFuture.completedFuture(
+				new Command(StateGraph.END, Map.of("messages", edgeMsgC)));
+		StateGraph prependAndEdgeGraph = new StateGraph(() -> Map.of("messages", prependingReducer))
+			.addNode("step", (s, c) -> CompletableFuture.completedFuture(
+					Map.of("messages", SequentialUpdates.of(List.of(msgA, msgB)))))
+			.addEdge(StateGraph.START, "step")
+			.addConditionalEdges("step", edgeWithMessageUpdate, Map.of(StateGraph.END, StateGraph.END));
+		var prependOutputs = prependAndEdgeGraph.compile()
+			.stream(Map.of("messages", List.of(oldSeed)))
+			.collectList().block(Duration.ofSeconds(5));
+		StreamingOutput<?> prependStepOutput = prependOutputs.stream()
+			.filter(o -> "step".equals(o.node()) && o instanceof StreamingOutput<?>)
+			.map(o -> (StreamingOutput<?>) o)
+			.findFirst()
+			.orElseThrow();
+		assertThat(prependStepOutput.message()).isEqualTo(msgB);
+
+		// 12. First-write-wins custom reducer rejecting ReplaceAllWith does not emit pre-batch message (even when equal to msgB)
+		KeyStrategy firstWriteWinsReducer = (oldVal, newVal) -> oldVal != null ? oldVal : newVal;
+		StateGraph rejectedResetGraph = new StateGraph(() -> Map.of("messages", firstWriteWinsReducer))
+			.addNode("step", (s, c) -> CompletableFuture.completedFuture(
+					Map.of("messages", SequentialUpdates.of(List.of(msgA, ReplaceAllWith.of(List.of(msgB)))))))
+			.addEdge(StateGraph.START, "step")
+			.addEdge("step", StateGraph.END);
+		var rejectedResetOutputs = rejectedResetGraph.compile()
+			.stream(Map.of("messages", List.of(msgB)))
+			.collectList().block(Duration.ofSeconds(5));
+		StreamingOutput<?> rejectedResetStepOutput = rejectedResetOutputs.stream()
+			.filter(o -> "step".equals(o.node()) && o instanceof StreamingOutput<?>)
+			.map(o -> (StreamingOutput<?>) o)
+			.findFirst()
+			.orElseThrow();
+		assertThat(rejectedResetStepOutput.message()).isNull();
+
+		// 13. Reducer-driven MARK_FOR_REMOVAL resets accumulator to null for subsequent sequential updates
+		KeyStrategy deleteOnKeywordReducer = (oldVal, newVal) -> "delete".equals(newVal)
+				? OverAllState.MARK_FOR_REMOVAL
+				: (oldVal == null ? String.valueOf(newVal) : oldVal + ":" + newVal);
+		ToolCallback deleteStep = new StateWritingSyncTool("deleteStep", "custom", "delete");
+		ToolCallback nextStep = new StateWritingSyncTool("nextStep", "custom", "next");
+		AgentToolNode deleteThenNextNode = baseBuilder.toolCallbacks(List.of(deleteStep, nextStep))
+			.parallelToolExecution(false)
+			.toolExecutionTimeout(Duration.ofSeconds(30))
+			.build();
+		OverAllState state13 = createStateWithMessages(createAssistantMessageWithToolCalls(
+				createToolCall("call_1", "deleteStep", "{}"), createToolCall("call_2", "nextStep", "{}")));
+		state13.registerKeyAndStrategy("custom", deleteOnKeywordReducer);
+		state13.updateState(Map.of("custom", "prior"));
+		state13.updateState(deleteThenNextNode.apply(state13, config));
+		assertThat(state13.value("custom")).contains("next");
+	}
+
 	// Helper methods
 
 	private ToolCallback createStateWritingTool(String name, String stateKey, String stateValue) {
@@ -258,9 +566,9 @@ class AgentToolNodeSequentialStateIsolationTest {
 
 		private final String stateKey;
 
-		private final String stateValue;
+		private final Object stateValue;
 
-		StateWritingSyncTool(String name, String stateKey, String stateValue) {
+		StateWritingSyncTool(String name, String stateKey, Object stateValue) {
 			this.name = name;
 			this.stateKey = stateKey;
 			this.stateValue = stateValue;

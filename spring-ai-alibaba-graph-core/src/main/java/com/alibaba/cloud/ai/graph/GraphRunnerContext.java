@@ -26,7 +26,11 @@ import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.ParallelBranchPath;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
+import com.alibaba.cloud.ai.graph.state.SequentialUpdates;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.state.strategy.MessageIdStrategy;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.RunEvent;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
@@ -105,6 +109,10 @@ public class GraphRunnerContext {
 	String nextNodeId;
 
 	Usage tokenUsage;
+
+	private Message lastSequentialNodeMessage;
+
+	private boolean hasLastSequentialNodeMessage;
 
 	String resumeFrom;
 
@@ -574,8 +582,13 @@ public class GraphRunnerContext {
 	public void mergeIntoCurrentState(Map<String, Object> updateState) {
 		// Create a new map and filter out ChatResponse entries
 		Map<String, Object> filteredState = findTokenUsageInDeltaState(updateState);
+		boolean sequentialMessageBatch = filteredState.get("messages") instanceof SequentialUpdates;
 		var write = captureWrites && !filteredState.isEmpty() ? CheckpointWrite.encode(filteredState) : null;
 		this.overallState.updateState(filteredState);
+		if (sequentialMessageBatch) {
+			this.lastSequentialNodeMessage = this.overallState.consumeLastSequentialMessage();
+			this.hasLastSequentialNodeMessage = true;
+		}
 		if (write != null) {
 			branchWrites.add(write);
 		}
@@ -704,25 +717,31 @@ public class GraphRunnerContext {
 
 	public NodeOutput buildNodeOutput(String nodeId, Map<String, Object> updateStates, boolean streaming) throws Exception {
 		Message message = null;
+		boolean hasRecordedSequentialMessage = this.hasLastSequentialNodeMessage;
+		Message recordedSequentialMessage = this.lastSequentialNodeMessage;
+		this.lastSequentialNodeMessage = null;
+		this.hasLastSequentialNodeMessage = false;
 
 		// Check if updateStates is not empty
 		if (updateStates != null && !updateStates.isEmpty()) {
-			// Check if "messages" key exists and is a List
 			Object messagesObj = updateStates.get("messages");
-			if (messagesObj instanceof List<?> messagesList && !messagesList.isEmpty()) {
-				// Iterate backwards to find the last Message, skipping non-Message
-				// markers such as RemoveByHash that may be appended after the actual
-				// message (e.g. in HITL partial tool-response handling).
-				for (int i = messagesList.size() - 1; i >= 0; i--) {
-					Object element = messagesList.get(i);
-					if (element instanceof Message msg) {
-						message = msg;
-						break;
+			if (messagesObj instanceof SequentialUpdates sequential) {
+				if (hasRecordedSequentialMessage) {
+					message = recordedSequentialMessage;
+				}
+				else {
+					Map<String, KeyStrategy> activeStrategies = overallState != null
+							? overallState.keyStrategies() : getKeyStrategyMap();
+					KeyStrategy messageStrategy = activeStrategies != null
+							? activeStrategies.getOrDefault("messages", KeyStrategy.REPLACE) : KeyStrategy.REPLACE;
+					if (isBuiltInPureMessageStrategy(messageStrategy)) {
+						message = OverAllState.applySequentialUpdates(null, sequential, messageStrategy)
+								.lastEmittedMessage();
 					}
 				}
-			} else if (messagesObj instanceof Message singleMessage) {
-				// If it's a single Message instance
-				message = singleMessage;
+			}
+			else {
+				message = findLastMessage(messagesObj);
 			}
 		}
 
@@ -735,6 +754,35 @@ public class GraphRunnerContext {
 			return new StreamingOutput<>(nodeId, (String) config.metadata("_AGENT_").orElse(""),
 					nodeOutputState(), tokenUsage, outputType);
 		}
+	}
+
+	private static Message findLastMessage(Object messagesObj) {
+		if (messagesObj == null || messagesObj == OverAllState.MARK_FOR_REMOVAL) {
+			return null;
+		}
+		if (messagesObj instanceof Message singleMessage) {
+			return singleMessage;
+		}
+		if (messagesObj instanceof List<?> messagesList && !messagesList.isEmpty()) {
+			// Iterate backwards to find the last Message, skipping non-Message
+			// markers such as RemoveByHash that may be appended after the actual
+			// message (e.g. in HITL partial tool-response handling).
+			for (int i = messagesList.size() - 1; i >= 0; i--) {
+				Message nested = findLastMessage(messagesList.get(i));
+				if (nested != null) {
+					return nested;
+				}
+			}
+		}
+		return null;
+	}
+
+	private static boolean isBuiltInPureMessageStrategy(KeyStrategy strategy) {
+		if (strategy == KeyStrategy.REPLACE) {
+			return true;
+		}
+		Class<?> type = strategy.getClass();
+		return type == ReplaceStrategy.class || type == AppendStrategy.class || type == MessageIdStrategy.class;
 	}
 
 }
