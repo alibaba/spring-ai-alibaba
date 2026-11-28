@@ -60,6 +60,8 @@ public final class ToolResultArchive {
 
 	private static final String MANIFEST_SUFFIX = "-manifest";
 
+	private static final String LEGACY_MANIFEST_SUFFIX = ":manifest";
+
 	private static final String PAGE_COUNT = "pages";
 
 	private static final String TEXT = "text";
@@ -118,7 +120,8 @@ public final class ToolResultArchive {
 			String reference = digest(namespace.get().get(1), callKey, Objects.toString(result.name(), ""),
 					Integer.toString(this.pageSizeChars), content);
 			int pages = (int) ((chars + (long) this.pageSizeChars - 1) / this.pageSizeChars);
-			if (this.store.getItem(namespace.get(), reference + MANIFEST_SUFFIX).isEmpty()) {
+			if (this.store.getItem(namespace.get(), reference + MANIFEST_SUFFIX).isEmpty()
+					&& getLegacyItem(namespace.get(), reference + LEGACY_MANIFEST_SUFFIX).isEmpty()) {
 				writePages(namespace.get(), reference, content, chars, pages);
 			}
 			var attributes = new HashMap<>(result.attributes());
@@ -165,11 +168,19 @@ public final class ToolResultArchive {
 			return Optional.empty();
 		}
 		var manifest = this.store.getItem(namespace.get(), reference + MANIFEST_SUFFIX);
+		boolean legacy = false;
+		if (manifest.isEmpty()) {
+			manifest = getLegacyItem(namespace.get(), reference + LEGACY_MANIFEST_SUFFIX);
+			legacy = manifest.isPresent();
+		}
 		if (manifest.isEmpty() || !(manifest.get().getValue().get(PAGE_COUNT) instanceof Number count)
 				|| page > count.intValue()) {
 			return Optional.empty();
 		}
-		return this.store.getItem(namespace.get(), pageKey(reference, page))
+		Optional<StoreItem> storedPage = legacy
+				? getLegacyItem(namespace.get(), legacyPageKey(reference, page))
+				: this.store.getItem(namespace.get(), pageKey(reference, page));
+		return storedPage
 			.map(item -> item.getValue().get(TEXT))
 			.filter(String.class::isInstance)
 			.map(String.class::cast)
@@ -205,8 +216,26 @@ public final class ToolResultArchive {
 		});
 	}
 
+	private Optional<StoreItem> getLegacyItem(List<String> namespace, String key) {
+		try {
+			return this.store.getItem(namespace, key);
+		}
+		catch (RuntimeException ex) {
+			for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
+				if (cause instanceof IllegalArgumentException) {
+					return Optional.empty();
+				}
+			}
+			throw ex;
+		}
+	}
+
 	private static String pageKey(String reference, int page) {
 		return reference + "-page-" + page;
+	}
+
+	private static String legacyPageKey(String reference, int page) {
+		return reference + ":page:" + page;
 	}
 
 	private static String digest(String... parts) {

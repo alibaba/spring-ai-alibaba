@@ -224,6 +224,30 @@ class ToolResultArchiveTest {
 		assertThat(calls).hasValue(3);
 	}
 
+	@Test
+	void readsLegacyColonDelimitedArchiveEntriesDuringUpgrade() {
+		var scope = config("tenant-a", "thread");
+		var legacyStore = new MemoryStore();
+		var recordingStore = new MemoryStore() {
+			@Override
+			public void putItem(StoreItem item) {
+				String legacyKey = item.getKey().replace("-manifest", ":manifest").replace("-page-", ":page:");
+				legacyStore.putItem(StoreItem.of(item.getNamespace(), legacyKey, item.getValue()));
+			}
+		};
+		String reference = reference(ToolResultArchive.builder(recordingStore).thresholdChars(30).pageSizeChars(40).build()
+				.archive(scope, AGENT, "call", original()));
+
+		var upgraded = ToolResultArchive.builder(legacyStore).thresholdChars(30).pageSizeChars(40).build();
+		StringBuilder retrieved = new StringBuilder();
+		for (Integer page = 1; page != null;) {
+			var result = upgraded.readPage(scope, AGENT, reference, page).orElseThrow();
+			retrieved.append(result.text());
+			page = result.nextPage();
+		}
+		assertThat(retrieved.toString()).isEqualTo(CONTENT);
+	}
+
 	private static ToolResultArchive scopedArchive(FileSystemStore store) {
 		return ToolResultArchive.builder(store)
 			.ownerScope(config -> (String) config.metadata("owner").orElseThrow())
