@@ -15,12 +15,14 @@
  */
 package com.alibaba.cloud.ai.graph.agent.hook.modelcalllimit;
 
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 
@@ -36,6 +38,7 @@ import java.util.concurrent.CompletableFuture;
  * This hook monitors the number of model calls made during agent execution
  * and can terminate the agent when specified limits are reached. It supports
  * both thread-level and run-level call counting with configurable exit behaviors.
+ * A checkpoint saver is needed to retain a thread count across separate invocations.
  */
 @HookPositions({HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL})
 public class ModelCallLimitHook extends ModelHook {
@@ -59,11 +62,8 @@ public class ModelCallLimitHook extends ModelHook {
 
 	@Override
 	public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
-		// Read current counts from context
-		int threadModelCallCount = config.context().containsKey(THREAD_COUNT_KEY)
-				? (int) config.context().get(THREAD_COUNT_KEY) : 0;
-		int runModelCallCount = config.context().containsKey(RUN_COUNT_KEY)
-				? (int) config.context().get(RUN_COUNT_KEY) : 0;
+		int runModelCallCount = runCount(config);
+		int threadModelCallCount = threadLimit == null ? runModelCallCount : threadCount(state);
 
 		// Check if limits are already exceeded (before making the call)
 		boolean threadLimitExceeded = threadLimit != null && threadModelCallCount >= threadLimit;
@@ -102,17 +102,26 @@ public class ModelCallLimitHook extends ModelHook {
 
 	@Override
 	public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
-		// Read current counts from context
-		int threadModelCallCount = config.context().containsKey(THREAD_COUNT_KEY)
-				? (int) config.context().get(THREAD_COUNT_KEY) : 0;
-		int runModelCallCount = config.context().containsKey(RUN_COUNT_KEY)
-				? (int) config.context().get(RUN_COUNT_KEY) : 0;
+		config.context().put(RUN_COUNT_KEY, runCount(config) + 1);
+		return CompletableFuture.completedFuture(
+				threadLimit == null ? Map.of() : Map.of(threadCountKey(), threadCount(state) + 1));
+	}
 
-		// Increment counters after the model call in context
-		config.context().put(THREAD_COUNT_KEY, threadModelCallCount + 1);
-		config.context().put(RUN_COUNT_KEY, runModelCallCount + 1);
+	private int runCount(RunnableConfig config) {
+		return (int) config.context().getOrDefault(RUN_COUNT_KEY, 0);
+	}
 
-		return CompletableFuture.completedFuture(Map.of());
+	private int threadCount(OverAllState state) {
+		return state.<Number>value(threadCountKey()).map(Number::intValue).orElse(0);
+	}
+
+	private String threadCountKey() {
+		return THREAD_COUNT_KEY + getAgentName() + "_" + getName();
+	}
+
+	@Override
+	public Map<String, KeyStrategy> getKeyStrategys() {
+		return threadLimit == null ? Map.of() : Map.of(threadCountKey(), new ReplaceStrategy());
 	}
 
 	private String buildLimitExceededMessage(int threadCount, int runCount, Integer threadLimit, Integer runLimit) {
