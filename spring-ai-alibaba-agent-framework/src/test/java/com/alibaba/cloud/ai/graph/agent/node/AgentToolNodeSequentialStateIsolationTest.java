@@ -20,6 +20,8 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.tool.AsyncToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.StateAwareToolCallback;
+import com.alibaba.cloud.ai.graph.state.RemoveByValue;
+import com.alibaba.cloud.ai.graph.state.ReplaceAllWith;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -248,6 +250,71 @@ class AgentToolNodeSequentialStateIsolationTest {
 		assertThat(result.get("items")).isSameAs(OverAllState.MARK_FOR_REMOVAL);
 		state.updateState(result);
 		assertThat(state.value("items")).isEmpty();
+	}
+
+	@Test
+	@Timeout(value = 15, unit = TimeUnit.SECONDS)
+	@DisplayName("Sequential execution: APPEND control directives (ReplaceAllWith, RemoveByValue, MARK_FOR_REMOVAL) survive folding")
+	void testSequentialAppendDirectivesSurviveBatchFolding() throws Exception {
+		RunnableConfig config = RunnableConfig.builder().threadId("test-thread").build();
+
+		// 1. Append followed by ReplaceAllWith replaces pre-batch and batch items
+		ToolCallback appendX = new StateWritingSyncTool("appendX", "items", List.of("x"));
+		ToolCallback replaceY = new StateWritingSyncTool("replaceY", "items", ReplaceAllWith.of(List.of("y")));
+		AgentToolNode replaceLastNode = baseBuilder.toolCallbacks(List.of(appendX, replaceY))
+			.parallelToolExecution(false)
+			.toolExecutionTimeout(Duration.ofSeconds(30))
+			.build();
+		OverAllState state1 = createStateWithMessages(createAssistantMessageWithToolCalls(
+				createToolCall("call_1", "appendX", "{}"), createToolCall("call_2", "replaceY", "{}")));
+		state1.registerKeyAndStrategy("items", KeyStrategy.APPEND);
+		state1.updateState(Map.of("items", List.of("old")));
+		state1.updateState(replaceLastNode.apply(state1, config));
+		assertThat(state1.value("items")).contains(List.of("y"));
+
+		// 2. ReplaceAllWith followed by Append keeps replacement semantics and appends later item
+		ToolCallback replaceX = new StateWritingSyncTool("replaceX", "items", ReplaceAllWith.of(List.of("x")));
+		ToolCallback appendY = new StateWritingSyncTool("appendY", "items", List.of("y"));
+		AgentToolNode replaceFirstNode = baseBuilder.toolCallbacks(List.of(replaceX, appendY))
+			.parallelToolExecution(false)
+			.toolExecutionTimeout(Duration.ofSeconds(30))
+			.build();
+		OverAllState state2 = createStateWithMessages(createAssistantMessageWithToolCalls(
+				createToolCall("call_1", "replaceX", "{}"), createToolCall("call_2", "appendY", "{}")));
+		state2.registerKeyAndStrategy("items", KeyStrategy.APPEND);
+		state2.updateState(Map.of("items", List.of("old")));
+		state2.updateState(replaceFirstNode.apply(state2, config));
+		assertThat(state2.value("items")).contains(List.of("x", "y"));
+
+		// 3. MARK_FOR_REMOVAL followed by Append starts fresh without pre-batch items
+		ToolCallback clearItems = new StateWritingSyncTool("clearItems", "items", OverAllState.MARK_FOR_REMOVAL);
+		AgentToolNode clearThenAppendNode = baseBuilder.toolCallbacks(List.of(clearItems, appendY))
+			.parallelToolExecution(false)
+			.toolExecutionTimeout(Duration.ofSeconds(30))
+			.build();
+		OverAllState state3 = createStateWithMessages(createAssistantMessageWithToolCalls(
+				createToolCall("call_1", "clearItems", "{}"), createToolCall("call_2", "appendY", "{}")));
+		state3.registerKeyAndStrategy("items", KeyStrategy.APPEND);
+		state3.updateState(Map.of("items", List.of("old")));
+		state3.updateState(clearThenAppendNode.apply(state3, config));
+		assertThat(state3.value("items")).contains(List.of("y"));
+
+		// 4. RemoveByValue removes pre-batch and in-batch items accurately
+		ToolCallback appendXY = new StateWritingSyncTool("appendXY", "items", List.of("x", "y"));
+		ToolCallback removeOld = new StateWritingSyncTool("removeOld", "items", RemoveByValue.of("old"));
+		ToolCallback removeX = new StateWritingSyncTool("removeX", "items", RemoveByValue.of("x"));
+		AgentToolNode removeNode = baseBuilder.toolCallbacks(List.of(appendXY, removeOld, removeX))
+			.parallelToolExecution(false)
+			.toolExecutionTimeout(Duration.ofSeconds(30))
+			.build();
+		OverAllState state4 = createStateWithMessages(createAssistantMessageWithToolCalls(
+				createToolCall("call_1", "appendXY", "{}"),
+				createToolCall("call_2", "removeOld", "{}"),
+				createToolCall("call_3", "removeX", "{}")));
+		state4.registerKeyAndStrategy("items", KeyStrategy.APPEND);
+		state4.updateState(Map.of("items", List.of("old", "keep")));
+		state4.updateState(removeNode.apply(state4, config));
+		assertThat(state4.value("items")).contains(List.of("keep", "y"));
 	}
 
 	// Helper methods
