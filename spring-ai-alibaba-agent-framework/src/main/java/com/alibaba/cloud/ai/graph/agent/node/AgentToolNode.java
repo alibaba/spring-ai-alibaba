@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.graph.streaming.RunEventContext;
 import com.alibaba.cloud.ai.graph.agent.context.ToolResultArchive;
 
 import com.alibaba.cloud.ai.graph.GraphLifecycleListener;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
@@ -319,6 +320,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 			OverAllState state, RunnableConfig config, ToolExecution execution) {
 
 		Map<String, Object> mergedUpdates = new HashMap<>(); // Accumulated results from successful tools
+		Map<String, KeyStrategy> keyStrategies = state.keyStrategies();
 		Map<String, ToolOutcome> outcomes = new LinkedHashMap<>();
 
 		for (var dispatch : toolCalls) {
@@ -329,7 +331,19 @@ public class AgentToolNode implements NodeActionWithConfig {
 					false, execution, null, -1);
 			outcomes.put(dispatch.key(), outcome);
 			// Merge immediately - subsequent timeout clear() won't affect already-merged data
-			mergedUpdates.putAll(toolSpecificUpdate);
+			for (Map.Entry<String, Object> entry : toolSpecificUpdate.entrySet()) {
+				String key = entry.getKey();
+				Object newValue = entry.getValue();
+				Object existingValue = mergedUpdates.get(key);
+				if (existingValue == null) {
+					mergedUpdates.put(key, newValue);
+				}
+				else {
+					KeyStrategy strategy = keyStrategies != null
+							? keyStrategies.getOrDefault(key, KeyStrategy.REPLACE) : KeyStrategy.REPLACE;
+					mergedUpdates.put(key, strategy.apply(existingValue, newValue));
+				}
+			}
 		}
 
 		return new ToolBatch(outcomes, mergedUpdates);
