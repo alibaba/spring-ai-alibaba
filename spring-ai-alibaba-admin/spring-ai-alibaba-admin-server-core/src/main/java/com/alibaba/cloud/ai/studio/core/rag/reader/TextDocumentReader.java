@@ -23,6 +23,7 @@ import org.springframework.core.io.Resource;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -51,8 +52,8 @@ public class TextDocumentReader implements DocumentReader {
 
 	@Override
 	public List<Document> get() {
-		try {
-			String text = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+		try (InputStream input = resource.getInputStream()) {
+			String text = new String(input.readAllBytes(), StandardCharsets.UTF_8);
 			if (text.isBlank()) {
 				return List.of();
 			}
