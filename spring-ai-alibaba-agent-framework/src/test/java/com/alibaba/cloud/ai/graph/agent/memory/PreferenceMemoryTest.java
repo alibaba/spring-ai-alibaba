@@ -32,6 +32,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import javax.sql.DataSource;
@@ -218,6 +219,98 @@ class PreferenceMemoryTest {
 					.isInstanceOf(IllegalStateException.class);
 			assertThat(physical.getAutoCommit()).isTrue();
 			assertThat(physical.getTransactionIsolation()).isEqualTo(Connection.TRANSACTION_SERIALIZABLE);
+		}
+	}
+
+	@Test
+	void failsFastOnNonUnique23000IntegrityViolationsWithoutRetrying() throws Exception {
+		var backing = h2(this.directory.resolve("non-unique-23000"));
+		var attempts = new AtomicInteger();
+		DataSource failing23000 = (DataSource) Proxy.newProxyInstance(DataSource.class.getClassLoader(),
+				new Class<?>[] { DataSource.class }, (proxy, method, args) -> {
+					Object result = invokeUnwrapping(backing, method, args);
+					if (!"getConnection".equals(method.getName()) || !(result instanceof Connection conn)) {
+						return result;
+					}
+					return Proxy.newProxyInstance(Connection.class.getClassLoader(),
+							new Class<?>[] { Connection.class }, (cProxy, cMethod, cArgs) -> {
+								Object stmtResult = invokeUnwrapping(conn, cMethod, cArgs);
+								if (stmtResult instanceof PreparedStatement stmt && cArgs != null && cArgs.length > 0
+										&& String.valueOf(cArgs[0]).contains("INSERT INTO saa_agent_preference_receipts")) {
+									return Proxy.newProxyInstance(PreparedStatement.class.getClassLoader(),
+											new Class<?>[] { PreparedStatement.class }, (sProxy, sMethod, sArgs) -> {
+												if ("executeUpdate".equals(sMethod.getName())) {
+													attempts.incrementAndGet();
+													throw new SQLIntegrityConstraintViolationException(
+															"ORA-02290: check constraint violated", "23000", 2290);
+												}
+												return invokeUnwrapping(stmt, sMethod, sArgs);
+											});
+								}
+								return stmtResult;
+							});
+				});
+		var memory = memory(failing23000);
+		memory.initializeSchema();
+		var config = config("writer", "tenant", "alice", true);
+		assertThatThrownBy(() -> memory.save(config, REPLY_FORMAT, "markdown", 0, "check-violation"))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("Could not commit preference memory");
+		assertThat(attempts).hasValue(1);
+		assertThat(memory.read(config, REPLY_FORMAT).version()).isZero();
+	}
+
+	@Test
+	void doesNotReEnableAutoCommitWhenRollbackFails() throws Exception {
+		var backing = h2(this.directory.resolve("rollback-failure"));
+		try (Connection physical = backing.getConnection()) {
+			physical.setAutoCommit(true);
+			var reEnabledAutoCommit = new AtomicBoolean(false);
+			var aborted = new AtomicBoolean(false);
+			var failRollback = new AtomicBoolean(false);
+			DataSource brokenRollbackPool = (DataSource) Proxy.newProxyInstance(DataSource.class.getClassLoader(),
+					new Class<?>[] { DataSource.class }, (proxy, method, args) -> {
+						if (!"getConnection".equals(method.getName())) {
+							return invokeUnwrapping(physical, method, args);
+						}
+						return Proxy.newProxyInstance(Connection.class.getClassLoader(),
+								new Class<?>[] { Connection.class }, (cProxy, cMethod, cArgs) -> {
+									if ("close".equals(cMethod.getName())) {
+										return null;
+									}
+									if (failRollback.get() && "rollback".equals(cMethod.getName())) {
+										throw new SQLException("Simulated rollback transport failure");
+									}
+									if (failRollback.get() && "setAutoCommit".equals(cMethod.getName())
+											&& Boolean.TRUE.equals(cArgs[0])) {
+										reEnabledAutoCommit.set(true);
+									}
+									if ("abort".equals(cMethod.getName())) {
+										aborted.set(true);
+										return null;
+									}
+									return invokeUnwrapping(physical, cMethod, cArgs);
+								});
+					});
+			var memory = memory(brokenRollbackPool);
+			memory.initializeSchema();
+			try (var statement = physical.createStatement()) {
+				statement.executeUpdate("""
+						ALTER TABLE saa_agent_preference_receipts ADD CONSTRAINT deny_rollback_receipt
+						CHECK (operation_id <> 'broken-rollback')
+						""");
+			}
+			physical.setAutoCommit(true);
+			failRollback.set(true);
+
+			var config = config("writer", "tenant", "alice", true);
+			assertThatThrownBy(() -> memory.save(config, REPLY_FORMAT, "markdown", 0, "broken-rollback"))
+					.isInstanceOf(IllegalStateException.class);
+			assertThat(reEnabledAutoCommit).isFalse();
+			assertThat(aborted).isTrue();
+			physical.rollback();
+			physical.setAutoCommit(true);
+			assertThat(memory.read(config, REPLY_FORMAT).version()).isZero();
 		}
 	}
 
