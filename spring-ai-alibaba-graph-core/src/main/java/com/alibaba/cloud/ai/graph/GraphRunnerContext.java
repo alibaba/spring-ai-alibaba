@@ -28,6 +28,9 @@ import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
 import com.alibaba.cloud.ai.graph.state.SequentialUpdates;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.state.strategy.MessageIdStrategy;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.RunEvent;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
@@ -708,10 +711,12 @@ public class GraphRunnerContext {
 
 		// Check if updateStates is not empty
 		if (updateStates != null && !updateStates.isEmpty()) {
-			Map<String, KeyStrategy> strategies = getKeyStrategyMap();
-			KeyStrategy messageStrategy = strategies != null
-					? strategies.getOrDefault("messages", KeyStrategy.REPLACE) : KeyStrategy.REPLACE;
-			message = findLastMessage(updateStates.get("messages"), messageStrategy);
+			Map<String, KeyStrategy> activeStrategies = overallState != null
+					? overallState.keyStrategies() : getKeyStrategyMap();
+			KeyStrategy messageStrategy = activeStrategies != null
+					? activeStrategies.getOrDefault("messages", KeyStrategy.REPLACE) : KeyStrategy.REPLACE;
+			Object committedMessages = overallState != null ? overallState.value("messages").orElse(null) : null;
+			message = findLastMessage(updateStates.get("messages"), messageStrategy, committedMessages);
 		}
 
 		OutputType outputType = OutputType.from(streaming, nodeId);
@@ -725,7 +730,7 @@ public class GraphRunnerContext {
 		}
 	}
 
-	private static Message findLastMessage(Object messagesObj, KeyStrategy messageStrategy) {
+	private static Message findLastMessage(Object messagesObj, KeyStrategy messageStrategy, Object committedMessages) {
 		if (messagesObj == null || messagesObj == OverAllState.MARK_FOR_REMOVAL) {
 			return null;
 		}
@@ -733,22 +738,34 @@ public class GraphRunnerContext {
 			return singleMessage;
 		}
 		if (messagesObj instanceof SequentialUpdates sequential) {
-			Object reduced = OverAllState.applyPartialValue(null, sequential,
-					messageStrategy != null ? messageStrategy : KeyStrategy.REPLACE);
-			return reduced instanceof SequentialUpdates ? null : findLastMessage(reduced, messageStrategy);
+			KeyStrategy effectiveStrategy = messageStrategy != null ? messageStrategy : KeyStrategy.REPLACE;
+			if (isBuiltInPureMessageStrategy(effectiveStrategy)) {
+				Object reduced = OverAllState.applyPartialValue(null, sequential, effectiveStrategy);
+				return reduced instanceof SequentialUpdates ? null : findLastMessage(reduced, effectiveStrategy, null);
+			}
+			return committedMessages instanceof SequentialUpdates
+					? null : findLastMessage(committedMessages, KeyStrategy.REPLACE, null);
 		}
 		if (messagesObj instanceof List<?> messagesList && !messagesList.isEmpty()) {
 			// Iterate backwards to find the last Message, skipping non-Message
 			// markers such as RemoveByHash that may be appended after the actual
 			// message (e.g. in HITL partial tool-response handling).
 			for (int i = messagesList.size() - 1; i >= 0; i--) {
-				Message nested = findLastMessage(messagesList.get(i), messageStrategy);
+				Message nested = findLastMessage(messagesList.get(i), messageStrategy, committedMessages);
 				if (nested != null) {
 					return nested;
 				}
 			}
 		}
 		return null;
+	}
+
+	private static boolean isBuiltInPureMessageStrategy(KeyStrategy strategy) {
+		if (strategy == KeyStrategy.REPLACE) {
+			return true;
+		}
+		Class<?> type = strategy.getClass();
+		return type == ReplaceStrategy.class || type == AppendStrategy.class || type == MessageIdStrategy.class;
 	}
 
 }

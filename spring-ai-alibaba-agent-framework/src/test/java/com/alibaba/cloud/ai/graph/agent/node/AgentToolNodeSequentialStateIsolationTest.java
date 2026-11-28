@@ -23,8 +23,10 @@ import com.alibaba.cloud.ai.graph.agent.tool.AsyncToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.StateAwareToolCallback;
 import com.alibaba.cloud.ai.graph.checkpoint.CheckpointWrite;
 import com.alibaba.cloud.ai.graph.state.RemoveByValue;
+import com.alibaba.cloud.ai.graph.state.RemoveMessage;
 import com.alibaba.cloud.ai.graph.state.ReplaceAllWith;
 import com.alibaba.cloud.ai.graph.state.SequentialUpdates;
+import com.alibaba.cloud.ai.graph.state.strategy.MessageIdStrategy;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -48,6 +50,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_STATE_FOR_UPDATE_CONTEXT_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -380,6 +383,50 @@ class AgentToolNodeSequentialStateIsolationTest {
 			.findFirst()
 			.orElseThrow();
 		assertThat(emptyStepOutput.message()).isNull();
+
+		// 8. streamFromInitialNode uses OverAllState's active strategy & custom message reducers are not re-run
+		Message identifiedA = UserMessage.builder().text("identified-A")
+			.metadata(Map.of(MessageIdStrategy.MESSAGE_ID, "id-x")).build();
+		StateGraph overrideStrategyGraph = new StateGraph(() -> Map.of("messages", KeyStrategy.APPEND))
+			.addNode("step", (s, c) -> CompletableFuture.completedFuture(
+					Map.of("messages", SequentialUpdates.of(List.of(identifiedA, new RemoveMessage("id-x"))))))
+			.addEdge(StateGraph.START, "step")
+			.addEdge("step", StateGraph.END);
+		OverAllState initialOverrideState = new OverAllState(new HashMap<>(Map.of("messages", new ArrayList<>())));
+		initialOverrideState.registerKeyAndStrategy("messages", new MessageIdStrategy());
+		var overrideOutputs = overrideStrategyGraph.compile()
+			.streamFromInitialNode(initialOverrideState, config)
+			.collectList().block(Duration.ofSeconds(5));
+		StreamingOutput<?> overrideStepOutput = overrideOutputs.stream()
+			.filter(o -> "step".equals(o.node()) && o instanceof StreamingOutput<?>)
+			.map(o -> (StreamingOutput<?>) o)
+			.findFirst()
+			.orElseThrow();
+		assertThat(overrideStepOutput.message()).isNull();
+
+		AtomicInteger reducerInvocations = new AtomicInteger();
+		KeyStrategy statefulMessageReducer = (oldVal, newVal) -> {
+			reducerInvocations.incrementAndGet();
+			List<Object> copy = new ArrayList<>((List<?>) oldVal);
+			copy.add(newVal);
+			return copy;
+		};
+		StateGraph customMessageReducerGraph = new StateGraph(() -> Map.of("messages", statefulMessageReducer))
+			.addNode("step", (s, c) -> CompletableFuture.completedFuture(
+					Map.of("messages", SequentialUpdates.of(List.of(msgA, msgB)))))
+			.addEdge(StateGraph.START, "step")
+			.addEdge("step", StateGraph.END);
+		var customReducerOutputs = customMessageReducerGraph.compile()
+			.stream(Map.of("messages", new ArrayList<>(List.of(new UserMessage("seed")))))
+			.collectList().block(Duration.ofSeconds(5));
+		StreamingOutput<?> customReducerStepOutput = customReducerOutputs.stream()
+			.filter(o -> "step".equals(o.node()) && o instanceof StreamingOutput<?>)
+			.map(o -> (StreamingOutput<?>) o)
+			.findFirst()
+			.orElseThrow();
+		assertThat(customReducerStepOutput.message()).isEqualTo(msgB);
+		// 1 call for initial seed + 2 calls for [msgA, msgB] during commit; 0 extra calls during buildNodeOutput
+		assertThat(reducerInvocations).hasValue(3);
 	}
 
 	// Helper methods
