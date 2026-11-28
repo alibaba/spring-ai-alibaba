@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -92,6 +93,25 @@ class FileSystemStoreTest {
 		assertThat(deleted).isTrue();
 		assertThat(store.getItem(namespace, key)).isEmpty();
 		assertThat(store.deleteItem(namespace, key)).isFalse(); // Already deleted
+	}
+
+	@Test
+	void testDeleteItemKeepsRelativeRootDirectory() throws IOException {
+		Path relativeRoot = Path.of("target", "file-system-store-" + UUID.randomUUID());
+		FileSystemStore relativeStore = new FileSystemStore(relativeRoot);
+
+		try {
+			List<String> namespace = List.of("users", "user123");
+			String key = "preferences";
+			relativeStore.putItem(StoreItem.of(namespace, key, Map.of("theme", "dark")));
+
+			assertThat(relativeStore.deleteItem(namespace, key)).isTrue();
+
+			assertThat(relativeRoot).isDirectory();
+		}
+		finally {
+			Files.deleteIfExists(relativeRoot);
+		}
 	}
 
 	@Test
