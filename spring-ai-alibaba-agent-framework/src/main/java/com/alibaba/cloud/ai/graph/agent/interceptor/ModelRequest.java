@@ -55,7 +55,7 @@ public class ModelRequest {
 			List<String> tools, List<ToolCallback> dynamicToolCallbacks, Map<String, String> toolDescriptions,
 			Map<String, Object> context, boolean toolSelectionSpecified, ModelTarget modelTarget) {
 		this.systemMessage = systemMessage;
-		this.messages = messages;
+		this.messages = messages == null ? null : new ArrayList<>(messages);
 		this.options = options;
 		this.modelTarget = modelTarget;
 		this.tools = tools != null ? tools : List.of();
