@@ -407,6 +407,9 @@ class AgentToolNodeSequentialStateIsolationTest {
 		AtomicInteger reducerInvocations = new AtomicInteger();
 		KeyStrategy statefulMessageReducer = (oldVal, newVal) -> {
 			reducerInvocations.incrementAndGet();
+			if (oldVal == null && newVal instanceof List<?> seedList) {
+				return new ArrayList<>(seedList);
+			}
 			List<Object> copy = new ArrayList<>((List<?>) oldVal);
 			copy.add(newVal);
 			return copy;
