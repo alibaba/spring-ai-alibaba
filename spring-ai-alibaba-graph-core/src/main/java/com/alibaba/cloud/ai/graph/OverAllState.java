@@ -440,7 +440,7 @@ public final class OverAllState implements Serializable {
 		}).collect(toMapAllowingNulls(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
-	private static Object applyPartialValue(Object currentValue, Object partialValue, KeyStrategy strategy) {
+	static Object applyPartialValue(Object currentValue, Object partialValue, KeyStrategy strategy) {
 		if (partialValue instanceof SequentialUpdates sequential) {
 			Object acc = currentValue;
 			boolean removed = false;

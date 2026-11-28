@@ -18,11 +18,14 @@ package com.alibaba.cloud.ai.graph.agent.node;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.tool.AsyncToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.StateAwareToolCallback;
 import com.alibaba.cloud.ai.graph.checkpoint.CheckpointWrite;
 import com.alibaba.cloud.ai.graph.state.RemoveByValue;
 import com.alibaba.cloud.ai.graph.state.ReplaceAllWith;
+import com.alibaba.cloud.ai.graph.state.SequentialUpdates;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,6 +33,7 @@ import org.junit.jupiter.api.Timeout;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -346,6 +350,36 @@ class AgentToolNodeSequentialStateIsolationTest {
 		Map<String, Object> roundTrippedDelta = CheckpointWrite.decode(CheckpointWrite.encode(rawDelta));
 		state6.updateState(roundTrippedDelta);
 		assertThat(state6.value("custom")).contains("b-merged");
+
+		// 7. StreamingOutput honors later ReplaceAllWith / RemoveByValue on SequentialUpdates("messages")
+		Message msgA = new UserMessage("stale-A");
+		Message msgB = new UserMessage("fresh-B");
+		StateGraph replaceGraph = new StateGraph(() -> Map.of("messages", KeyStrategy.APPEND))
+			.addNode("step", (s, c) -> CompletableFuture.completedFuture(
+					Map.of("messages", SequentialUpdates.of(List.of(msgA, ReplaceAllWith.of(List.of(msgB)))))))
+			.addEdge(StateGraph.START, "step")
+			.addEdge("step", StateGraph.END);
+		var replaceOutputs = replaceGraph.compile().stream(Map.of()).collectList().block(Duration.ofSeconds(5));
+		StreamingOutput<?> stepOutput = replaceOutputs.stream()
+			.filter(o -> "step".equals(o.node()) && o instanceof StreamingOutput<?>)
+			.map(o -> (StreamingOutput<?>) o)
+			.findFirst()
+			.orElseThrow();
+		assertThat(stepOutput.message()).isEqualTo(msgB);
+
+		StateGraph removeAllGraph = new StateGraph(() -> Map.of("messages", KeyStrategy.APPEND))
+			.addNode("step", (s, c) -> CompletableFuture.completedFuture(
+					Map.of("messages", SequentialUpdates.of(List.of(msgA, ReplaceAllWith.of(List.of()))))))
+			.addEdge(StateGraph.START, "step")
+			.addEdge("step", StateGraph.END);
+		var removeOutputs = removeAllGraph.compile().stream(Map.of("messages", List.of(new UserMessage("prior"))))
+			.collectList().block(Duration.ofSeconds(5));
+		StreamingOutput<?> emptyStepOutput = removeOutputs.stream()
+			.filter(o -> "step".equals(o.node()) && o instanceof StreamingOutput<?>)
+			.map(o -> (StreamingOutput<?>) o)
+			.findFirst()
+			.orElseThrow();
+		assertThat(emptyStepOutput.message()).isNull();
 	}
 
 	// Helper methods

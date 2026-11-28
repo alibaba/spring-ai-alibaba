@@ -708,7 +708,10 @@ public class GraphRunnerContext {
 
 		// Check if updateStates is not empty
 		if (updateStates != null && !updateStates.isEmpty()) {
-			message = findLastMessage(updateStates.get("messages"));
+			Map<String, KeyStrategy> strategies = getKeyStrategyMap();
+			KeyStrategy messageStrategy = strategies != null
+					? strategies.getOrDefault("messages", KeyStrategy.REPLACE) : KeyStrategy.REPLACE;
+			message = findLastMessage(updateStates.get("messages"), messageStrategy);
 		}
 
 		OutputType outputType = OutputType.from(streaming, nodeId);
@@ -722,26 +725,24 @@ public class GraphRunnerContext {
 		}
 	}
 
-	private static Message findLastMessage(Object messagesObj) {
+	private static Message findLastMessage(Object messagesObj, KeyStrategy messageStrategy) {
+		if (messagesObj == null || messagesObj == OverAllState.MARK_FOR_REMOVAL) {
+			return null;
+		}
 		if (messagesObj instanceof Message singleMessage) {
 			return singleMessage;
 		}
 		if (messagesObj instanceof SequentialUpdates sequential) {
-			List<Object> updates = sequential.updates();
-			for (int i = updates.size() - 1; i >= 0; i--) {
-				Message nested = findLastMessage(updates.get(i));
-				if (nested != null) {
-					return nested;
-				}
-			}
-			return null;
+			Object reduced = OverAllState.applyPartialValue(null, sequential,
+					messageStrategy != null ? messageStrategy : KeyStrategy.REPLACE);
+			return reduced instanceof SequentialUpdates ? null : findLastMessage(reduced, messageStrategy);
 		}
 		if (messagesObj instanceof List<?> messagesList && !messagesList.isEmpty()) {
 			// Iterate backwards to find the last Message, skipping non-Message
 			// markers such as RemoveByHash that may be appended after the actual
 			// message (e.g. in HITL partial tool-response handling).
 			for (int i = messagesList.size() - 1; i >= 0; i--) {
-				Message nested = findLastMessage(messagesList.get(i));
+				Message nested = findLastMessage(messagesList.get(i), messageStrategy);
 				if (nested != null) {
 					return nested;
 				}
