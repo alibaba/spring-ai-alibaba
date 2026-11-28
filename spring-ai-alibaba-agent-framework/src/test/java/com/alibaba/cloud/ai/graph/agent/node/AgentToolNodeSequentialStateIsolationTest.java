@@ -19,6 +19,8 @@ import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
+import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.agent.tool.AsyncToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.StateAwareToolCallback;
 import com.alibaba.cloud.ai.graph.checkpoint.CheckpointWrite;
@@ -27,6 +29,7 @@ import com.alibaba.cloud.ai.graph.state.RemoveMessage;
 import com.alibaba.cloud.ai.graph.state.ReplaceAllWith;
 import com.alibaba.cloud.ai.graph.state.SequentialUpdates;
 import com.alibaba.cloud.ai.graph.state.strategy.MessageIdStrategy;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -448,6 +451,65 @@ class AgentToolNodeSequentialStateIsolationTest {
 			.findFirst()
 			.orElseThrow();
 		assertThat(cancelledStepOutput.message()).isNull();
+
+		// 10. Overridden ReplaceStrategy subclass retains ordered updates
+		KeyStrategy overriddenReplace = new ReplaceStrategy() {
+			@Override
+			public Object apply(Object oldVal, Object newVal) {
+				return (oldVal == null ? "" : oldVal + "+") + newVal;
+			}
+		};
+		OverAllState state10 = createStateWithMessages(createAssistantMessageWithToolCalls(
+				createToolCall("call_1", "writeA", "{}"), createToolCall("call_2", "writeB", "{}")));
+		state10.registerKeyAndStrategy("custom", overriddenReplace);
+		state10.updateState(customStrategyNode.apply(state10, config));
+		assertThat(state10.value("custom")).contains("a+b");
+
+		// 11. Prepending custom reducer preserves batch order (msgB over msgA) & excludes conditional edge updates
+		Message edgeMsgC = new UserMessage("edge-C");
+		KeyStrategy prependingReducer = (oldVal, newVal) -> {
+			List<Object> base = oldVal instanceof List<?> list ? new ArrayList<>(list) : new ArrayList<>();
+			if (newVal instanceof List<?> incoming) {
+				base.addAll(0, incoming);
+			}
+			else if (newVal != null) {
+				base.add(0, newVal);
+			}
+			return base;
+		};
+		AsyncCommandAction edgeWithMessageUpdate = (s, c) -> CompletableFuture.completedFuture(
+				new Command(StateGraph.END, Map.of("messages", edgeMsgC)));
+		StateGraph prependAndEdgeGraph = new StateGraph(() -> Map.of("messages", prependingReducer))
+			.addNode("step", (s, c) -> CompletableFuture.completedFuture(
+					Map.of("messages", SequentialUpdates.of(List.of(msgA, msgB)))))
+			.addEdge(StateGraph.START, "step")
+			.addConditionalEdges("step", edgeWithMessageUpdate, Map.of(StateGraph.END, StateGraph.END));
+		var prependOutputs = prependAndEdgeGraph.compile()
+			.stream(Map.of("messages", List.of(oldSeed)))
+			.collectList().block(Duration.ofSeconds(5));
+		StreamingOutput<?> prependStepOutput = prependOutputs.stream()
+			.filter(o -> "step".equals(o.node()) && o instanceof StreamingOutput<?>)
+			.map(o -> (StreamingOutput<?>) o)
+			.findFirst()
+			.orElseThrow();
+		assertThat(prependStepOutput.message()).isEqualTo(msgB);
+
+		// 12. First-write-wins custom reducer rejecting ReplaceAllWith does not emit pre-batch message
+		KeyStrategy firstWriteWinsReducer = (oldVal, newVal) -> oldVal != null ? oldVal : newVal;
+		StateGraph rejectedResetGraph = new StateGraph(() -> Map.of("messages", firstWriteWinsReducer))
+			.addNode("step", (s, c) -> CompletableFuture.completedFuture(
+					Map.of("messages", SequentialUpdates.of(List.of(msgA, ReplaceAllWith.of(List.of(msgB)))))))
+			.addEdge(StateGraph.START, "step")
+			.addEdge("step", StateGraph.END);
+		var rejectedResetOutputs = rejectedResetGraph.compile()
+			.stream(Map.of("messages", List.of(oldSeed)))
+			.collectList().block(Duration.ofSeconds(5));
+		StreamingOutput<?> rejectedResetStepOutput = rejectedResetOutputs.stream()
+			.filter(o -> "step".equals(o.node()) && o instanceof StreamingOutput<?>)
+			.map(o -> (StreamingOutput<?>) o)
+			.findFirst()
+			.orElseThrow();
+		assertThat(rejectedResetStepOutput.message()).isNull();
 	}
 
 	// Helper methods

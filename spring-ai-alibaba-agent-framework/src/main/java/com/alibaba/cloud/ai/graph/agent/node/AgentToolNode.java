@@ -349,7 +349,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 	}
 
 	private static boolean isReplaceStrategy(KeyStrategy strategy) {
-		return strategy == null || strategy == KeyStrategy.REPLACE || strategy instanceof ReplaceStrategy;
+		return strategy == null || strategy == KeyStrategy.REPLACE || strategy.getClass() == ReplaceStrategy.class;
 	}
 
 	/**

@@ -49,12 +49,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
@@ -117,6 +115,10 @@ public class GraphRunnerContext {
 	Usage tokenUsage;
 
 	private Object preSequentialMessages;
+
+	private Object postSequentialMessages;
+
+	private boolean hasSequentialMessagesSnapshot;
 
 	String resumeFrom;
 
@@ -586,12 +588,18 @@ public class GraphRunnerContext {
 	public void mergeIntoCurrentState(Map<String, Object> updateState) {
 		// Create a new map and filter out ChatResponse entries
 		Map<String, Object> filteredState = findTokenUsageInDeltaState(updateState);
-		if (filteredState.get("messages") instanceof SequentialUpdates) {
+		boolean sequentialMessageBatch = filteredState.get("messages") instanceof SequentialUpdates;
+		if (sequentialMessageBatch) {
 			Object existing = this.overallState != null ? this.overallState.value("messages").orElse(null) : null;
 			this.preSequentialMessages = existing instanceof Collection<?> col ? new ArrayList<>(col) : existing;
 		}
 		var write = captureWrites && !filteredState.isEmpty() ? CheckpointWrite.encode(filteredState) : null;
 		this.overallState.updateState(filteredState);
+		if (sequentialMessageBatch) {
+			Object committed = this.overallState != null ? this.overallState.value("messages").orElse(null) : null;
+			this.postSequentialMessages = committed instanceof Collection<?> col ? new ArrayList<>(col) : committed;
+			this.hasSequentialMessagesSnapshot = true;
+		}
 		if (write != null) {
 			branchWrites.add(write);
 		}
@@ -720,8 +728,12 @@ public class GraphRunnerContext {
 
 	public NodeOutput buildNodeOutput(String nodeId, Map<String, Object> updateStates, boolean streaming) throws Exception {
 		Message message = null;
+		boolean useSequentialSnapshot = this.hasSequentialMessagesSnapshot;
 		Object priorMessages = this.preSequentialMessages;
+		Object snapshottedPostMessages = this.postSequentialMessages;
 		this.preSequentialMessages = null;
+		this.postSequentialMessages = null;
+		this.hasSequentialMessagesSnapshot = false;
 
 		// Check if updateStates is not empty
 		if (updateStates != null && !updateStates.isEmpty()) {
@@ -729,7 +741,8 @@ public class GraphRunnerContext {
 					? overallState.keyStrategies() : getKeyStrategyMap();
 			KeyStrategy messageStrategy = activeStrategies != null
 					? activeStrategies.getOrDefault("messages", KeyStrategy.REPLACE) : KeyStrategy.REPLACE;
-			Object committedMessages = overallState != null ? overallState.value("messages").orElse(null) : null;
+			Object committedMessages = useSequentialSnapshot ? snapshottedPostMessages
+					: (overallState != null ? overallState.value("messages").orElse(null) : null);
 			message = findLastMessage(updateStates.get("messages"), messageStrategy, priorMessages, committedMessages);
 		}
 
@@ -779,27 +792,42 @@ public class GraphRunnerContext {
 		if (committedMessages == null || committedMessages instanceof SequentialUpdates) {
 			return null;
 		}
-		Set<Message> candidates = new HashSet<>();
+		List<Message> orderedCandidates = new ArrayList<>();
+		List<Boolean> candidateHadLaterDirective = new ArrayList<>();
 		boolean reset = false;
-		boolean hasRemoval = false;
 		for (Object step : sequential.updates()) {
 			if (step == OverAllState.MARK_FOR_REMOVAL) {
-				candidates.clear();
+				orderedCandidates.clear();
+				candidateHadLaterDirective.clear();
 				reset = true;
 			}
 			else if (step instanceof ReplaceAllWith<?> replace) {
-				candidates.clear();
+				orderedCandidates.clear();
+				candidateHadLaterDirective.clear();
 				reset = true;
-				collectMessages(replace.newValues(), candidates);
+				List<Message> stepMessages = new ArrayList<>();
+				collectMessages(replace.newValues(), stepMessages);
+				for (Message msg : stepMessages) {
+					orderedCandidates.add(msg);
+					candidateHadLaterDirective.add(false);
+				}
 			}
 			else {
-				if (containsRemovalDirective(step)) {
-					hasRemoval = true;
+				List<Message> stepMessages = new ArrayList<>();
+				collectMessages(step, stepMessages);
+				boolean stepHasDirective = containsRemovalDirective(step) || stepMessages.isEmpty();
+				if (stepHasDirective) {
+					for (int i = 0; i < candidateHadLaterDirective.size(); i++) {
+						candidateHadLaterDirective.set(i, true);
+					}
 				}
-				collectMessages(step, candidates);
+				for (Message msg : stepMessages) {
+					orderedCandidates.add(msg);
+					candidateHadLaterDirective.add(containsRemovalDirective(step));
+				}
 			}
 		}
-		if (candidates.isEmpty()) {
+		if (orderedCandidates.isEmpty()) {
 			return null;
 		}
 		List<Message> postList = new ArrayList<>();
@@ -807,21 +835,28 @@ public class GraphRunnerContext {
 		if (postList.isEmpty()) {
 			return null;
 		}
-		if (reset) {
-			for (int i = postList.size() - 1; i >= 0; i--) {
-				if (candidates.contains(postList.get(i))) {
-					return postList.get(i);
-				}
-			}
-			return postList.get(postList.size() - 1);
+		List<Message> preList = new ArrayList<>();
+		collectMessages(priorMessages, preList);
+		if (!reset && postList.equals(preList)) {
+			return null;
 		}
-		Map<Message, Integer> preCounts = countMessages(priorMessages);
+		Map<Message, Integer> preCounts = countMessages(preList);
 		Map<Message, Integer> postCounts = countMessages(postList);
-		for (int i = postList.size() - 1; i >= 0; i--) {
-			Message candidate = postList.get(i);
-			if ((!hasRemoval && candidates.contains(candidate))
-					|| postCounts.getOrDefault(candidate, 0) > preCounts.getOrDefault(candidate, 0)) {
+		for (int i = orderedCandidates.size() - 1; i >= 0; i--) {
+			Message candidate = orderedCandidates.get(i);
+			int postCount = postCounts.getOrDefault(candidate, 0);
+			if (postCount <= 0) {
+				continue;
+			}
+			if (reset || !candidateHadLaterDirective.get(i)
+					|| postCount > preCounts.getOrDefault(candidate, 0)) {
 				return candidate;
+			}
+		}
+		for (int i = postList.size() - 1; i >= 0; i--) {
+			Message committed = postList.get(i);
+			if (postCounts.getOrDefault(committed, 0) > preCounts.getOrDefault(committed, 0)) {
+				return committed;
 			}
 		}
 		return null;
