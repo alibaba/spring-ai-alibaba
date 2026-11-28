@@ -430,6 +430,24 @@ class AgentToolNodeSequentialStateIsolationTest {
 		assertThat(customReducerStepOutput.message()).isEqualTo(msgB);
 		// 1 call for initial seed + 2 calls for [msgA, msgB] during commit; 0 extra calls during buildNodeOutput
 		assertThat(reducerInvocations).hasValue(3);
+
+		// 9. Custom delegating APPEND reducer does not re-emit pre-existing message when batch adds and removes msgA
+		Message oldSeed = new UserMessage("old-seed");
+		KeyStrategy metricsAppendWrapper = (oldVal, newVal) -> KeyStrategy.APPEND.apply(oldVal, newVal);
+		StateGraph cancelledCustomBatchGraph = new StateGraph(() -> Map.of("messages", metricsAppendWrapper))
+			.addNode("step", (s, c) -> CompletableFuture.completedFuture(
+					Map.of("messages", SequentialUpdates.of(List.of(msgA, RemoveByValue.of(msgA))))))
+			.addEdge(StateGraph.START, "step")
+			.addEdge("step", StateGraph.END);
+		var cancelledOutputs = cancelledCustomBatchGraph.compile()
+			.stream(Map.of("messages", List.of(oldSeed)))
+			.collectList().block(Duration.ofSeconds(5));
+		StreamingOutput<?> cancelledStepOutput = cancelledOutputs.stream()
+			.filter(o -> "step".equals(o.node()) && o instanceof StreamingOutput<?>)
+			.map(o -> (StreamingOutput<?>) o)
+			.findFirst()
+			.orElseThrow();
+		assertThat(cancelledStepOutput.message()).isNull();
 	}
 
 	// Helper methods
