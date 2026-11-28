@@ -22,6 +22,17 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.ai.document.Document;
 
 import java.util.List;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.api.io.TempDir;
+import java.nio.file.Path;
+import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.FilterInputStream;
+import java.io.IOException;
+import org.springframework.core.io.Resource;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -54,6 +65,44 @@ class TextDocumentReaderTest {
 		assertNotNull(result);
 		assertEquals(expectedDocuments, result);
 		verify(reader, times(1)).read();
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "text", "blank", "failure" })
+	void shouldCloseActualFileStreamOnEveryReadPath(String mode, @TempDir Path dir) throws Exception {
+		Path path = dir.resolve("lesson.txt");
+		String content = mode.equals("blank") ? "  \n" : "Photosynthesis experiment instructions";
+		Files.writeString(path, content, StandardCharsets.UTF_8);
+		FileInputStream input = new FileInputStream(path.toFile());
+		InputStream stream = mode.equals("failure") ? new FilterInputStream(input) {
+			@Override
+			public byte[] readAllBytes() throws IOException {
+				throw new IOException("read failed");
+			}
+		} : input;
+		Resource resource = mock(Resource.class);
+		when(resource.getInputStream()).thenReturn(stream);
+		try {
+			TextDocumentReader realReader = new TextDocumentReader(resource);
+			if (mode.equals("failure")) {
+				RuntimeException error = assertThrows(RuntimeException.class, realReader::get);
+				assertInstanceOf(IOException.class, error.getCause());
+				assertEquals("read failed", error.getCause().getMessage());
+			}
+			else {
+				List<Document> documents = realReader.get();
+				if (mode.equals("blank")) {
+					assertTrue(documents.isEmpty());
+				}
+				else {
+					assertEquals(List.of(content), documents.stream().map(Document::getText).toList());
+				}
+			}
+			assertFalse(input.getChannel().isOpen());
+		}
+		finally {
+			stream.close();
+		}
 	}
 
 }
