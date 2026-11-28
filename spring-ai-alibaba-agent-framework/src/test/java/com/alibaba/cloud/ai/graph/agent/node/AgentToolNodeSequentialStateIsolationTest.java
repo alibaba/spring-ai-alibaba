@@ -494,7 +494,7 @@ class AgentToolNodeSequentialStateIsolationTest {
 			.orElseThrow();
 		assertThat(prependStepOutput.message()).isEqualTo(msgB);
 
-		// 12. First-write-wins custom reducer rejecting ReplaceAllWith does not emit pre-batch message
+		// 12. First-write-wins custom reducer rejecting ReplaceAllWith does not emit pre-batch message (even when equal to msgB)
 		KeyStrategy firstWriteWinsReducer = (oldVal, newVal) -> oldVal != null ? oldVal : newVal;
 		StateGraph rejectedResetGraph = new StateGraph(() -> Map.of("messages", firstWriteWinsReducer))
 			.addNode("step", (s, c) -> CompletableFuture.completedFuture(
@@ -502,7 +502,7 @@ class AgentToolNodeSequentialStateIsolationTest {
 			.addEdge(StateGraph.START, "step")
 			.addEdge("step", StateGraph.END);
 		var rejectedResetOutputs = rejectedResetGraph.compile()
-			.stream(Map.of("messages", List.of(oldSeed)))
+			.stream(Map.of("messages", List.of(msgB)))
 			.collectList().block(Duration.ofSeconds(5));
 		StreamingOutput<?> rejectedResetStepOutput = rejectedResetOutputs.stream()
 			.filter(o -> "step".equals(o.node()) && o instanceof StreamingOutput<?>)
@@ -510,6 +510,23 @@ class AgentToolNodeSequentialStateIsolationTest {
 			.findFirst()
 			.orElseThrow();
 		assertThat(rejectedResetStepOutput.message()).isNull();
+
+		// 13. Reducer-driven MARK_FOR_REMOVAL resets accumulator to null for subsequent sequential updates
+		KeyStrategy deleteOnKeywordReducer = (oldVal, newVal) -> "delete".equals(newVal)
+				? OverAllState.MARK_FOR_REMOVAL
+				: (oldVal == null ? String.valueOf(newVal) : oldVal + ":" + newVal);
+		ToolCallback deleteStep = new StateWritingSyncTool("deleteStep", "custom", "delete");
+		ToolCallback nextStep = new StateWritingSyncTool("nextStep", "custom", "next");
+		AgentToolNode deleteThenNextNode = baseBuilder.toolCallbacks(List.of(deleteStep, nextStep))
+			.parallelToolExecution(false)
+			.toolExecutionTimeout(Duration.ofSeconds(30))
+			.build();
+		OverAllState state13 = createStateWithMessages(createAssistantMessageWithToolCalls(
+				createToolCall("call_1", "deleteStep", "{}"), createToolCall("call_2", "nextStep", "{}")));
+		state13.registerKeyAndStrategy("custom", deleteOnKeywordReducer);
+		state13.updateState(Map.of("custom", "prior"));
+		state13.updateState(deleteThenNextNode.apply(state13, config));
+		assertThat(state13.value("custom")).contains("next");
 	}
 
 	// Helper methods

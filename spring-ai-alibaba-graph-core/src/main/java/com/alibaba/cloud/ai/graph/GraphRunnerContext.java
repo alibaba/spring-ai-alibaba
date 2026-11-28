@@ -26,9 +26,6 @@ import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.ParallelBranchPath;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
-import com.alibaba.cloud.ai.graph.state.AppenderChannel;
-import com.alibaba.cloud.ai.graph.state.RemoveMessage;
-import com.alibaba.cloud.ai.graph.state.ReplaceAllWith;
 import com.alibaba.cloud.ai.graph.state.SequentialUpdates;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
@@ -47,7 +44,6 @@ import org.springframework.util.CollectionUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -114,11 +110,9 @@ public class GraphRunnerContext {
 
 	Usage tokenUsage;
 
-	private Object preSequentialMessages;
+	private Message lastSequentialNodeMessage;
 
-	private Object postSequentialMessages;
-
-	private boolean hasSequentialMessagesSnapshot;
+	private boolean hasLastSequentialNodeMessage;
 
 	String resumeFrom;
 
@@ -589,16 +583,11 @@ public class GraphRunnerContext {
 		// Create a new map and filter out ChatResponse entries
 		Map<String, Object> filteredState = findTokenUsageInDeltaState(updateState);
 		boolean sequentialMessageBatch = filteredState.get("messages") instanceof SequentialUpdates;
-		if (sequentialMessageBatch) {
-			Object existing = this.overallState != null ? this.overallState.value("messages").orElse(null) : null;
-			this.preSequentialMessages = existing instanceof Collection<?> col ? new ArrayList<>(col) : existing;
-		}
 		var write = captureWrites && !filteredState.isEmpty() ? CheckpointWrite.encode(filteredState) : null;
 		this.overallState.updateState(filteredState);
 		if (sequentialMessageBatch) {
-			Object committed = this.overallState != null ? this.overallState.value("messages").orElse(null) : null;
-			this.postSequentialMessages = committed instanceof Collection<?> col ? new ArrayList<>(col) : committed;
-			this.hasSequentialMessagesSnapshot = true;
+			this.lastSequentialNodeMessage = this.overallState.consumeLastSequentialMessage();
+			this.hasLastSequentialNodeMessage = true;
 		}
 		if (write != null) {
 			branchWrites.add(write);
@@ -728,22 +717,32 @@ public class GraphRunnerContext {
 
 	public NodeOutput buildNodeOutput(String nodeId, Map<String, Object> updateStates, boolean streaming) throws Exception {
 		Message message = null;
-		boolean useSequentialSnapshot = this.hasSequentialMessagesSnapshot;
-		Object priorMessages = this.preSequentialMessages;
-		Object snapshottedPostMessages = this.postSequentialMessages;
-		this.preSequentialMessages = null;
-		this.postSequentialMessages = null;
-		this.hasSequentialMessagesSnapshot = false;
+		boolean hasRecordedSequentialMessage = this.hasLastSequentialNodeMessage;
+		Message recordedSequentialMessage = this.lastSequentialNodeMessage;
+		this.lastSequentialNodeMessage = null;
+		this.hasLastSequentialNodeMessage = false;
 
 		// Check if updateStates is not empty
 		if (updateStates != null && !updateStates.isEmpty()) {
-			Map<String, KeyStrategy> activeStrategies = overallState != null
-					? overallState.keyStrategies() : getKeyStrategyMap();
-			KeyStrategy messageStrategy = activeStrategies != null
-					? activeStrategies.getOrDefault("messages", KeyStrategy.REPLACE) : KeyStrategy.REPLACE;
-			Object committedMessages = useSequentialSnapshot ? snapshottedPostMessages
-					: (overallState != null ? overallState.value("messages").orElse(null) : null);
-			message = findLastMessage(updateStates.get("messages"), messageStrategy, priorMessages, committedMessages);
+			Object messagesObj = updateStates.get("messages");
+			if (messagesObj instanceof SequentialUpdates sequential) {
+				if (hasRecordedSequentialMessage) {
+					message = recordedSequentialMessage;
+				}
+				else {
+					Map<String, KeyStrategy> activeStrategies = overallState != null
+							? overallState.keyStrategies() : getKeyStrategyMap();
+					KeyStrategy messageStrategy = activeStrategies != null
+							? activeStrategies.getOrDefault("messages", KeyStrategy.REPLACE) : KeyStrategy.REPLACE;
+					if (isBuiltInPureMessageStrategy(messageStrategy)) {
+						message = OverAllState.applySequentialUpdates(null, sequential, messageStrategy)
+								.lastEmittedMessage();
+					}
+				}
+			}
+			else {
+				message = findLastMessage(messagesObj);
+			}
 		}
 
 		OutputType outputType = OutputType.from(streaming, nodeId);
@@ -757,145 +756,25 @@ public class GraphRunnerContext {
 		}
 	}
 
-	private static Message findLastMessage(Object messagesObj, KeyStrategy messageStrategy,
-			Object priorMessages, Object committedMessages) {
+	private static Message findLastMessage(Object messagesObj) {
 		if (messagesObj == null || messagesObj == OverAllState.MARK_FOR_REMOVAL) {
 			return null;
 		}
 		if (messagesObj instanceof Message singleMessage) {
 			return singleMessage;
 		}
-		if (messagesObj instanceof SequentialUpdates sequential) {
-			KeyStrategy effectiveStrategy = messageStrategy != null ? messageStrategy : KeyStrategy.REPLACE;
-			if (isBuiltInPureMessageStrategy(effectiveStrategy)) {
-				Object reduced = OverAllState.applyPartialValue(null, sequential, effectiveStrategy);
-				return reduced instanceof SequentialUpdates ? null : findLastMessage(reduced, effectiveStrategy, null, null);
-			}
-			return selectCommittedBatchMessage(sequential, priorMessages, committedMessages);
-		}
 		if (messagesObj instanceof List<?> messagesList && !messagesList.isEmpty()) {
 			// Iterate backwards to find the last Message, skipping non-Message
 			// markers such as RemoveByHash that may be appended after the actual
 			// message (e.g. in HITL partial tool-response handling).
 			for (int i = messagesList.size() - 1; i >= 0; i--) {
-				Message nested = findLastMessage(messagesList.get(i), messageStrategy, priorMessages, committedMessages);
+				Message nested = findLastMessage(messagesList.get(i));
 				if (nested != null) {
 					return nested;
 				}
 			}
 		}
 		return null;
-	}
-
-	private static Message selectCommittedBatchMessage(SequentialUpdates sequential, Object priorMessages,
-			Object committedMessages) {
-		if (committedMessages == null || committedMessages instanceof SequentialUpdates) {
-			return null;
-		}
-		List<Message> orderedCandidates = new ArrayList<>();
-		List<Boolean> candidateHadLaterDirective = new ArrayList<>();
-		boolean reset = false;
-		for (Object step : sequential.updates()) {
-			if (step == OverAllState.MARK_FOR_REMOVAL) {
-				orderedCandidates.clear();
-				candidateHadLaterDirective.clear();
-				reset = true;
-			}
-			else if (step instanceof ReplaceAllWith<?> replace) {
-				orderedCandidates.clear();
-				candidateHadLaterDirective.clear();
-				reset = true;
-				List<Message> stepMessages = new ArrayList<>();
-				collectMessages(replace.newValues(), stepMessages);
-				for (Message msg : stepMessages) {
-					orderedCandidates.add(msg);
-					candidateHadLaterDirective.add(false);
-				}
-			}
-			else {
-				List<Message> stepMessages = new ArrayList<>();
-				collectMessages(step, stepMessages);
-				boolean stepHasDirective = containsRemovalDirective(step) || stepMessages.isEmpty();
-				if (stepHasDirective) {
-					for (int i = 0; i < candidateHadLaterDirective.size(); i++) {
-						candidateHadLaterDirective.set(i, true);
-					}
-				}
-				for (Message msg : stepMessages) {
-					orderedCandidates.add(msg);
-					candidateHadLaterDirective.add(containsRemovalDirective(step));
-				}
-			}
-		}
-		if (orderedCandidates.isEmpty()) {
-			return null;
-		}
-		List<Message> postList = new ArrayList<>();
-		collectMessages(committedMessages, postList);
-		if (postList.isEmpty()) {
-			return null;
-		}
-		List<Message> preList = new ArrayList<>();
-		collectMessages(priorMessages, preList);
-		if (!reset && postList.equals(preList)) {
-			return null;
-		}
-		Map<Message, Integer> preCounts = countMessages(preList);
-		Map<Message, Integer> postCounts = countMessages(postList);
-		for (int i = orderedCandidates.size() - 1; i >= 0; i--) {
-			Message candidate = orderedCandidates.get(i);
-			int postCount = postCounts.getOrDefault(candidate, 0);
-			if (postCount <= 0) {
-				continue;
-			}
-			if (reset || !candidateHadLaterDirective.get(i)
-					|| postCount > preCounts.getOrDefault(candidate, 0)) {
-				return candidate;
-			}
-		}
-		for (int i = postList.size() - 1; i >= 0; i--) {
-			Message committed = postList.get(i);
-			if (postCounts.getOrDefault(committed, 0) > preCounts.getOrDefault(committed, 0)) {
-				return committed;
-			}
-		}
-		return null;
-	}
-
-	private static void collectMessages(Object source, Collection<Message> target) {
-		if (source instanceof Message msg) {
-			target.add(msg);
-		}
-		else if (source instanceof SequentialUpdates nested) {
-			for (Object item : nested.updates()) {
-				collectMessages(item, target);
-			}
-		}
-		else if (source instanceof Collection<?> items) {
-			for (Object item : items) {
-				collectMessages(item, target);
-			}
-		}
-	}
-
-	private static boolean containsRemovalDirective(Object value) {
-		if (value instanceof AppenderChannel.RemoveIdentifier<?> || value instanceof RemoveMessage) {
-			return true;
-		}
-		if (value instanceof Collection<?> items) {
-			return items.stream().anyMatch(GraphRunnerContext::containsRemovalDirective);
-		}
-		return false;
-	}
-
-	private static Map<Message, Integer> countMessages(Object messagesObj) {
-		List<Message> flattened = new ArrayList<>();
-		collectMessages(messagesObj, flattened);
-		Map<Message, Integer> counts = new HashMap<>();
-		for (Message msg : flattened) {
-			counts.merge(msg, 1, Integer::sum);
-		}
-		return counts;
 	}
 
 	private static boolean isBuiltInPureMessageStrategy(KeyStrategy strategy) {
