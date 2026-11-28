@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.studio.core.rag.advisor;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +48,7 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.document.Document;
@@ -156,16 +158,15 @@ public class KnowledgeBaseRetrievalAdvisor implements BaseAdvisor {
 		}
 
 		Message systemMessage = promptTemplate.createMessage(promptParameters);
-		chatClientRequest.prompt()
-			.getInstructions()
-			.removeIf(element -> element.getMessageType() == MessageType.SYSTEM);
-		chatClientRequest.prompt().getInstructions().add(0, systemMessage);
+		List<Message> messages = new ArrayList<>(chatClientRequest.prompt().getInstructions());
+		messages.removeIf(element -> element.getMessageType() == MessageType.SYSTEM);
+		messages.add(0, systemMessage);
 
 		// 4. Update advised request with augmented prompt.
 		context.put(FILE_SEARCH_RESULT, documents);
 
 		return chatClientRequest.mutate()
-			.prompt(chatClientRequest.prompt().augmentUserMessage(request.getText()))
+			.prompt(new Prompt(messages, chatClientRequest.prompt().getOptions()).augmentUserMessage(request.getText()))
 			.context(context)
 			.build();
 	}
