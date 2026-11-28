@@ -23,10 +23,17 @@ import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 
 /** Marks a search or read callback that must stay usable when other tools are selected. */
-public record ContextSourceTool(ToolCallback delegate) implements StateAwareToolCallback {
+public record ContextSourceTool(ToolCallback delegate, int maxCallsPerTurn) implements StateAwareToolCallback {
+
+	public ContextSourceTool(ToolCallback delegate) {
+		this(delegate, Integer.MAX_VALUE);
+	}
 
 	public ContextSourceTool {
 		Objects.requireNonNull(delegate, "delegate must not be null");
+		if (maxCallsPerTurn < 1) {
+			throw new IllegalArgumentException("maxCallsPerTurn must be positive");
+		}
 	}
 
 	@Override

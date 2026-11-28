@@ -27,6 +27,7 @@ import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
@@ -158,7 +159,15 @@ public abstract class Agent {
 	}
 
 	public StateSnapshot getCurrentState(RunnableConfig config) throws GraphRunnerException {
-		return compiledGraph.getState(config);
+		return getAndCompileGraph().getState(config);
+	}
+
+	/**
+	 * Reads the pending approval saved for the latest checkpoint of the thread.
+	 * Authorize access to the thread before calling this method.
+	 */
+	public Optional<InterruptionMetadata> getPendingInterruption(RunnableConfig config) {
+		return getAndCompileGraph().getPendingInterruption(config);
 	}
 
 	// ------------------- Invoke with OverAllState as return value -------------------

@@ -96,7 +96,8 @@ public final class ToolContextHelper {
 	}
 
 	/**
-	 * Get the agent state (OverAllState) from ToolContext.
+	 * Get the state visible to this tool call. Treat it as read-only and submit changes
+	 * using {@link #getStateForUpdate(ToolContext)}.
 	 *
 	 * <p>This is a convenience method equivalent to:
 	 * {@code toolContext.getContext().get(ToolContextConstants.AGENT_STATE_CONTEXT_KEY)}</p>
@@ -113,7 +114,8 @@ public final class ToolContextHelper {
 
 	/**
 	 * Get the state map for update from ToolContext.
-	 * This is used when the tool needs to modify state.
+	 * Put changes to the thread state in this map. The tool node collects updates and
+	 * the graph applies the configured key strategies when committing state.
 	 *
 	 * <p>This is a convenience method equivalent to:
 	 * {@code toolContext.getContext().get(ToolContextConstants.AGENT_STATE_FOR_UPDATE_CONTEXT_KEY)}</p>

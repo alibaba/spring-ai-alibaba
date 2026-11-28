@@ -15,28 +15,28 @@
  */
 package com.alibaba.cloud.ai.graph.agent.memory;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.context.ContextPage;
 import com.alibaba.cloud.ai.graph.agent.tool.ContextSourceTool;
-import com.alibaba.cloud.ai.graph.agent.tools.ToolContextHelper;
 import com.alibaba.cloud.ai.graph.store.Store;
-import com.alibaba.cloud.ai.graph.store.StoreItem;
-import com.alibaba.cloud.ai.graph.store.StoreSearchRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.util.JsonHelper;
-import org.springframework.util.StringUtils;
 
 /**
  * Registers explicit search and read tools for cross-session memory. The application
@@ -51,6 +51,8 @@ public final class LongTermMemoryTools {
 
 	private static final JsonHelper JSON = new JsonHelper();
 
+	private static final Logger logger = LoggerFactory.getLogger(LongTermMemoryTools.class);
+
 	private final Store store;
 
 	private final Function<RunnableConfig, List<String>> namespaceResolver;
@@ -59,11 +61,20 @@ public final class LongTermMemoryTools {
 
 	private final int pageCharacters;
 
+	private final int maxQueryCharacters;
+
+	private final int maxCallsPerToolPerTurn;
+
+	private final ObservationRegistry observationRegistry;
+
 	private LongTermMemoryTools(Builder builder) {
 		this.store = builder.store;
 		this.namespaceResolver = Objects.requireNonNull(builder.namespaceResolver, "A namespace resolver is required");
 		this.maxSearchResults = builder.maxSearchResults;
 		this.pageCharacters = builder.pageCharacters;
+		this.maxQueryCharacters = builder.maxQueryCharacters;
+		this.maxCallsPerToolPerTurn = builder.maxCallsPerToolPerTurn;
+		this.observationRegistry = builder.observationRegistry;
 	}
 
 	public static Builder builder() {
@@ -75,72 +86,83 @@ public final class LongTermMemoryTools {
 		return List.of(new ContextSourceTool(FunctionToolCallback.builder(SEARCH_MEMORY,
 				(BiFunction<SearchRequest, ToolContext, Object>) this::search)
 				.description("Find relevant long-term memory keys for this task. Use read_memory to retrieve a value.")
-				.inputType(SearchRequest.class).build()),
+				.inputType(SearchRequest.class).build(), this.maxCallsPerToolPerTurn),
 			new ContextSourceTool(FunctionToolCallback.builder(READ_MEMORY,
 					(BiFunction<ReadRequest, ToolContext, Object>) this::read)
 				.description("Read a long-term memory value by key. Use nextOffset to continue reading the same key.")
-				.inputType(ReadRequest.class).build()));
+					.inputType(ReadRequest.class).build(), this.maxCallsPerToolPerTurn));
 	}
 
 	private Object search(SearchRequest request, ToolContext context) {
-		var scoped = scope(context);
-		if (scoped.isEmpty()) {
-			return Map.of("error", "Long-term memory is unavailable");
-		}
-		var memory = scoped.get();
-		var query = StoreSearchRequest.builder().namespace(memory.namespace()).exactNamespace(true)
-			.query(request.query()).sortFields(List.of("key")).limit(this.maxSearchResults).build();
-		return memory.store().searchItems(query).getItems().stream()
-			.filter(item -> memory.namespace().equals(item.getNamespace()))
-			.map(StoreItem::getKey).filter(LongTermMemoryTools::usableKey)
-			.distinct().limit(this.maxSearchResults).toList();
+		return observe("search", observation -> {
+			var scoped = ScopedMemory.resolve(context, this.store, this.namespaceResolver);
+			if (scoped.isEmpty()) {
+				return error(observation, "scope_unavailable", "Long-term memory is unavailable");
+			}
+			if (request.query() != null && request.query().length() > this.maxQueryCharacters) {
+				return error(observation, "invalid_request", "Memory search query is too long");
+			}
+			var keys = scoped.get().searchKeys(request.query(), this.maxSearchResults);
+			observation.lowCardinalityKeyValue("outcome", keys.isEmpty() ? "miss" : "success");
+			if (!observation.isNoop()) {
+				observation.getContext().put("result.count", keys.size());
+			}
+			return keys;
+		});
 	}
 
 	private Object read(ReadRequest request, ToolContext context) {
-		var scoped = scope(context);
-		if (scoped.isEmpty()) {
-			return Map.of("error", "Long-term memory is unavailable");
-		}
-		if (!usableKey(request.key())) {
-			return Map.of("error", "Invalid memory key");
-		}
-		var memory = scoped.get();
-		var item = memory.store().getItem(memory.namespace(), request.key())
-			.filter(found -> memory.namespace().equals(found.getNamespace()) && request.key().equals(found.getKey()));
-		if (item.isEmpty()) {
-			return Map.of("error", "Memory item is unavailable");
-		}
+		return observe("read", observation -> {
+			var scoped = ScopedMemory.resolve(context, this.store, this.namespaceResolver);
+			if (scoped.isEmpty()) {
+				return error(observation, "scope_unavailable", "Long-term memory is unavailable");
+			}
+			if (!ScopedMemory.usableKey(request.key())) {
+				return error(observation, "invalid_request", "Invalid memory key");
+			}
+			if (request.offset() != null && request.offset() < 0) {
+				return error(observation, "invalid_request", "Invalid memory read request");
+			}
+			var item = scoped.get().get(request.key());
+			if (item.isEmpty()) {
+				return error(observation, "miss", "Memory item is unavailable");
+			}
+			String content = JSON.toJson(item.get().getValue());
+			ContextPage page;
+			try {
+				page = ContextPage.read(content, request.offset(), this.pageCharacters);
+			}
+			catch (IllegalArgumentException invalidOffset) {
+				return error(observation, "invalid_request", "Invalid memory read request");
+			}
+			observation.lowCardinalityKeyValue("outcome", "success");
+			observation.lowCardinalityKeyValue("paginated", Boolean.toString(page.nextOffset() != null));
+			if (!observation.isNoop()) {
+				observation.getContext().put("result.bytes", page.content().getBytes(StandardCharsets.UTF_8).length);
+			}
+			return page;
+		});
+	}
+
+	private Object observe(String operation, Function<Observation, Object> action) {
+		var observation = Observation.createNotStarted("saa.agent.memory", this.observationRegistry)
+				.lowCardinalityKeyValue("operation", operation).start();
 		try {
-			return ContextPage.read(JSON.toJson(item.get().getValue()), request.offset(), this.pageCharacters);
+			return action.apply(observation);
 		}
-		catch (IllegalArgumentException error) {
-			return Map.of("error", "Invalid memory read request");
+		catch (RuntimeException failure) {
+			// Store errors may contain user data or connection details.
+			logger.warn("Long-term memory {} failed ({})", operation, failure.getClass().getSimpleName());
+			return error(observation, "backend_error", "Long-term memory is temporarily unavailable");
+		}
+		finally {
+			observation.stop();
 		}
 	}
 
-	private Optional<Scope> scope(ToolContext context) {
-		var config = ToolContextHelper.getConfig(context);
-		if (config.isEmpty()) {
-			return Optional.empty();
-		}
-		List<String> namespace = this.namespaceResolver.apply(config.get());
-		if (namespace == null || namespace.isEmpty() || namespace.stream().anyMatch(part -> !StringUtils.hasText(part))) {
-			return Optional.empty();
-		}
-		Store source = this.store != null ? this.store : config.get().store();
-		if (source == null) {
-			source = ToolContextHelper.getState(context).map(state -> state.getStore()).orElse(null);
-		}
-		return source == null ? Optional.empty() : Optional.of(new Scope(source, List.copyOf(namespace)));
-	}
-
-	private static boolean usableKey(String key) {
-		return StringUtils.hasText(key) && key.length() <= 256 && !key.equals(".") && !key.equals("..")
-				&& key.indexOf('/') == -1 && key.indexOf('\\') == -1
-				&& key.chars().noneMatch(Character::isISOControl);
-	}
-
-	private record Scope(Store store, List<String> namespace) {
+	private static Map<String, String> error(Observation observation, String outcome, String message) {
+		observation.lowCardinalityKeyValue("outcome", outcome);
+		return Map.of("error", message);
 	}
 
 	private record SearchRequest(@JsonPropertyDescription("Words describing the memory you need") String query) {
@@ -159,6 +181,12 @@ public final class LongTermMemoryTools {
 		private int maxSearchResults = 8;
 
 		private int pageCharacters = 4096;
+
+		private int maxQueryCharacters = 1024;
+
+		private int maxCallsPerToolPerTurn = Integer.MAX_VALUE;
+
+		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 
 		/** Uses a specific Store. The default is to use the execution's configured Store. */
 		public Builder store(Store store) {
@@ -185,6 +213,30 @@ public final class LongTermMemoryTools {
 				throw new IllegalArgumentException("pageCharacters must be at least two");
 			}
 			this.pageCharacters = pageCharacters;
+			return this;
+		}
+
+		/** Bounds the search query length in UTF-16 code units. Defaults to 1024. */
+		public Builder maxQueryCharacters(int maxQueryCharacters) {
+			if (maxQueryCharacters < 1) {
+				throw new IllegalArgumentException("maxQueryCharacters must be positive");
+			}
+			this.maxQueryCharacters = maxQueryCharacters;
+			return this;
+		}
+
+		/** Sets an additional per-turn limit for each of the two memory tools. */
+		public Builder maxCallsPerToolPerTurn(int maxCallsPerToolPerTurn) {
+			if (maxCallsPerToolPerTurn < 1) {
+				throw new IllegalArgumentException("maxCallsPerToolPerTurn must be positive");
+			}
+			this.maxCallsPerToolPerTurn = maxCallsPerToolPerTurn;
+			return this;
+		}
+
+		/** Observes recall without recording identities, queries, or memory content. */
+		public Builder observationRegistry(ObservationRegistry observationRegistry) {
+			this.observationRegistry = Objects.requireNonNull(observationRegistry, "observationRegistry");
 			return this;
 		}
 

@@ -117,7 +117,7 @@ class WorkflowCompositionTest {
 
 	@Test
 	void repeatsAnAgentInAConditionalWorkflowWithTheLatestBusinessVariables() throws Exception {
-		var model = new RecordingModel(prompt -> "result " + lastMessage(prompt));
+		var model = new RecordingModel(prompt -> "round " + lastMessage(prompt));
 		var agent = ReactAgent.builder().name("worker").model(model).instruction("Try {round}").outputKey("answer").build();
 		var workflow = new StateGraph()
 				.addNode("prepare", node_async(state -> Map.of("round", state.value("round", 0) + 1)))
@@ -131,8 +131,8 @@ class WorkflowCompositionTest {
 
 		assertThat(model.prompts.stream().map(WorkflowCompositionTest::lastMessage))
 				.containsExactly("Try 1", "Try 2");
-		assertThat(text(finalState(events), "answer")).isEqualTo("result Try 2");
-		assertThat(modelChunks(events)).containsExactly("resul", "t Try 1", "resul", "t Try 2");
+		assertThat(text(finalState(events), "answer")).isEqualTo("round Try 2");
+		assertThat(modelChunks(events)).containsExactly("round", " Try 1", "round", " Try 2");
 	}
 
 	@Test
@@ -367,7 +367,7 @@ class WorkflowCompositionTest {
 				assertThat(prompt.getSystemMessage().getText()).contains("original question");
 				assertThat(prompt.getUserMessage().getText()).contains("left answer", "right answer");
 				assertThat(prompt.getUserMessage().getText()).doesNotContain("AssistantMessage");
-				return "combined answer";
+				return "final answer";
 			}
 			return """
 					{"agents":[{"agent":"left","query":"left query"},{"agent":"right","query":"right query"}]}
@@ -383,8 +383,8 @@ class WorkflowCompositionTest {
 
 		assertThat(events.stream().filter(event -> "routing_merge".equals(event.node()))
 				.filter(StreamingOutput.class::isInstance).map(StreamingOutput.class::cast)
-				.map(event -> event.message().getText())).containsExactly("combi", "ned answer");
-		assertThat(finalState(events).value("merged_result").orElseThrow()).isEqualTo("combined answer");
+				.map(event -> event.message().getText())).containsExactly("final", " answer");
+		assertThat(finalState(events).value("merged_result").orElseThrow()).isEqualTo("final answer");
 	}
 
 	private static OverAllState finalState(List<NodeOutput> events) {

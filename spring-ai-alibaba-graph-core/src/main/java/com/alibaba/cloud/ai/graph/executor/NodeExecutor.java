@@ -254,7 +254,13 @@ public class NodeExecutor extends BaseGraphExecutor {
 				var writes = new LinkedHashMap<>(updateState);
 				writes.remove(NodePause.RESULT_KEY);
 				context.mergeIntoCurrentState(writes);
-				context.checkpointPausedNode();
+				if (pause.interruption().interruptionId().isPresent()
+						|| !pause.interruption().pendingInterruptions().isEmpty()) {
+					context.checkpointPendingInterruption(pause.interruption());
+				}
+				else {
+					context.checkpointPausedNode();
+				}
 				context.doListeners(NODE_AFTER, null);
 				resultValue.set(pause.interruption());
 				return Flux.just(GraphResponse.done(pause.interruption()));

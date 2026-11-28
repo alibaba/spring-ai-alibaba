@@ -29,6 +29,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -38,6 +39,7 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -95,7 +97,8 @@ public class ReturnDirectMessagesModelHookTest {
 
 		System.out.println("\n=== 测试 ReturnDirectModelHook 与 returnDirect 工具 ===");
 
-		String output = react.call("上海,北京").getText();
+		String output = react.call(Map.of("messages", List.of(new UserMessage("上海,北京")),
+				"target_topic", "上海,北京")).getText();
 		System.out.println("ReactAgent Output: " + output);
 
 		assertNotNull(output, "Output should not be null");
@@ -189,8 +192,8 @@ public class ReturnDirectMessagesModelHookTest {
 			}
 
 			@Override
-			public ChatOptions getDefaultOptions() {
-				return chatModel.getDefaultOptions();
+			public ChatOptions getOptions() {
+				return chatModel.getOptions();
 			}
 		};
 
@@ -255,8 +258,8 @@ public class ReturnDirectMessagesModelHookTest {
 			}
 
 			@Override
-			public ChatOptions getDefaultOptions() {
-				return chatModel.getDefaultOptions();
+			public ChatOptions getOptions() {
+				return chatModel.getOptions();
 			}
 		};
 

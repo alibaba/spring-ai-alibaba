@@ -91,13 +91,7 @@ public class LoopAgentTest {
                 .name("sqlGenerateAgent")
                 .model(chatModel)
                 .description("可以根据用户的自然语言生成MySQL的SQL代码。")
-                .instruction("你是一个熟悉MySQL数据库的小助手，请你根据用户的自然语言，输出对应的SQL。")
-                .outputSchema("""
-                        {
-                           "query": 用户的请求,
-                           "output": 生成SQL结果
-                        }
-                        """)
+                .instruction("请根据用户的请求生成 MySQL SQL，并以 JSON 返回 query 和 output 两个字段。")
                 .outputKey("sql")
                 .build();
 
@@ -105,8 +99,7 @@ public class LoopAgentTest {
                 .name("sqlRatingAgent")
                 .model(chatModel)
                 .description("可以根据输入的自然语言和SQL语句的匹配度进行评分。")
-                .instruction("你是一个熟悉MySQL数据库的小助手，请你根据用户输入的自然语言和对应的SQL语句，输出一个评分。评分为一个浮点数，在0到1之间。越趋近于1说明SQL越匹配自然语言。")
-                .outputSchema("你的输出有且仅有一个浮点数，且在0到1之间，**不要输出任何额外的字符**")
+                .instruction("按请求与 MySQL SQL 的匹配度打分。只输出 0 到 1 之间的数字。")
                 .outputKey("score")
                 .build();
 
