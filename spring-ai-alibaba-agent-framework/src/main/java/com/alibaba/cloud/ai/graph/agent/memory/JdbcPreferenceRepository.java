@@ -21,6 +21,7 @@ import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.SQLTransactionRollbackException;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
@@ -110,28 +111,46 @@ final class JdbcPreferenceRepository {
 		SQLException retryFailure = null;
 		for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
 			try (var connection = this.dataSource.getConnection()) {
+				boolean previousAutoCommit = connection.getAutoCommit();
+				int previousIsolation = connection.getTransactionIsolation();
+				boolean settled = false;
+				boolean committed = false;
+				SQLException terminalFailure = null;
 				connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 				connection.setAutoCommit(false);
 				try {
 					Receipt result = change(connection, scope, change, requestHash, source);
 					if (result != null) {
 						connection.commit();
+						settled = true;
+						committed = true;
 						return result;
 					}
 					connection.rollback();
+					settled = true;
 				}
 				catch (SQLException failure) {
 					try {
 						connection.rollback();
+						settled = true;
 					}
 					catch (SQLException rollbackFailure) {
 						failure.addSuppressed(rollbackFailure);
+						abortBrokenConnection(connection, failure);
+						terminalFailure = failure;
 						throw failure;
 					}
 					if (!retryable(failure)) {
+						terminalFailure = failure;
 						throw failure;
 					}
 					retryFailure = failure;
+				}
+				finally {
+					if (settled) {
+						restoreConnectionState(connection, previousAutoCommit, previousIsolation,
+								committed || retryFailure != null, terminalFailure);
+					}
 				}
 			}
 			catch (SQLException failure) {
@@ -254,10 +273,64 @@ final class JdbcPreferenceRepository {
 		statement.setString(2, key.storeKey());
 	}
 
+	private static void restoreConnectionState(Connection connection, boolean autoCommit, int isolation,
+			boolean suppressErrors, SQLException priorFailure) throws SQLException {
+		try {
+			if (!connection.isClosed()) {
+				connection.setAutoCommit(autoCommit);
+				connection.setTransactionIsolation(isolation);
+			}
+		}
+		catch (SQLException failure) {
+			if (priorFailure != null) {
+				priorFailure.addSuppressed(failure);
+			}
+			else if (!suppressErrors) {
+				throw failure;
+			}
+		}
+	}
+
+	private static void abortBrokenConnection(Connection connection, SQLException failure) {
+		try {
+			if (!connection.isClosed()) {
+				connection.abort(Runnable::run);
+			}
+		}
+		catch (SQLException | SecurityException abortFailure) {
+			failure.addSuppressed(abortFailure);
+		}
+	}
+
 	private static boolean retryable(SQLException failure) {
-		String state = failure.getSQLState();
-		// Uniqueness races with the first write or a duplicate operation. Retry after rollback.
-		return "23505".equals(state) || "40001".equals(state) || "40P01".equals(state);
+		for (Throwable current = failure; current != null; current = current.getCause()) {
+			if (current instanceof SQLTransactionRollbackException) {
+				return true;
+			}
+			if (current instanceof SQLException sqlEx) {
+				String state = sqlEx.getSQLState();
+				if ("23505".equals(state) || "40001".equals(state) || "40P01".equals(state)) {
+					return true;
+				}
+				if ("23000".equals(state) && isDuplicateKeyErrorCode(sqlEx)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	private static boolean isDuplicateKeyErrorCode(SQLException failure) {
+		return switch (failure.getErrorCode()) {
+			// Oracle (ORA-00001), MySQL/MariaDB (1062), SQLite extended (1555, 2067),
+			// SQL Server (2601, 2627), and H2 compatibility modes (23505).
+			case 1, 1062, 1555, 2067, 2601, 2627, 23505 -> true;
+			case 19 -> {
+				String message = failure.getMessage();
+				yield message != null && (message.contains("UNIQUE") || message.contains("PRIMARY KEY"));
+			}
+			default -> false;
+		};
 	}
 
 	private static String hash(List<?> values) {
