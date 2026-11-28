@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent.node;
 
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.tool.AsyncToolCallback;
@@ -221,6 +222,34 @@ class AgentToolNodeSequentialStateIsolationTest {
 		}
 	}
 
+	@Test
+	@Timeout(value = 15, unit = TimeUnit.SECONDS)
+	@DisplayName("Sequential execution: MARK_FOR_REMOVAL sentinel should not be consumed by APPEND KeyStrategy")
+	void testSequentialMarkForRemovalSentinelPreservedOnAppendKey() throws Exception {
+		ToolCallback appendTool = new StateWritingSyncTool("appendTool", "items", List.of("x"));
+		ToolCallback removeTool = new StateWritingSyncTool("removeTool", "items", OverAllState.MARK_FOR_REMOVAL);
+
+		AgentToolNode toolNode = baseBuilder.toolCallbacks(List.of(appendTool, removeTool))
+			.parallelToolExecution(false)
+			.toolExecutionTimeout(Duration.ofSeconds(30))
+			.build();
+
+		AssistantMessage assistantMessage = createAssistantMessageWithToolCalls(
+				createToolCall("call_1", "appendTool", "{}"), createToolCall("call_2", "removeTool", "{}"));
+
+		OverAllState state = createStateWithMessages(assistantMessage);
+		state.registerKeyAndStrategy("items", KeyStrategy.APPEND);
+		state.updateState(Map.of("items", List.of("initial")));
+
+		RunnableConfig config = RunnableConfig.builder().threadId("test-thread").build();
+
+		Map<String, Object> result = toolNode.apply(state, config);
+
+		assertThat(result.get("items")).isSameAs(OverAllState.MARK_FOR_REMOVAL);
+		state.updateState(result);
+		assertThat(state.value("items")).isEmpty();
+	}
+
 	// Helper methods
 
 	private ToolCallback createStateWritingTool(String name, String stateKey, String stateValue) {
@@ -258,9 +287,9 @@ class AgentToolNodeSequentialStateIsolationTest {
 
 		private final String stateKey;
 
-		private final String stateValue;
+		private final Object stateValue;
 
-		StateWritingSyncTool(String name, String stateKey, String stateValue) {
+		StateWritingSyncTool(String name, String stateKey, Object stateValue) {
 			this.name = name;
 			this.stateKey = stateKey;
 			this.stateValue = stateValue;

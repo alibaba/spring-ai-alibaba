@@ -335,7 +335,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 				String key = entry.getKey();
 				Object newValue = entry.getValue();
 				Object existingValue = mergedUpdates.get(key);
-				if (existingValue == null) {
+				if (existingValue == null || existingValue == OverAllState.MARK_FOR_REMOVAL
+						|| newValue == OverAllState.MARK_FOR_REMOVAL) {
 					mergedUpdates.put(key, newValue);
 				}
 				else {
