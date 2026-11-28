@@ -30,6 +30,7 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.agent.tool.ContextSourceTool;
 import com.alibaba.cloud.ai.graph.agent.tools.ToolContextHelper;
 import com.alibaba.cloud.ai.graph.store.Store;
 import com.alibaba.cloud.ai.graph.store.StoreItem;
@@ -57,7 +58,7 @@ public final class ToolResultArchive {
 
 	private static final String REFERENCE_ATTRIBUTE = "spring.ai.alibaba.toolResultArchive";
 
-	private static final String MANIFEST_SUFFIX = ":manifest";
+	private static final String MANIFEST_SUFFIX = "-manifest";
 
 	private static final String PAGE_COUNT = "pages";
 
@@ -190,10 +191,10 @@ public final class ToolResultArchive {
 			}
 			return Map.of("error", "The tool result page is unavailable in this conversation.");
 		};
-		return FunctionToolCallback.builder(READ_TOOL_NAME, read)
+		return new ContextSourceTool(FunctionToolCallback.builder(READ_TOOL_NAME, read)
 			.description("Read one page of a tool result archived in this conversation. Follow nextPage until it is null.")
 			.inputType(ReadRequest.class)
-			.build();
+			.build());
 	}
 
 	private Optional<List<String>> namespace(RunnableConfig config, String agentName) {
@@ -205,7 +206,7 @@ public final class ToolResultArchive {
 	}
 
 	private static String pageKey(String reference, int page) {
-		return reference + ":page:" + page;
+		return reference + "-page-" + page;
 	}
 
 	private static String digest(String... parts) {

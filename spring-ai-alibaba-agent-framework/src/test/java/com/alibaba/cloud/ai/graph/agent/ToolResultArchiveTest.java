@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.context.ToolResultArchive;
 import com.alibaba.cloud.ai.graph.agent.interceptor.contextediting.ContextEditingInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.toolselection.ToolSelectionInterceptor;
 import com.alibaba.cloud.ai.graph.store.StoreItem;
 import com.alibaba.cloud.ai.graph.store.stores.FileSystemStore;
 import com.alibaba.cloud.ai.graph.store.stores.MemoryStore;
@@ -40,6 +41,8 @@ import org.springframework.ai.chat.messages.part.ToolResultPart;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 
@@ -94,7 +97,7 @@ class ToolResultArchiveTest {
 		var store = new MemoryStore() {
 			@Override
 			public void putItem(StoreItem item) {
-				if (failWrite.get() && item.getKey().endsWith(":manifest")) {
+				if (failWrite.get() && item.getKey().endsWith("-manifest")) {
 					throw new IllegalStateException("interrupted write");
 				}
 				super.putItem(item);
@@ -173,6 +176,52 @@ class ToolResultArchiveTest {
 			.isEqualTo(new ObjectMapper().writeValueAsString(CONTENT));
 		assertThat(calls).hasValue(1);
 		assertThat(store.isEmpty()).isTrue();
+	}
+
+	@Test
+	void retainsPageReaderWhenToolSelectionInterceptorLimitsTools() throws Exception {
+		var scope = config("tenant-a", "thread");
+		var archive = ToolResultArchive.builder(new MemoryStore()).thresholdChars(30).pageSizeChars(40).build();
+		var producer = FunctionToolCallback.builder("produce", (Map<String, Object> input) -> CONTENT)
+			.description("Produce a long result").inputType(Map.class).build();
+		var unused = FunctionToolCallback.builder("unused", (Map<String, Object> input) -> "unused")
+			.description("Unused business tool").inputType(Map.class).build();
+		var calls = new AtomicInteger();
+		ChatModel model = new ChatModel() {
+			@Override
+			public ChatResponse call(Prompt prompt) {
+				var toolNames = ((ToolCallingChatOptions) prompt.getOptions()).getToolCallbacks().stream()
+					.map(callback -> callback.getToolDefinition().name()).toList();
+				assertThat(toolNames).contains(ToolResultArchive.READ_TOOL_NAME, "produce").doesNotContain("unused");
+				int step = calls.getAndIncrement();
+				if (step == 0) {
+					return toolCall("write", "produce", "{}");
+				}
+				var results = prompt.getInstructions().stream()
+					.filter(ToolResponseMessage.class::isInstance)
+					.map(ToolResponseMessage.class::cast)
+					.flatMap(message -> message.getResults().stream())
+					.toList();
+				if (step == 1) {
+					return toolCall("read", ToolResultArchive.READ_TOOL_NAME,
+							"{\"reference\":\"" + reference(results.get(results.size() - 1)) + "\",\"page\":1}");
+				}
+				return new ChatResponse(List.of(new Generation(new AssistantMessage("done"))));
+			}
+
+			@Override
+			public ToolCallingChatOptions getOptions() {
+				return ToolCallingChatOptions.builder().build();
+			}
+		};
+		var selector = ToolSelectionInterceptor.builder().maxTools(1)
+			.selectionModel(prompt -> new ChatResponse(List.of(new Generation(new AssistantMessage("{\"tools\":[\"produce\"]}")))))
+			.build();
+		var agent = ReactAgent.builder().name(AGENT).model(model).tools(producer, unused).toolResultArchive(archive)
+			.interceptors(selector).build();
+
+		assertThat(agent.call("Produce and read with tool selection", scope).getText()).isEqualTo("done");
+		assertThat(calls).hasValue(3);
 	}
 
 	private static ToolResultArchive scopedArchive(FileSystemStore store) {
