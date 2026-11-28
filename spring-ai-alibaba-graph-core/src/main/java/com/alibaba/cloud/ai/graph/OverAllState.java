@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.state.SequentialUpdates;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.store.Store;
 import org.springframework.ai.util.JsonHelper;
@@ -279,7 +280,13 @@ public final class OverAllState implements Serializable {
 			if (partialState.get(key) == MARK_FOR_REMOVAL) {
 				this.data.remove(key);
 			} else {
-				this.data.put(key, strategy.apply(data.get(key), partialState.get(key)));
+				Object updated = applyPartialValue(data.get(key), partialState.get(key), strategy);
+				if (updated == MARK_FOR_REMOVAL) {
+					this.data.remove(key);
+				}
+				else {
+					this.data.put(key, updated);
+				}
 			}
 		});
 		return data();
@@ -308,7 +315,13 @@ public final class OverAllState implements Serializable {
 				this.data.remove(key);
 			}
 			else {
-				this.data.put(key, strategy.apply(data.get(key), partialState.get(key)));
+				Object updated = applyPartialValue(data.get(key), partialState.get(key), strategy);
+				if (updated == MARK_FOR_REMOVAL) {
+					this.data.remove(key);
+				}
+				else {
+					this.data.put(key, updated);
+				}
 			}
 		});
 	}
@@ -422,9 +435,28 @@ public final class OverAllState implements Serializable {
 				channel = KeyStrategy.REPLACE;
 			}
 
-			Object newValue = channel.apply(state.get(entry.getKey()), entry.getValue());
-			return entryOf(entry.getKey(), newValue);
+			Object newValue = applyPartialValue(state.get(entry.getKey()), entry.getValue(), channel);
+			return entryOf(entry.getKey(), newValue == MARK_FOR_REMOVAL ? null : newValue);
 		}).collect(toMapAllowingNulls(Map.Entry::getKey, Map.Entry::getValue));
+	}
+
+	private static Object applyPartialValue(Object currentValue, Object partialValue, KeyStrategy strategy) {
+		if (partialValue instanceof SequentialUpdates sequential) {
+			Object acc = currentValue;
+			boolean removed = false;
+			for (Object step : sequential.updates()) {
+				if (step == MARK_FOR_REMOVAL) {
+					acc = null;
+					removed = true;
+				}
+				else {
+					acc = strategy.apply(acc, step);
+					removed = false;
+				}
+			}
+			return removed ? MARK_FOR_REMOVAL : acc;
+		}
+		return strategy.apply(currentValue, partialValue);
 	}
 
 	private static <T, K, U> Collector<T, ?, Map<K, U>> toMapRemovingNulls(Function<? super T, ? extends K> keyMapper,

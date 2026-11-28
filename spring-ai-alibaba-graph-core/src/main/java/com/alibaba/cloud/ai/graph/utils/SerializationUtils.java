@@ -15,7 +15,13 @@
  */
 package com.alibaba.cloud.ai.graph.utils;
 
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
+import com.alibaba.cloud.ai.graph.state.RemoveByHash;
+import com.alibaba.cloud.ai.graph.state.RemoveByValue;
+import com.alibaba.cloud.ai.graph.state.RemoveMessage;
+import com.alibaba.cloud.ai.graph.state.ReplaceAllWith;
+import com.alibaba.cloud.ai.graph.state.SequentialUpdates;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.slf4j.Logger;
@@ -95,6 +101,25 @@ public class SerializationUtils {
 	public static Object deepCopyValue(Object value) {
 		if (value == null) {
 			return null;
+		}
+		if (value == OverAllState.MARK_FOR_REMOVAL || value instanceof RemoveMessage) {
+			return value;
+		}
+		if (value instanceof RemoveByHash<?> remove) {
+			return RemoveByHash.of(deepCopyValue(remove.value()));
+		}
+		if (value instanceof RemoveByValue<?> remove) {
+			return RemoveByValue.of(deepCopyValue(remove.value()));
+		}
+		if (value instanceof ReplaceAllWith<?> replace) {
+			return ReplaceAllWith.of((java.util.List<?>) deepCopyValue(replace.newValues()));
+		}
+		if (value instanceof SequentialUpdates sequential) {
+			java.util.List<Object> copied = new java.util.ArrayList<>(sequential.updates().size());
+			for (Object item : sequential.updates()) {
+				copied.add(deepCopyValue(item));
+			}
+			return SequentialUpdates.of(copied);
 		}
 
 		// Handle primitive types and immutable objects

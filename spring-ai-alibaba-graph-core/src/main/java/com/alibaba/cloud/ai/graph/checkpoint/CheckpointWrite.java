@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 import com.alibaba.cloud.ai.graph.state.RemoveByValue;
 import com.alibaba.cloud.ai.graph.state.RemoveMessage;
 import com.alibaba.cloud.ai.graph.state.ReplaceAllWith;
+import com.alibaba.cloud.ai.graph.state.SequentialUpdates;
 import com.alibaba.cloud.ai.graph.utils.SerializationUtils;
 
 import java.util.ArrayList;
@@ -89,6 +90,16 @@ public final class CheckpointWrite {
 		if (value instanceof ReplaceAllWith<?> replace) {
 			return operation("replaceAll", replace.newValues());
 		}
+		if (value instanceof SequentialUpdates sequential) {
+			var encoded = sequential.updates().stream().map(item -> {
+				if (item == OverAllState.MARK_FOR_REMOVAL) {
+					return operation("markForRemoval", null);
+				}
+				var command = encodeOperation(item);
+				return command == null ? operation("value", item) : command;
+			}).toList();
+			return operation("sequentialUpdates", encoded);
+		}
 		Collection<?> items = value instanceof Object[] array ? Arrays.asList(array)
 				: value instanceof Collection<?> collection ? collection : List.of();
 		if (items.stream().anyMatch(item -> item instanceof RemoveByHash<?> || item instanceof RemoveByValue<?>
@@ -117,6 +128,9 @@ public final class CheckpointWrite {
 			case "removeByValue" -> RemoveByValue.of(SerializationUtils.deepCopyValue(value));
 			case "removeMessage" -> new RemoveMessage((String) value);
 			case "replaceAll" -> ReplaceAllWith.of((List<?>) SerializationUtils.deepCopyValue(value));
+			case "markForRemoval" -> OverAllState.MARK_FOR_REMOVAL;
+			case "sequentialUpdates" -> SequentialUpdates.of(((List<Map<String, Object>>) value).stream()
+					.map(CheckpointWrite::decodeOperation).toList());
 			case "value" -> SerializationUtils.deepCopyValue(value);
 			case "sequence" -> ((List<Map<String, Object>>) value).stream()
 					.map(CheckpointWrite::decodeOperation).toList();

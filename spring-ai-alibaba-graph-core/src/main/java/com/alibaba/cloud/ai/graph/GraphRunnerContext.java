@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.ParallelBranchPath;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
+import com.alibaba.cloud.ai.graph.state.SequentialUpdates;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.RunEvent;
@@ -707,23 +708,7 @@ public class GraphRunnerContext {
 
 		// Check if updateStates is not empty
 		if (updateStates != null && !updateStates.isEmpty()) {
-			// Check if "messages" key exists and is a List
-			Object messagesObj = updateStates.get("messages");
-			if (messagesObj instanceof List<?> messagesList && !messagesList.isEmpty()) {
-				// Iterate backwards to find the last Message, skipping non-Message
-				// markers such as RemoveByHash that may be appended after the actual
-				// message (e.g. in HITL partial tool-response handling).
-				for (int i = messagesList.size() - 1; i >= 0; i--) {
-					Object element = messagesList.get(i);
-					if (element instanceof Message msg) {
-						message = msg;
-						break;
-					}
-				}
-			} else if (messagesObj instanceof Message singleMessage) {
-				// If it's a single Message instance
-				message = singleMessage;
-			}
+			message = findLastMessage(updateStates.get("messages"));
 		}
 
 		OutputType outputType = OutputType.from(streaming, nodeId);
@@ -735,6 +720,34 @@ public class GraphRunnerContext {
 			return new StreamingOutput<>(nodeId, (String) config.metadata("_AGENT_").orElse(""),
 					nodeOutputState(), tokenUsage, outputType);
 		}
+	}
+
+	private static Message findLastMessage(Object messagesObj) {
+		if (messagesObj instanceof Message singleMessage) {
+			return singleMessage;
+		}
+		if (messagesObj instanceof SequentialUpdates sequential) {
+			List<Object> updates = sequential.updates();
+			for (int i = updates.size() - 1; i >= 0; i--) {
+				Message nested = findLastMessage(updates.get(i));
+				if (nested != null) {
+					return nested;
+				}
+			}
+			return null;
+		}
+		if (messagesObj instanceof List<?> messagesList && !messagesList.isEmpty()) {
+			// Iterate backwards to find the last Message, skipping non-Message
+			// markers such as RemoveByHash that may be appended after the actual
+			// message (e.g. in HITL partial tool-response handling).
+			for (int i = messagesList.size() - 1; i >= 0; i--) {
+				Message nested = findLastMessage(messagesList.get(i));
+				if (nested != null) {
+					return nested;
+				}
+			}
+		}
+		return null;
 	}
 
 }

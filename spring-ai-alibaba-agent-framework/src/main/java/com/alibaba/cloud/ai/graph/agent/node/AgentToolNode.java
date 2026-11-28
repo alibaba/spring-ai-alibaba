@@ -49,11 +49,9 @@ import com.alibaba.cloud.ai.graph.agent.tool.StateAwareToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolCancelledException;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolStateCollector;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
-import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
-import com.alibaba.cloud.ai.graph.state.RemoveMessage;
-import com.alibaba.cloud.ai.graph.state.ReplaceAllWith;
-import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.state.SequentialUpdates;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,8 +75,6 @@ import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -308,12 +304,13 @@ public class AgentToolNode implements NodeActionWithConfig {
 	 *
 	 * <h3>State Merge Semantics</h3>
 	 * <p>
-	 * Sequential mode folds per-tool updates in tool-call order using the
-	 * {@link com.alibaba.cloud.ai.graph.KeyStrategy} registered for each state key,
+	 * Sequential mode preserves per-tool updates in tool-call order for keys configured
+	 * with a custom {@link com.alibaba.cloud.ai.graph.KeyStrategy} (via
+	 * {@link SequentialUpdates} when multiple tools update the same non-replace key),
 	 * defaulting to {@link KeyStrategy#REPLACE} (<b>last-write-wins</b>) when no custom
-	 * strategy is configured. State-control directives ({@link OverAllState#MARK_FOR_REMOVAL},
-	 * {@link ReplaceAllWith}, and append removal markers) are preserved so the graph
-	 * applies them faithfully against the pre-batch state.
+	 * strategy is configured. {@link OverAllState} then applies each ordered update
+	 * step-by-step against the evolving state value without re-applying the strategy to
+	 * an already-reduced value.
 	 * </p>
 	 *
 	 * @see #executeToolCallsParallel(List, OverAllState, RunnableConfig)
@@ -335,125 +332,24 @@ public class AgentToolNode implements NodeActionWithConfig {
 			// Merge immediately - subsequent timeout clear() won't affect already-merged data
 			for (Map.Entry<String, Object> entry : toolSpecificUpdate.entrySet()) {
 				String key = entry.getKey();
+				Object newValue = entry.getValue();
 				KeyStrategy strategy = keyStrategies != null
 						? keyStrategies.getOrDefault(key, KeyStrategy.REPLACE) : KeyStrategy.REPLACE;
-				Object currentStateValue = state.value(key).orElse(null);
-				mergedUpdates.put(key, mergeSequentialStateUpdate(mergedUpdates.get(key), entry.getValue(),
-						strategy, currentStateValue));
+				if (newValue == OverAllState.MARK_FOR_REMOVAL
+						|| !mergedUpdates.containsKey(key) || isReplaceStrategy(strategy)) {
+					mergedUpdates.put(key, newValue);
+				}
+				else {
+					mergedUpdates.put(key, SequentialUpdates.append(mergedUpdates.get(key), newValue));
+				}
 			}
 		}
 
 		return new ToolBatch(outcomes, mergedUpdates);
 	}
 
-	@SuppressWarnings("unchecked")
-	private static Object mergeSequentialStateUpdate(Object existingValue, Object newValue, KeyStrategy strategy,
-			Object currentStateValue) {
-		if (newValue == OverAllState.MARK_FOR_REMOVAL) {
-			return OverAllState.MARK_FOR_REMOVAL;
-		}
-		if (existingValue == null) {
-			return newValue;
-		}
-		if (newValue == null) {
-			return existingValue;
-		}
-		if (strategy instanceof AppendStrategy) {
-			if (newValue instanceof ReplaceAllWith<?>) {
-				return newValue;
-			}
-			if (existingValue == OverAllState.MARK_FOR_REMOVAL) {
-				return ReplaceAllWith.of(asAppendList(strategy.apply(null, newValue)));
-			}
-			if (existingValue instanceof ReplaceAllWith<?> replaceExisting) {
-				return ReplaceAllWith.of(asAppendList(strategy.apply(replaceExisting.newValues(), newValue)));
-			}
-			if (containsAppendDirective(existingValue) || containsAppendDirective(newValue)) {
-				return foldAppendDirectives(currentStateValue, existingValue, newValue);
-			}
-		}
-		if (existingValue == OverAllState.MARK_FOR_REMOVAL) {
-			return newValue;
-		}
-		return strategy.apply(existingValue, newValue);
-	}
-
-	@SuppressWarnings("unchecked")
-	private static List<Object> foldAppendDirectives(Object currentStateValue, Object existingValue, Object newValue) {
-		List<Object> simulatedOld = currentStateValue instanceof List<?> list
-				? new ArrayList<>(list) : new ArrayList<>();
-		List<Object> combined = new ArrayList<>();
-		for (List<Object> batch : List.of(toRawAppendItems(existingValue), toRawAppendItems(newValue))) {
-			for (Object item : batch) {
-				if (item instanceof AppenderChannel.RemoveIdentifier<?> rawRemove) {
-					var identifier = (AppenderChannel.RemoveIdentifier<Object>) rawRemove;
-					if (removeFirstMatch(simulatedOld, identifier, 0)) {
-						combined.add(item);
-					}
-					else {
-						removeFirstNonDirectiveMatch(combined, identifier, simulatedOld.size());
-					}
-				}
-				else {
-					combined.add(item);
-				}
-			}
-		}
-		return combined;
-	}
-
-	private static boolean containsAppendDirective(Object value) {
-		if (value instanceof AppenderChannel.RemoveIdentifier<?> || value instanceof RemoveMessage) {
-			return true;
-		}
-		Collection<?> items = value instanceof Object[] array ? Arrays.asList(array)
-				: value instanceof Collection<?> collection ? collection : List.of();
-		return items.stream().anyMatch(
-				item -> item instanceof AppenderChannel.RemoveIdentifier<?> || item instanceof RemoveMessage);
-	}
-
-	private static List<Object> toRawAppendItems(Object value) {
-		if (value instanceof Collection<?> collection) {
-			return new ArrayList<>(collection);
-		}
-		if (value != null && value.getClass().isArray()) {
-			return new ArrayList<>(Arrays.asList((Object[]) value));
-		}
-		List<Object> single = new ArrayList<>(1);
-		single.add(value);
-		return single;
-	}
-
-	@SuppressWarnings("unchecked")
-	private static List<Object> asAppendList(Object value) {
-		return value instanceof List<?> list ? new ArrayList<>(list) : List.of();
-	}
-
-	private static boolean removeFirstMatch(List<Object> items,
-			AppenderChannel.RemoveIdentifier<Object> identifier, int indexOffset) {
-		for (int i = 0; i < items.size(); i++) {
-			if (identifier.compareTo(items.get(i), indexOffset + i) == 0) {
-				items.remove(i);
-				return true;
-			}
-		}
-		return false;
-	}
-
-	private static void removeFirstNonDirectiveMatch(List<Object> combined,
-			AppenderChannel.RemoveIdentifier<Object> identifier, int indexOffset) {
-		int logicalIndex = indexOffset;
-		for (int i = 0; i < combined.size(); i++) {
-			Object candidate = combined.get(i);
-			if (candidate instanceof AppenderChannel.RemoveIdentifier<?> || candidate instanceof RemoveMessage) {
-				continue;
-			}
-			if (identifier.compareTo(candidate, logicalIndex) == 0) {
-				combined.remove(i);
-				return;
-			}
-			logicalIndex++;
-		}
+	private static boolean isReplaceStrategy(KeyStrategy strategy) {
+		return strategy == null || strategy == KeyStrategy.REPLACE || strategy instanceof ReplaceStrategy;
 	}
 
 	/**

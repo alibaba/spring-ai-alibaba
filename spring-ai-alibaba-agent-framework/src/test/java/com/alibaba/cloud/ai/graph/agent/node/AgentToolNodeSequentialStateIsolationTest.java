@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.tool.AsyncToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.StateAwareToolCallback;
+import com.alibaba.cloud.ai.graph.checkpoint.CheckpointWrite;
 import com.alibaba.cloud.ai.graph.state.RemoveByValue;
 import com.alibaba.cloud.ai.graph.state.ReplaceAllWith;
 import org.junit.jupiter.api.BeforeEach;
@@ -315,6 +316,36 @@ class AgentToolNodeSequentialStateIsolationTest {
 		state4.updateState(Map.of("items", List.of("old", "keep")));
 		state4.updateState(removeNode.apply(state4, config));
 		assertThat(state4.value("items")).contains(List.of("keep", "y"));
+
+		// 5. Intra-tool atomic [b, RemoveByValue(b)] keeps 'b' when no prior 'b' existed
+		ToolCallback appendA = new StateWritingSyncTool("appendA", "items", List.of("a"));
+		ToolCallback appendAndRemoveB = new StateWritingSyncTool("appendAndRemoveB", "items",
+				List.of("b", RemoveByValue.of("b")));
+		AgentToolNode atomicBatchNode = baseBuilder.toolCallbacks(List.of(appendA, appendAndRemoveB))
+			.parallelToolExecution(false)
+			.toolExecutionTimeout(Duration.ofSeconds(30))
+			.build();
+		OverAllState state5 = createStateWithMessages(createAssistantMessageWithToolCalls(
+				createToolCall("call_1", "appendA", "{}"), createToolCall("call_2", "appendAndRemoveB", "{}")));
+		state5.registerKeyAndStrategy("items", KeyStrategy.APPEND);
+		state5.updateState(atomicBatchNode.apply(state5, config));
+		assertThat(state5.value("items")).contains(List.of("a", "b"));
+
+		// 6. Non-associative custom KeyStrategy applies state-first without double-reducing
+		ToolCallback writeA = new StateWritingSyncTool("writeA", "custom", "a");
+		ToolCallback writeB = new StateWritingSyncTool("writeB", "custom", "b");
+		AgentToolNode customStrategyNode = baseBuilder.toolCallbacks(List.of(writeA, writeB))
+			.parallelToolExecution(false)
+			.toolExecutionTimeout(Duration.ofSeconds(30))
+			.build();
+		OverAllState state6 = createStateWithMessages(createAssistantMessageWithToolCalls(
+				createToolCall("call_1", "writeA", "{}"), createToolCall("call_2", "writeB", "{}")));
+		state6.registerKeyAndStrategy("custom", (oldVal, newVal) -> newVal + "-merged");
+		state6.updateState(Map.of("custom", "init"));
+		Map<String, Object> rawDelta = customStrategyNode.apply(state6, config);
+		Map<String, Object> roundTrippedDelta = CheckpointWrite.decode(CheckpointWrite.encode(rawDelta));
+		state6.updateState(roundTrippedDelta);
+		assertThat(state6.value("custom")).contains("b-merged");
 	}
 
 	// Helper methods
