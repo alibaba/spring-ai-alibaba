@@ -28,6 +28,7 @@ import java.util.Map;
 public class ToolCallResponse {
 
     public final static String SUCCESS_STATUS = "SUCCESS";
+	public static final String PERMISSION_DENIED_ATTRIBUTE = "spring.ai.alibaba.permissionDenied";
 	private final String result;
 	private final String toolName;
 	private final String toolCallId;
@@ -73,6 +74,12 @@ public class ToolCallResponse {
 	public static ToolCallResponse error(String toolCallId, String toolName, String errorMessage) {
 		return new ToolCallResponse("Error: " + errorMessage, toolName, toolCallId, "error",
 				Map.of("error", true, "errorMessage", errorMessage));
+	}
+
+	/** Creates a result for a tool rejected by the agent's permission policy. */
+	public static ToolCallResponse permissionDenied(String toolCallId, String toolName) {
+		return new ToolCallResponse("Error: Tool call denied by permission policy", toolName, toolCallId, "error",
+				Map.of("error", true, PERMISSION_DENIED_ATTRIBUTE, true));
 	}
 
 	/**
@@ -126,6 +133,9 @@ public class ToolCallResponse {
 
 	public ToolResultPart toToolResultPart() {
 		ToolResultPart part = ToolResultPart.of(toToolResponse());
+		if (Boolean.TRUE.equals(metadata.get(PERMISSION_DENIED_ATTRIBUTE))) {
+			part = part.withAttributes(Map.of(PERMISSION_DENIED_ATTRIBUTE, "true"));
+		}
 		return isError() ? new ToolResultPart(part.id(), part.name(), part.content(), true,
 				part.payload(), part.attributes()) : part;
 	}

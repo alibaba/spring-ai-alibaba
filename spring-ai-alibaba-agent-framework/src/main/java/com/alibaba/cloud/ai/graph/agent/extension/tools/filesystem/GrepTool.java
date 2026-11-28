@@ -22,9 +22,11 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
+import java.util.stream.Stream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -64,31 +66,32 @@ public class GrepTool implements BiFunction<GrepTool.GrepRequest, ToolContext, S
 			PathMatcher globMatcher = request.glob != null ?
 					FileSystems.getDefault().getPathMatcher("glob:" + request.glob) : null;
 
-			Files.walk(searchPath)
-					.filter(Files::isRegularFile)
-					.filter(path -> globMatcher == null || globMatcher.matches(path.getFileName()))
-					.forEach(path -> {
-						try {
-							List<String> lines = Files.readAllLines(path);
-							for (int i = 0; i < lines.size(); i++) {
-								if (lines.get(i).contains(request.pattern)) {
-									String result = switch (request.outputMode) {
-										case "files_with_matches" -> path.toString();
-										case "content" -> path + ":" + (i + 1) + ": " + lines.get(i);
-										case "count" -> path + ": matched";
-										default -> path.toString();
-									};
-									results.add(result);
-									if ("files_with_matches".equals(request.outputMode)) {
-										break; // Only need file name once
+			try (Stream<Path> paths = Files.walk(searchPath)) {
+				paths.filter(path -> Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
+						.filter(path -> globMatcher == null || globMatcher.matches(path.getFileName()))
+						.forEach(path -> {
+							try {
+								List<String> lines = Files.readAllLines(path);
+								for (int i = 0; i < lines.size(); i++) {
+									if (lines.get(i).contains(request.pattern)) {
+										String result = switch (request.outputMode) {
+											case "files_with_matches" -> path.toString();
+											case "content" -> path + ":" + (i + 1) + ": " + lines.get(i);
+											case "count" -> path + ": matched";
+											default -> path.toString();
+										};
+										results.add(result);
+										if ("files_with_matches".equals(request.outputMode)) {
+											break; // Only need file name once
+										}
 									}
 								}
 							}
-						}
-						catch (IOException e) {
-							// Skip files that can't be read
-						}
-					});
+							catch (IOException e) {
+								// Skip files that can't be read
+							}
+						});
+			}
 
 			if (results.isEmpty()) {
 				return "No matches found for pattern: " + request.pattern;

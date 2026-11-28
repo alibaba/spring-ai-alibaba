@@ -35,6 +35,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.Interceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.StreamingModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
+import com.alibaba.cloud.ai.graph.agent.permission.ToolPermissionPolicy;
 import com.alibaba.cloud.ai.graph.agent.model.ModelRoutingPolicy;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
@@ -100,6 +101,8 @@ public abstract class Builder {
 	protected ToolCallbackResolver resolver;
 
 	protected ToolExecutionExceptionProcessor toolExecutionExceptionProcessor;
+
+	protected ToolPermissionPolicy toolPermissionPolicy;
 
 	protected Map<String, Object> toolContext = new HashMap<>();
 
@@ -228,6 +231,12 @@ public abstract class Builder {
 
 	public Builder toolExecutionExceptionProcessor(ToolExecutionExceptionProcessor toolExecutionExceptionProcessor) {
 		this.toolExecutionExceptionProcessor = toolExecutionExceptionProcessor;
+		return this;
+	}
+
+	/** Sets the authorization policy for tool calls dispatched by this agent. */
+	public Builder toolPermissionPolicy(ToolPermissionPolicy policy) {
+		this.toolPermissionPolicy = Objects.requireNonNull(policy, "tool permission policy");
 		return this;
 	}
 
