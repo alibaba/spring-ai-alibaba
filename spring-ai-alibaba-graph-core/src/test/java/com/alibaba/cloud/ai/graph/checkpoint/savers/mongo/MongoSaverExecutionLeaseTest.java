@@ -53,15 +53,15 @@ class MongoSaverExecutionLeaseTest {
 			assertEquals(0, init.getExitCode(), init.getStderr());
 			var url = "mongodb://" + mongo.getHost() + ":" + mongo.getMappedPort(27017)
 					+ "/?directConnection=true&replicaSet=rs0";
-			try (var clientA = MongoClients.create(url); var clientB = MongoClients.create(url)) {
-				var first = MongoSaver.builder().client(clientA).build();
-				var second = MongoSaver.builder().client(clientB).build();
+			try (var firstClient = MongoClients.create(url); var secondClient = MongoClients.create(url)) {
+				var first = MongoSaver.builder().client(firstClient).build();
+				var second = MongoSaver.builder().client(secondClient).build();
 				var config = RunnableConfig.builder().threadId("mongo-lease-test").build();
 				try (var original = first.acquireExecutionLease(config)) {
 					var stale = original.configure(config);
 					first.put(stale, checkpoint("original"));
 					assertThrows(IllegalStateException.class, () -> second.acquireExecutionLease(config));
-					var leaseCollection = clientB.getDatabase("check_point_db").getCollection("execution_lease");
+					var leaseCollection = secondClient.getDatabase("check_point_db").getCollection("execution_lease");
 					leaseCollection.updateOne(Filters.eq("_id", "mongo-lease-test"), Updates.set("expiresAt", new Date(0)));
 					try (var successor = second.acquireExecutionLease(config)) {
 						second.put(successor.configure(config), checkpoint("successor"));
