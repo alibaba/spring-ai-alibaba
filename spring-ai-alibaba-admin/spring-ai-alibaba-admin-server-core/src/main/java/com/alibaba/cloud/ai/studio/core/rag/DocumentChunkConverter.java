@@ -71,6 +71,10 @@ public class DocumentChunkConverter {
 		}
 
 		if (chunk.getDocName() != null) {
+			metadata.put(KEY_DOC_NAME, chunk.getDocName());
+		}
+
+		if (chunk.getWorkspaceId() != null) {
 			metadata.put(KEY_WORKSPACE_ID, chunk.getWorkspaceId());
 		}
 
